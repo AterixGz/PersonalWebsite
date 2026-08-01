@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>MyFinance — แดชบอร์ดการเงิน</title>
+  
+  <!-- iOS PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="MyFinance">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#f8fafc">
+  
+  <!-- Apple Touch Icon -->
+  <link rel="apple-touch-icon" href="/static/icons/icon-512x512.jpg">
+  <link rel="manifest" href="/static/manifest.json">
+  
+  <!-- CDN Dependencies -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/app.css">
+
+  <!-- App JS (Registers Alpine stores before Alpine loads) -->
+  <script src="/static/app.js"></script>
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <script>
+    window.__INITIAL_DATA__ = {
+      config: {{.ConfigJSON}},
+      expenses: {{.ExpensesJSON}},
+      currentMonth: "{{.CurrentMonth}}"
+    };
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/static/sw.js');
+      });
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased overflow-hidden w-full h-full safe-top" x-data>
+  
+  <!-- Main Container -->
+  <main class="w-full h-full max-w-md mx-auto relative flex flex-col bg-slate-50 shadow-xl overflow-hidden" style="height: 100dvh;">
+    
+    <!-- Tab Content Area -->
+    <div class="flex-1 overflow-y-auto no-scrollbar pb-[100px] safe-bottom px-4 pt-6 scroll-smooth" id="scroll-container">
+      
+      <!-- TAB 1: Finance -->
+      <div x-show="$store.ui.activeTab === 'finance'" 
+           x-transition:enter="transition ease-out duration-300"
+           x-transition:enter-start="opacity-0 translate-y-4"
+           x-transition:enter-end="opacity-100 translate-y-0"
+           class="space-y-6">
+           
+        <!-- Header -->
+        <div class="flex justify-between items-center">
+          <h1 class="text-2xl font-bold tracking-tight text-slate-900">สรุปการเงิน</h1>
+          <button @click="$store.ui.configModalOpen = true; $store.finance.editConfig = {...$store.finance.config}" class="w-11 h-11 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-500 hover:text-indigo-600 active:scale-95 transition-transform">
+            <i class="fa-solid fa-gear text-lg"></i>
+          </button>
+        </div>
+
+        <!-- Net Balance Card -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col items-center justify-center relative overflow-hidden">
+          <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
+          <div class="absolute -bottom-8 -left-8 w-24 h-24 bg-emerald-50 rounded-full blur-2xl opacity-50 pointer-events-none"></div>
+          <p class="text-sm font-medium text-slate-500 mb-1 relative z-10">ยอดคงเหลือสุทธิ</p>
+          <h2 class="text-4xl font-bold text-slate-900 tracking-tight relative z-10" x-text="$store.finance.formattedNetBalance()"></h2>
+          <p class="text-xs text-slate-400 mt-2 relative z-10">รายได้ − รายจ่ายประจำ</p>
+        </div>
+
+        <!-- Income Section -->
+        <div class="space-y-4 bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+          <div>
+            <div class="flex justify-between text-sm font-medium mb-2">
+              <span class="text-slate-600">รายได้ประจำ (Active)</span>
+              <span class="text-slate-900 font-bold" x-text="$store.finance.formatMoney($store.finance.config.active_income)"></span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+              <div class="bg-indigo-500 h-3 rounded-full transition-all duration-700 ease-out" :style="`width: ${$store.finance.activeIncomePercent()}%`"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm font-medium mb-2">
+              <span class="text-slate-600">รายได้อัตโนมัติ (Passive)</span>
+              <span class="text-slate-900 font-bold" x-text="$store.finance.formatMoney($store.finance.config.passive_income)"></span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+              <div class="bg-emerald-500 h-3 rounded-full transition-all duration-700 ease-out" :style="`width: ${$store.finance.passiveIncomePercent()}%`"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Freedom Goal -->
+        <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-3xl p-5 text-white shadow-md relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+          <div class="flex justify-between items-center mb-3 relative z-10">
+            <span class="font-medium text-indigo-100">🎯 เป้าหมายอิสรภาพทางการเงิน</span>
+            <span class="text-lg font-bold" x-text="`${$store.finance.freedomPercent()}%`"></span>
+          </div>
+          <div class="w-full bg-indigo-900/30 rounded-full h-2.5 mb-2 relative z-10">
+            <div class="bg-white h-2.5 rounded-full transition-all duration-700 ease-out" :style="`width: ${$store.finance.freedomPercent()}%`"></div>
+          </div>
+          <div class="flex justify-between text-xs text-indigo-200 font-medium relative z-10">
+            <span x-text="$store.finance.formatMoney($store.finance.config.passive_income)"></span>
+            <span x-text="$store.finance.formatMoney($store.finance.config.passive_goal)"></span>
+          </div>
+        </div>
+
+        <!-- Monthly Expenses List -->
+        <div class="space-y-4 pb-4">
+          <div class="flex justify-between items-end">
+            <h3 class="text-lg font-bold text-slate-800">📋 รายจ่ายเดือนนี้</h3>
+            <span class="text-sm font-medium text-slate-500" x-text="`รวม ${$store.finance.formatMoney($store.finance.totalExpenses())}`"></span>
+          </div>
+          
+          <template x-if="$store.finance.expenses.length === 0">
+            <div class="text-center py-8 text-slate-400 text-sm">ไม่มีรายการรายจ่าย</div>
+          </template>
+
+          <template x-for="expense in $store.finance.expenses" :key="expense.id">
+            <div class="bg-white rounded-2xl p-4 flex items-center justify-between shadow-sm border border-slate-100 active:bg-slate-50 transition-colors">
+              <div class="flex items-center gap-3 min-w-0 flex-1">
+                <div class="w-11 h-11 rounded-full flex items-center justify-center text-xl shrink-0" :class="expense.is_paid ? 'bg-emerald-50' : 'bg-slate-50'" x-text="$store.finance.getEmoji(expense.category)"></div>
+                <div class="min-w-0">
+                  <h4 class="font-bold text-slate-900 text-sm truncate" x-text="expense.name"></h4>
+                  <p class="text-xs text-slate-500">วันที่ <span x-text="expense.due_day"></span> • <span class="font-semibold" x-text="$store.finance.formatMoney(expense.amount)"></span></p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 ml-2 shrink-0">
+                <button @click="$store.finance.togglePaid(expense.id)" class="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90" :class="expense.is_paid ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'">
+                  <i class="fa-solid" :class="expense.is_paid ? 'fa-check' : 'fa-clock'"></i>
+                </button>
+                <button @click="$store.finance.deleteExpense(expense.id)" class="w-10 h-10 rounded-full bg-red-50 text-red-400 flex items-center justify-center active:scale-90 transition-transform">
+                  <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </template>
+
+          <button @click="$store.ui.addExpenseModalOpen = true" class="w-full py-4 rounded-2xl border-2 border-dashed border-slate-200 text-slate-500 font-medium hover:border-indigo-300 hover:text-indigo-600 active:bg-slate-50 transition-colors flex items-center justify-center gap-2">
+            <i class="fa-solid fa-plus"></i> เพิ่มรายการ
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 2: Workspace -->
+      <div x-show="$store.ui.activeTab === 'workspace'" style="display: none;"
+           x-transition:enter="transition ease-out duration-300"
+           x-transition:enter-start="opacity-0 translate-y-4"
+           x-transition:enter-end="opacity-100 translate-y-0"
+           class="space-y-6">
+        
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">พื้นที่ทำงาน</h1>
+
+        <template x-if="$store.workspace.loading">
+          <div class="space-y-4">
+            <div class="h-24 bg-slate-200 animate-pulse rounded-2xl"></div>
+            <div class="h-24 bg-slate-200 animate-pulse rounded-2xl"></div>
+            <div class="h-24 bg-slate-200 animate-pulse rounded-2xl"></div>
+          </div>
+        </template>
+
+        <template x-if="!$store.workspace.loading">
+          <div class="space-y-6">
+            <!-- Trello Section -->
+            <div class="space-y-3">
+              <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><i class="fa-brands fa-trello"></i> Trello งาน</h3>
+              <div class="space-y-2">
+                <template x-for="task in $store.workspace.trello" :key="task.id">
+                  <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-start">
+                    <span class="font-medium text-slate-800 text-sm" x-text="task.name"></span>
+                    <span class="text-[10px] font-bold px-2.5 py-1 rounded-full" 
+                          :class="task.status === 'เสร็จแล้ว' ? 'bg-emerald-100 text-emerald-700' : task.status === 'กำลังทำ' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'"
+                          x-text="task.status"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Calendar Section -->
+            <div class="space-y-3">
+              <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><i class="fa-regular fa-calendar-check"></i> นัดหมาย</h3>
+              <div class="space-y-2">
+                <template x-for="event in $store.workspace.calendar" :key="event.id">
+                  <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-l-indigo-500 flex flex-col gap-1">
+                    <span class="font-medium text-slate-800 text-sm" x-text="event.name"></span>
+                    <span class="text-xs text-slate-500" x-text="event.time"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Gmail Section -->
+            <div class="space-y-3">
+              <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><i class="fa-regular fa-envelope"></i> อีเมลสำคัญ</h3>
+              <div class="space-y-2">
+                <template x-for="email in $store.workspace.gmail" :key="email.id">
+                  <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-1 overflow-hidden">
+                    <span class="font-bold text-slate-900 text-sm" x-text="email.sender"></span>
+                    <span class="font-medium text-slate-700 text-sm truncate" x-text="email.subject"></span>
+                    <span class="text-xs text-slate-500 truncate" x-text="email.preview"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- TAB 3: Chat -->
+      <div x-show="$store.ui.activeTab === 'chat'" style="display: none;"
+           class="h-full flex flex-col relative"
+           x-transition:enter="transition ease-out duration-300"
+           x-transition:enter-start="opacity-0 translate-y-4"
+           x-transition:enter-end="opacity-100 translate-y-0">
+        
+        <div class="flex justify-between items-center mb-4 shrink-0">
+          <h1 class="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            OpenClaw AI <span class="text-indigo-500 text-sm">✨</span>
+          </h1>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="flex-1 overflow-y-auto no-scrollbar space-y-4 pb-32" id="chat-messages">
+          <template x-for="msg in $store.chat.messages" :key="msg.id">
+            <div class="flex w-full" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+              <div class="max-w-[85%] rounded-2xl px-4 py-3 shadow-sm text-[15px] leading-relaxed break-words"
+                   :class="msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-sm' : 'bg-white border border-slate-100 text-slate-800 rounded-tl-sm'">
+                <span x-html="$store.chat.formatMessage(msg.content)"></span>
+              </div>
+            </div>
+          </template>
+
+          <!-- Streaming message -->
+          <template x-if="$store.chat.streaming && $store.chat.currentStreamContent">
+            <div class="flex w-full justify-start">
+              <div class="max-w-[85%] rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm bg-white border border-slate-100 text-slate-800 text-[15px] leading-relaxed break-words">
+                <span x-html="$store.chat.formatMessage($store.chat.currentStreamContent)"></span>
+                <span class="inline-block w-1.5 h-4 bg-indigo-400 animate-pulse ml-1 align-middle rounded-sm"></span>
+              </div>
+            </div>
+          </template>
+
+          <template x-if="$store.chat.streaming && !$store.chat.currentStreamContent">
+            <div class="flex w-full justify-start">
+              <div class="rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm bg-white border border-slate-100 text-slate-500 text-sm flex gap-1.5 items-center">
+                <div class="w-2 h-2 rounded-full bg-slate-300 animate-bounce" style="animation-delay: 0ms"></div>
+                <div class="w-2 h-2 rounded-full bg-slate-300 animate-bounce" style="animation-delay: 150ms"></div>
+                <div class="w-2 h-2 rounded-full bg-slate-300 animate-bounce" style="animation-delay: 300ms"></div>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Chat Input Fixed Bottom -->
+        <div class="absolute bottom-4 left-0 right-0 z-10 flex gap-2">
+          <input type="text" 
+                 x-model="$store.chat.input" 
+                 @keydown.enter="$store.chat.send()"
+                 placeholder="พิมพ์ข้อความ..." 
+                 class="flex-1 h-12 rounded-full border-0 shadow-md bg-white px-5 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-base outline-none">
+          <button @click="$store.chat.send()" 
+                  :disabled="$store.chat.streaming || $store.chat.input.trim() === ''"
+                  class="w-12 h-12 rounded-full bg-indigo-600 text-white shadow-md flex items-center justify-center active:scale-90 disabled:opacity-50 transition-all shrink-0">
+            <i class="fa-solid fa-paper-plane text-sm"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Navigation Bar (Glassmorphism) -->
+    <nav class="absolute bottom-0 left-0 right-0 glass-nav border-t border-slate-200/50 safe-bottom z-30">
+      <div class="flex justify-around items-center h-16 px-2">
+        
+        <button @click="$store.ui.setTab('finance')" class="flex flex-col items-center justify-center w-full h-full gap-1 active:scale-95 transition-transform">
+          <i class="fa-solid fa-chart-pie text-xl transition-colors" :class="$store.ui.activeTab === 'finance' ? 'text-indigo-600' : 'text-slate-400'"></i>
+          <span class="text-[10px] font-semibold transition-colors" :class="$store.ui.activeTab === 'finance' ? 'text-indigo-600' : 'text-slate-400'">การเงิน</span>
+        </button>
+        
+        <button @click="$store.ui.setTab('workspace')" class="flex flex-col items-center justify-center w-full h-full gap-1 active:scale-95 transition-transform">
+          <i class="fa-solid fa-list-check text-xl transition-colors" :class="$store.ui.activeTab === 'workspace' ? 'text-indigo-600' : 'text-slate-400'"></i>
+          <span class="text-[10px] font-semibold transition-colors" :class="$store.ui.activeTab === 'workspace' ? 'text-indigo-600' : 'text-slate-400'">งาน</span>
+        </button>
+
+        <button @click="$store.ui.setTab('chat')" class="flex flex-col items-center justify-center w-full h-full gap-1 active:scale-95 transition-transform">
+          <i class="fa-solid fa-robot text-xl transition-colors" :class="$store.ui.activeTab === 'chat' ? 'text-indigo-600' : 'text-slate-400'"></i>
+          <span class="text-[10px] font-semibold transition-colors" :class="$store.ui.activeTab === 'chat' ? 'text-indigo-600' : 'text-slate-400'">AI</span>
+        </button>
+        
+      </div>
+    </nav>
+  </main>
+
+  <!-- Modals -->
+
+  <!-- Config Modal -->
+  <div x-show="$store.ui.configModalOpen" style="display: none;" class="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">
+    <div x-show="$store.ui.configModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" @click="$store.ui.configModalOpen = false"></div>
+
+    <div x-show="$store.ui.configModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0" x-transition:leave="ease-in duration-200" x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full" class="bg-white rounded-t-3xl w-full max-w-md shadow-2xl relative z-10 safe-bottom">
+      <div class="p-6">
+        <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
+        <h3 class="text-xl font-bold text-slate-900 mb-6">⚙️ ตั้งค่าการเงิน</h3>
+        
+        <form @submit.prevent="$store.finance.updateConfig()" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">รายได้ประจำ (Active Income)</label>
+            <input type="number" x-model.number="$store.finance.editConfig.active_income" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">รายได้อัตโนมัติ (Passive Income)</label>
+            <input type="number" x-model.number="$store.finance.editConfig.passive_income" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">เป้าหมายอิสรภาพ (Passive Goal)</label>
+            <input type="number" x-model.number="$store.finance.editConfig.passive_goal" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors" required>
+          </div>
+          
+          <button type="submit" class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold shadow-md shadow-indigo-200 active:scale-95 transition-transform mt-2">
+            บันทึกการตั้งค่า
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Expense Modal -->
+  <div x-show="$store.ui.addExpenseModalOpen" style="display: none;" class="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">
+    <div x-show="$store.ui.addExpenseModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" @click="$store.ui.addExpenseModalOpen = false"></div>
+
+    <div x-show="$store.ui.addExpenseModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0" x-transition:leave="ease-in duration-200" x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full" class="bg-white rounded-t-3xl w-full max-w-md shadow-2xl relative z-10 safe-bottom">
+      <div class="p-6">
+        <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
+        <h3 class="text-xl font-bold text-slate-900 mb-6">➕ เพิ่มรายการรายจ่าย</h3>
+        
+        <form @submit.prevent="$store.finance.addExpense()" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">ชื่อรายการ</label>
+            <input type="text" x-model="$store.finance.newExpense.name" placeholder="เช่น ค่าเช่าบ้าน" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">จำนวนเงิน (บาท)</label>
+            <input type="number" x-model.number="$store.finance.newExpense.amount" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors" required>
+          </div>
+          <div class="flex gap-4">
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-slate-700 mb-1">หมวดหมู่</label>
+              <select x-model="$store.finance.newExpense.category" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors appearance-none">
+                <option value="housing">🏠 ที่อยู่อาศัย</option>
+                <option value="utilities">⚡ ค่าน้ำ/ไฟ</option>
+                <option value="internet">🌐 อินเทอร์เน็ต</option>
+                <option value="subscription">📺 สมาชิกรายเดือน</option>
+                <option value="phone">📱 ค่าโทรศัพท์</option>
+                <option value="food">🍔 อาหาร</option>
+                <option value="transport">🚗 เดินทาง</option>
+                <option value="other">📦 อื่นๆ</option>
+              </select>
+            </div>
+            <div class="w-24">
+              <label class="block text-sm font-medium text-slate-700 mb-1">วันที่จ่าย</label>
+              <input type="number" min="1" max="31" x-model.number="$store.finance.newExpense.due_day" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors text-center" required>
+            </div>
+          </div>
+          
+          <button type="submit" class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold shadow-md shadow-indigo-200 active:scale-95 transition-transform mt-2">
+            เพิ่มรายการ
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
