@@ -4,59 +4,37 @@ document.addEventListener('alpine:init', () => {
     user: JSON.parse(localStorage.getItem('myfinance_user') || 'null'),
     loginInput: { email: '', password: '' },
     loginError: '',
-    
-    demoAccounts: [
-      {
-        id: 'admin',
-        name: 'ผู้ดูแลระบบ (Admin)',
-        email: 'admin@myfinance.app',
-        role: 'Administrator',
-        badge: '👑 Admin',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        password: '123456'
-      },
-      {
-        id: 'demo-user',
-        name: 'คุณสมชาย ใจดี',
-        email: 'demo@myfinance.app',
-        role: 'Demo Member',
-        badge: '👤 User',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-        password: '123456'
-      }
-    ],
+    turnstileToken: '',
 
     isLoggedIn() {
       return !!this.user;
     },
 
-    loginAsDemo(acc) {
-      this.user = { ...acc };
-      localStorage.setItem('myfinance_user', JSON.stringify(this.user));
-      this.loginError = '';
-      Alpine.store('ui').sidebarOpen = false;
-    },
-
     login() {
-      const found = this.demoAccounts.find(
-        a => a.email.toLowerCase() === this.loginInput.email.trim().toLowerCase() && a.password === this.loginInput.password
-      );
-      if (found) {
-        this.loginAsDemo(found);
-        this.loginInput = { email: '', password: '' };
-      } else if (this.loginInput.email.trim() && this.loginInput.password) {
-        const customUser = {
-          id: 'custom',
-          name: this.loginInput.email.split('@')[0],
-          email: this.loginInput.email.trim(),
-          role: 'Member',
-          badge: '✨ Member',
-          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
+      const username = this.loginInput.email.trim().toLowerCase();
+      const password = this.loginInput.password;
+
+      // Anti-bot Cloudflare Turnstile check
+      if (!this.turnstileToken) {
+        this.loginError = '🛡️ กรุณายืนยันการตรวจสอบความปลอดภัย (Cloudflare Turnstile)';
+        return;
+      }
+
+      // Admin verification (Username: admin / Password: buabut123)
+      if ((username === 'admin' || username === 'admin@myfinance.app') && password === 'buabut123') {
+        this.user = {
+          id: 'admin',
+          name: 'ผู้ดูแลระบบ (Admin)',
+          email: 'admin@myfinance.app',
+          role: 'Administrator',
+          badge: '👑 Admin'
         };
-        this.loginAsDemo(customUser);
+        localStorage.setItem('myfinance_user', JSON.stringify(this.user));
+        this.loginError = '';
         this.loginInput = { email: '', password: '' };
+        Alpine.store('ui').sidebarOpen = false;
       } else {
-        this.loginError = 'กรุณากรอกอีเมลและรหัสผ่านให้ถูกต้อง';
+        this.loginError = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
       }
     },
 
@@ -64,6 +42,64 @@ document.addEventListener('alpine:init', () => {
       this.user = null;
       localStorage.removeItem('myfinance_user');
       Alpine.store('ui').sidebarOpen = false;
+    }
+  });
+
+  // --- Notification Store (iPhone iOS / Web Push Notifications) ---
+  Alpine.store('notification', {
+    permissionStatus: typeof Notification !== 'undefined' ? Notification.permission : 'unsupported',
+    statusMessage: '',
+    testing: false,
+
+    async requestAndTest() {
+      this.testing = true;
+      this.statusMessage = '';
+
+      if (!('Notification' in window)) {
+        this.statusMessage = '❌ เบราว์เซอร์นี้ยังไม่รองรับระบบการแจ้งเตือน (แนะนำให้กด Add to Home Screen บน iOS 16.4+)';
+        this.testing = false;
+        return;
+      }
+
+      try {
+        let perm = Notification.permission;
+        if (perm !== 'granted') {
+          perm = await Notification.requestPermission();
+        }
+        this.permissionStatus = perm;
+
+        if (perm === 'granted') {
+          const title = '🔔 ทดสอบการแจ้งเตือน MyFinance';
+          const options = {
+            body: 'ระบบแจ้งเตือนบน iPhone ทำงานได้จริงสมบูรณ์แบบ! 🎉',
+            icon: '/static/icons/icon-512x512.jpg',
+            badge: '/static/icons/icon-512x512.jpg',
+            vibrate: [200, 100, 200],
+            tag: 'myfinance-test-notif',
+            renotify: true
+          };
+
+          // Try Service Worker registration first (standard for PWA & iOS)
+          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            const reg = await navigator.serviceWorker.ready;
+            await reg.showNotification(title, options);
+          } else {
+            // Fallback for standard Web Notification API
+            new Notification(title, options);
+          }
+
+          this.statusMessage = '✅ ส่งการแจ้งเตือนสำเร็จ! ตรวจสอบที่แถบแจ้งเตือนด้านบนของคุณ';
+        } else if (perm === 'denied') {
+          this.statusMessage = '⚠️ สิทธิ์การแจ้งเตือนถูกปฏิเสธ (กรุณาอนุญาตในตั้งค่าของ iOS / Safari)';
+        } else {
+          this.statusMessage = 'ℹ️ รอการตอบรับสิทธิ์การแจ้งเตือนจากผู้ใช้';
+        }
+      } catch (err) {
+        console.error('Notification test error:', err);
+        this.statusMessage = '❌ เกิดข้อผิดพลาด: ' + (err.message || 'ไม่สามารถส่งการแจ้งเตือนได้');
+      }
+
+      this.testing = false;
     }
   });
 

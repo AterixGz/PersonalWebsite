@@ -74,3 +74,31 @@ self.addEventListener('fetch', event => {
       })
   );
 });
+
+// iOS Web Push & Local Notification Click Handlers
+self.addEventListener('push', event => {
+  let data = { title: '🔔 การแจ้งเตือน MyFinance', body: 'ระบบแจ้งเตือนบน iPhone ทำงานได้จริงสมบูรณ์แบบ! 🎉' };
+  if (event.data) {
+    try { data = event.data.json(); } catch(e) { data.body = event.data.text(); }
+  }
+  const options = {
+    body: data.body,
+    icon: '/static/icons/icon-512x512.jpg',
+    badge: '/static/icons/icon-512x512.jpg',
+    vibrate: [200, 100, 200],
+    data: data.url || '/'
+  };
+  event.waitUntil(self.registration.showNotification(data.title, options));
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      if (clientList.length > 0) {
+        return clientList[0].focus();
+      }
+      return clients.openWindow(event.notification.data || '/');
+    })
+  );
+});
