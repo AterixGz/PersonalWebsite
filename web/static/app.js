@@ -187,9 +187,7 @@ document.addEventListener('alpine:init', () => {
       this.activeTab = tab;
       
       // Load data on demand
-      if (tab === 'workspace' && Alpine.store('workspace').trello.length === 0) {
-        Alpine.store('workspace').loadAll();
-      } else if (tab === 'chat' && Alpine.store('chat').messages.length === 0) {
+      if (tab === 'chat' && Alpine.store('chat').messages.length === 0) {
         Alpine.store('chat').loadHistory();
       }
       
@@ -323,28 +321,131 @@ document.addEventListener('alpine:init', () => {
   // --- Workspace Store ---
   Alpine.store('workspace', {
     loading: false,
+    trelloConnected: localStorage.getItem('ws_trello') === 'true',
+    calendarConnected: localStorage.getItem('ws_calendar') === 'true',
+    gmailConnected: localStorage.getItem('ws_gmail') === 'true',
+    
+    connecting: { trello: false, calendar: false, gmail: false },
+    connectModalOpen: false,
+    selectedService: null,
+    
     trello: [],
     calendar: [],
     gmail: [],
-    
-    async loadAll() {
-      this.loading = true;
-      try {
-        const [trelloRes, calendarRes, gmailRes] = await Promise.all([
-          fetch('/api/workspace/trello').then(r => r.ok ? r.json() : []),
-          fetch('/api/workspace/calendar').then(r => r.ok ? r.json() : []),
-          fetch('/api/workspace/gmail').then(r => r.ok ? r.json() : [])
-        ]);
-        this.trello = trelloRes;
-        this.calendar = calendarRes;
-        this.gmail = gmailRes;
-      } catch (err) {
-        console.error('Failed to load workspace data', err);
-        this.trello = [];
-        this.calendar = [];
-        this.gmail = [];
+
+    init() {
+      // Ensure initial load defaults to unconnected if not set
+      if (localStorage.getItem('ws_trello') === null) {
+        this.trelloConnected = false;
+        this.calendarConnected = false;
+        this.gmailConnected = false;
       }
-      this.loading = false;
+    },
+    
+    connectedCount() {
+      let count = 0;
+      if (this.trelloConnected) count++;
+      if (this.calendarConnected) count++;
+      if (this.gmailConnected) count++;
+      return count;
+    },
+
+    openConnectModal(service) {
+      this.selectedService = service;
+      this.connectModalOpen = true;
+    },
+
+    closeConnectModal() {
+      this.connectModalOpen = false;
+      this.selectedService = null;
+    },
+
+    async confirmConnect() {
+      const service = this.selectedService;
+      if (!service) return;
+      
+      this.closeConnectModal();
+      await this.connectService(service);
+    },
+
+    async connectService(service) {
+      this.connecting[service] = true;
+      
+      // Simulate OAuth / API connection delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if (service === 'trello') {
+        this.trelloConnected = true;
+        localStorage.setItem('ws_trello', 'true');
+        if (this.trello.length === 0) await this.loadTrello();
+      } else if (service === 'calendar') {
+        this.calendarConnected = true;
+        localStorage.setItem('ws_calendar', 'true');
+        if (this.calendar.length === 0) await this.loadCalendar();
+      } else if (service === 'gmail') {
+        this.gmailConnected = true;
+        localStorage.setItem('ws_gmail', 'true');
+        if (this.gmail.length === 0) await this.loadGmail();
+      }
+      
+      this.connecting[service] = false;
+    },
+
+    disconnectService(service) {
+      if (service === 'trello') {
+        this.trelloConnected = false;
+        localStorage.setItem('ws_trello', 'false');
+      } else if (service === 'calendar') {
+        this.calendarConnected = false;
+        localStorage.setItem('ws_calendar', 'false');
+      } else if (service === 'gmail') {
+        this.gmailConnected = false;
+        localStorage.setItem('ws_gmail', 'false');
+      }
+    },
+
+    resetAll() {
+      this.trelloConnected = false;
+      this.calendarConnected = false;
+      this.gmailConnected = false;
+      localStorage.setItem('ws_trello', 'false');
+      localStorage.setItem('ws_calendar', 'false');
+      localStorage.setItem('ws_gmail', 'false');
+    },
+
+    async connectAll() {
+      await Promise.all([
+        this.connectService('trello'),
+        this.connectService('calendar'),
+        this.connectService('gmail')
+      ]);
+    },
+
+    async loadTrello() {
+      try {
+        const res = await fetch('/api/workspace/trello');
+        if (res.ok) this.trello = await res.json();
+      } catch (err) {
+        console.error('Failed to load trello', err);
+      }
+    },
+
+    async loadCalendar() {
+      try {
+        const res = await fetch('/api/workspace/calendar');
+        if (res.ok) this.calendar = await res.json();
+      } catch (err) {
+        console.error('Failed to load calendar', err);
+      }
+    },
+
+    async loadGmail() {
+      try {
+        const res = await fetch('/api/workspace/gmail');
+        if (res.ok) this.gmail = await res.json();
+      } catch (err) {
+        console.error('Failed to load gmail', err);
+      }
     }
   });
 
