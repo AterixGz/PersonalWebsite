@@ -317,11 +317,30 @@
             <div class="text-center py-8 text-slate-400 text-sm">ไม่มีรายการรายจ่าย</div>
           </template>
 
-          <template x-for="expense in $store.finance.expenses" :key="expense.id">
-            <div class="bg-white rounded-2xl p-4 flex items-center justify-between shadow-sm border border-slate-100 active:bg-slate-50 transition-colors">
-              <div class="flex items-center gap-3 min-w-0 flex-1">
-                <div class="w-11 h-11 rounded-full flex items-center justify-center text-xl shrink-0" :class="expense.is_paid ? 'bg-emerald-50' : 'bg-slate-50'" x-text="$store.finance.getEmoji(expense.category)"></div>
-                <div class="min-w-0">
+          <template x-for="(expense, index) in $store.finance.expenses" :key="expense.id">
+            <div :data-expense-index="index"
+                 @dragover.prevent="$store.finance.onDragOver(index)"
+                 class="expense-card bg-white rounded-2xl p-4 flex items-center justify-between shadow-sm border transition-all duration-150"
+                 :class="{
+                   'shadow-xl border-indigo-500 scale-[1.02] bg-indigo-50/80 z-20 opacity-90': $store.finance.draggedIndex === index,
+                   'border-2 border-dashed border-indigo-400 bg-indigo-50/30': $store.finance.hoverIndex === index && $store.finance.draggedIndex !== index,
+                   'border-slate-100': $store.finance.draggedIndex !== index && $store.finance.hoverIndex !== index
+                 }">
+              <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                <!-- Grip handle icon (Drag & Touch ONLY from here) -->
+                <div x-init="$nextTick(() => $store.finance.initDragHandles())"
+                     :draggable="!('ontouchstart' in window)"
+                     @dragstart="$store.finance.onDragStart(index)"
+                     @dragend="$store.finance.onDragEnd()"
+                     @touchstart="$store.finance.onTouchStart($event, index)"
+                     @touchend="$store.finance.onTouchEnd()"
+                     @touchcancel="$store.finance.onTouchEnd()"
+                     class="grip-handle cursor-grab active:cursor-grabbing p-2 -ml-2 text-slate-300 hover:text-indigo-600 active:text-indigo-600 shrink-0">
+                  <i class="fa-solid fa-grip-vertical text-base pointer-events-none"></i>
+                </div>
+
+                <div class="w-11 h-11 rounded-full flex items-center justify-center text-xl shrink-0 pointer-events-none" :class="expense.is_paid ? 'bg-emerald-50' : 'bg-slate-50'" x-text="$store.finance.getEmoji(expense.category)"></div>
+                <div class="min-w-0 pointer-events-none">
                   <h4 class="font-bold text-slate-900 text-sm truncate" x-text="expense.name"></h4>
                   <p class="text-xs text-slate-500">วันที่ <span x-text="expense.due_day"></span> • <span class="font-semibold" x-text="$store.finance.formatMoney(expense.amount)"></span></p>
                 </div>
@@ -763,7 +782,7 @@
         <!-- Cloudflare Turnstile Anti-Bot Protection Widget -->
         <div class="pt-1 flex flex-col items-center justify-center space-y-1.5">
           <div class="cf-turnstile scale-90" 
-               data-sitekey="1x00000000000000000000AA" 
+               data-sitekey="0x4AAAAAAED23TH1oEuLiHAd" 
                data-callback="onTurnstileSuccess" 
                data-expired-callback="onTurnstileExpired"
                data-theme="light"></div>
@@ -772,8 +791,11 @@
           </span>
         </div>
 
-        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-200 active:scale-95 transition-all mt-2">
-          เข้าสู่ระบบ (Login)
+        <button type="submit" 
+                :disabled="$store.auth.loginLoading"
+                class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-200 active:scale-95 transition-all mt-2 disabled:opacity-60 disabled:cursor-wait flex items-center justify-center gap-2">
+          <i x-show="$store.auth.loginLoading" class="fa-solid fa-spinner animate-spin text-sm"></i>
+          <span x-text="$store.auth.loginLoading ? 'กำลังตรวจสอบ...' : 'เข้าสู่ระบบ (Login)'"></span>
         </button>
       </form>
 

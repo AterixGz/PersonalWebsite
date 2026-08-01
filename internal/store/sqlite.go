@@ -47,7 +47,8 @@ func runMigrations(db *sql.DB) error {
 			category TEXT,
 			due_day INTEGER,
 			paid_month TEXT,
-			created_at TEXT
+			created_at TEXT,
+			sort_order INTEGER DEFAULT 0
 		)`,
 		`CREATE TABLE IF NOT EXISTS chat_messages (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,6 +63,9 @@ func runMigrations(db *sql.DB) error {
 			return err
 		}
 	}
+
+	// Safe migration: Add sort_order column if upgrading existing DB
+	db.Exec("ALTER TABLE expenses ADD COLUMN sort_order INTEGER DEFAULT 0;")
 
 	var count int
 	err := db.QueryRow("SELECT COUNT(*) FROM income_config WHERE id = 1").Scan(&count)
@@ -91,7 +95,7 @@ func (s *Store) UpdateIncomeConfig(active, passive, goal float64) error {
 }
 
 func (s *Store) ListExpenses(month string) ([]model.Expense, error) {
-	rows, err := s.db.Query("SELECT id, name, amount, category, due_day, paid_month, created_at FROM expenses")
+	rows, err := s.db.Query("SELECT id, name, amount, category, due_day, paid_month, created_at, sort_order FROM expenses ORDER BY sort_order ASC, id ASC")
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +105,7 @@ func (s *Store) ListExpenses(month string) ([]model.Expense, error) {
 	for rows.Next() {
 		var e model.Expense
 		var paidMonth sql.NullString
-		if err := rows.Scan(&e.ID, &e.Name, &e.Amount, &e.Category, &e.DueDay, &paidMonth, &e.CreatedAt); err != nil {
+		if err := rows.Scan(&e.ID, &e.Name, &e.Amount, &e.Category, &e.DueDay, &paidMonth, &e.CreatedAt, &e.SortOrder); err != nil {
 			return nil, err
 		}
 		if paidMonth.Valid {
@@ -115,8 +119,12 @@ func (s *Store) ListExpenses(month string) ([]model.Expense, error) {
 
 func (s *Store) CreateExpense(req model.ExpenseRequest) (model.Expense, error) {
 	now := time.Now().Format(time.RFC3339)
-	res, err := s.db.Exec("INSERT INTO expenses (name, amount, category, due_day, paid_month, created_at) VALUES (?, ?, ?, ?, '', ?)",
-		req.Name, req.Amount, req.Category, req.DueDay, now)
+	var maxOrder int
+	_ = s.db.QueryRow("SELECT COALESCE(MAX(sort_order), 0) FROM expenses").Scan(&maxOrder)
+	newOrder := maxOrder + 1
+
+	res, err := s.db.Exec("INSERT INTO expenses (name, amount, category, due_day, paid_month, created_at, sort_order) VALUES (?, ?, ?, ?, '', ?, ?)",
+		req.Name, req.Amount, req.Category, req.DueDay, now, newOrder)
 	if err != nil {
 		return model.Expense{}, err
 	}
@@ -133,7 +141,30 @@ func (s *Store) CreateExpense(req model.ExpenseRequest) (model.Expense, error) {
 		IsPaid:    false,
 		PaidMonth: "",
 		CreatedAt: now,
+		SortOrder: newOrder,
 	}, nil
+}
+
+func (s *Store) ReorderExpenses(expenseIDs []int) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare("UPDATE expenses SET sort_order=? WHERE id=?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for order, id := range expenseIDs {
+		if _, err := stmt.Exec(order, id); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (s *Store) UpdateExpense(id int, req model.ExpenseRequest) error {

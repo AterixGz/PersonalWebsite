@@ -130,3 +130,18 @@ func HandleToggleExpense(st *store.Store) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 	}
 }
+
+func HandleReorderExpenses(st *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req model.ReorderExpensesRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := st.ReorderExpenses(req.ExpenseIDs); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}
+}

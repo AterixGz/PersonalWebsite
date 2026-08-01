@@ -5,37 +5,70 @@ document.addEventListener('alpine:init', () => {
     loginInput: { email: '', password: '' },
     loginError: '',
     turnstileToken: '',
+    loginLoading: false,
 
     isLoggedIn() {
       return !!this.user;
     },
 
-    login() {
+    async login() {
       const username = this.loginInput.email.trim().toLowerCase();
       const password = this.loginInput.password;
 
-      // Anti-bot Cloudflare Turnstile check
+      // Anti-bot Cloudflare Turnstile check (frontend)
       if (!this.turnstileToken) {
         this.loginError = '🛡️ กรุณายืนยันการตรวจสอบความปลอดภัย (Cloudflare Turnstile)';
         return;
       }
 
-      // Admin verification (Username: admin / Password: buabut123)
-      if ((username === 'admin' || username === 'admin@myfinance.app') && password === 'buabut123') {
-        this.user = {
-          id: 'admin',
-          name: 'ผู้ดูแลระบบ (Admin)',
-          email: 'admin@myfinance.app',
-          role: 'Administrator',
-          badge: '👑 Admin'
-        };
-        localStorage.setItem('myfinance_user', JSON.stringify(this.user));
-        this.loginError = '';
-        this.loginInput = { email: '', password: '' };
-        Alpine.store('ui').sidebarOpen = false;
-      } else {
-        this.loginError = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+      this.loginLoading = true;
+      this.loginError = '';
+
+      try {
+        // Server-side Turnstile verification via backend
+        const res = await fetch('/api/auth/turnstile-verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: this.turnstileToken })
+        });
+        const result = await res.json();
+
+        if (!result.success) {
+          this.loginError = '🛡️ การยืนยันความปลอดภัยล้มเหลว กรุณาลองใหม่อีกครั้ง';
+          this.turnstileToken = '';
+          // Reset Turnstile widget
+          if (window.turnstile) { turnstile.reset(); }
+          this.loginLoading = false;
+          return;
+        }
+
+        // Admin verification
+        if ((username === 'admin' || username === 'admin@myfinance.app') && password === 'buabut123') {
+          this.user = {
+            id: 'admin',
+            name: 'ผู้ดูแลระบบ (Admin)',
+            email: 'admin@myfinance.app',
+            role: 'Administrator',
+            badge: '👑 Admin'
+          };
+          localStorage.setItem('myfinance_user', JSON.stringify(this.user));
+          this.loginError = '';
+          this.loginInput = { email: '', password: '' };
+          Alpine.store('ui').sidebarOpen = false;
+        } else {
+          this.loginError = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+          // Reset Turnstile after failed login
+          this.turnstileToken = '';
+          if (window.turnstile) { turnstile.reset(); }
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        this.loginError = '❌ เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่';
+        this.turnstileToken = '';
+        if (window.turnstile) { turnstile.reset(); }
       }
+
+      this.loginLoading = false;
     },
 
     logout() {
@@ -241,9 +274,95 @@ document.addEventListener('alpine:init', () => {
     
     editConfig: { active_income: 0, passive_income: 0, passive_goal: 0 },
     newExpense: { name: '', amount: 0, category: 'housing', due_day: 1 },
+    draggedIndex: null,
+    hoverIndex: null,
     
     init() {
       this.editConfig = { ...this.config };
+    },
+
+    // Drag & Drop Reorder (JS-native touch with non-passive listeners)
+
+    initDragHandles() {
+      // Attach non-passive touchmove to all grip handles after Alpine renders
+      const self = this;
+      document.querySelectorAll('.grip-handle').forEach(handle => {
+        if (handle._dragBound) return;
+        handle._dragBound = true;
+        handle.addEventListener('touchmove', function(e) {
+          e.preventDefault();
+          self.onTouchMove(e);
+        }, { passive: false });
+      });
+    },
+
+    onDragStart(index) {
+      this.draggedIndex = index;
+      this.hoverIndex = index;
+    },
+
+    onDragOver(index) {
+      if (this.draggedIndex !== null && this.hoverIndex !== index) {
+        this.hoverIndex = index;
+      }
+    },
+
+    onDragEnd() {
+      this.finalizeReorder();
+    },
+
+    onTouchStart(e, index) {
+      this.draggedIndex = index;
+      this.hoverIndex = index;
+      // Re-init handles in case Alpine re-rendered
+      requestAnimationFrame(() => this.initDragHandles());
+    },
+
+    onTouchMove(e) {
+      if (this.draggedIndex === null) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (!elem) return;
+      const card = elem.closest('[data-expense-index]');
+      if (card) {
+        const targetIndex = parseInt(card.getAttribute('data-expense-index'), 10);
+        if (!isNaN(targetIndex) && targetIndex >= 0 && targetIndex < this.expenses.length && this.hoverIndex !== targetIndex) {
+          this.hoverIndex = targetIndex;
+        }
+      }
+    },
+
+    onTouchEnd() {
+      this.finalizeReorder();
+    },
+
+    async finalizeReorder() {
+      if (this.draggedIndex !== null && this.hoverIndex !== null && this.draggedIndex !== this.hoverIndex) {
+        const item = this.expenses.splice(this.draggedIndex, 1)[0];
+        this.expenses.splice(this.hoverIndex, 0, item);
+        this.draggedIndex = null;
+        this.hoverIndex = null;
+        await this.saveExpenseOrder();
+        // Re-init handles after DOM change
+        requestAnimationFrame(() => this.initDragHandles());
+      } else {
+        this.draggedIndex = null;
+        this.hoverIndex = null;
+      }
+    },
+
+    async saveExpenseOrder() {
+      const ids = this.expenses.map(e => e.id);
+      try {
+        await fetch('/api/finance/expenses/reorder', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ expense_ids: ids })
+        });
+      } catch (err) {
+        console.error('Failed to save expense order:', err);
+      }
     },
     
     formatMoney(amount) {

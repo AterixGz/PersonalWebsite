@@ -74,8 +74,19 @@ input, select, textarea {
   font-size: 16px !important; /* Prevents auto-zoom on iOS */
 }
 
+/* Prevent native browser ghost drag and touch callout menu on mobile */
+* {
+  -webkit-touch-callout: none;
+}
+
+input, textarea {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 /* User Selection */
-nav, button, .no-select {
+nav, button, .no-select, .card-item {
   user-select: none;
   -webkit-user-select: none;
 }

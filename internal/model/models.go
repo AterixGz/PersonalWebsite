@@ -17,6 +17,11 @@ type Expense struct {
 	IsPaid    bool    `json:"is_paid"`
 	PaidMonth string  `json:"paid_month"`
 	CreatedAt string  `json:"created_at"`
+	SortOrder int     `json:"sort_order"`
+}
+
+type ReorderExpensesRequest struct {
+	ExpenseIDs []int `json:"expense_ids"`
 }
 
 type ChatMessage struct {

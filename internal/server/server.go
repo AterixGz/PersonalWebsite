@@ -51,6 +51,7 @@ func (s *Server) SetupRoutes() http.Handler {
 	mux.HandleFunc("PUT /api/finance/config", handler.HandleUpdateConfig(s.store))
 	mux.HandleFunc("GET /api/finance/expenses", handler.HandleListExpenses(s.store))
 	mux.HandleFunc("POST /api/finance/expenses", handler.HandleCreateExpense(s.store))
+	mux.HandleFunc("PUT /api/finance/expenses/reorder", handler.HandleReorderExpenses(s.store))
 	mux.HandleFunc("PUT /api/finance/expenses/{id}", handler.HandleUpdateExpense(s.store))
 	mux.HandleFunc("DELETE /api/finance/expenses/{id}", handler.HandleDeleteExpense(s.store))
 	mux.HandleFunc("PATCH /api/finance/expenses/{id}/toggle", handler.HandleToggleExpense(s.store))
@@ -62,6 +63,9 @@ func (s *Server) SetupRoutes() http.Handler {
 	mux.HandleFunc("GET /api/workspace/trello", handler.HandleTrello())
 	mux.HandleFunc("GET /api/workspace/calendar", handler.HandleCalendar())
 	mux.HandleFunc("GET /api/workspace/gmail", handler.HandleGmail())
+
+	// Cloudflare Turnstile verification
+	mux.HandleFunc("POST /api/auth/turnstile-verify", handler.HandleTurnstileVerify())
 
 	// Middleware
 	return middleware(mux)
