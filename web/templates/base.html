@@ -15,10 +15,21 @@
   <link rel="apple-touch-icon" href="/static/icons/icon-512x512.jpg">
   <link rel="manifest" href="/static/manifest.json">
   
+  <!-- Preconnect CDN origins for faster loading -->
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
   <!-- CDN Dependencies -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
+  <!-- x-cloak: hide Alpine elements until initialized -->
+  <style>[x-cloak] { display: none !important; }</style>
+
   <!-- Custom CSS -->
   <link rel="stylesheet" href="/static/app.css">
 
@@ -47,22 +58,150 @@
   <!-- Main Container -->
   <main class="w-full h-full max-w-md mx-auto relative flex flex-col bg-slate-50 shadow-xl overflow-hidden" style="height: 100dvh;">
     
+    <!-- Mobile Top Header Bar -->
+    <header class="h-14 px-4 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between shrink-0 z-20">
+      <div class="flex items-center gap-3">
+        <button @click="$store.ui.toggleSidebar()" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 active:scale-90 transition-transform">
+          <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">MF</div>
+          <span class="font-bold text-slate-800 text-base tracking-tight">MyFinance</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <template x-if="$store.keypass.enabled">
+          <button @click="$store.keypass.lockApp()" title="ล็อกแอปด้วย Keypass" class="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm active:scale-95 transition-transform border border-indigo-100">
+            <i class="fa-solid fa-shield-halved"></i>
+          </button>
+        </template>
+        <button @click="$store.ui.configModalOpen = true; $store.finance.editConfig = {...$store.finance.config}" class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-transform">
+          <i class="fa-solid fa-gear text-sm"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Mobile Sidebar Drawer -->
+    <div x-show="$store.ui.sidebarOpen" style="display: none;" class="fixed inset-0 z-50 flex" role="dialog" aria-modal="true">
+      <!-- Backdrop -->
+      <div x-show="$store.ui.sidebarOpen"
+           x-transition:enter="ease-out duration-150"
+           x-transition:enter-start="opacity-0"
+           x-transition:enter-end="opacity-100"
+           x-transition:leave="ease-in duration-100"
+           x-transition:leave-start="opacity-100"
+           x-transition:leave-end="opacity-0"
+           class="fixed inset-0 bg-slate-900/50 transition-opacity"
+           @click="$store.ui.closeSidebar()"></div>
+
+      <!-- Drawer Content -->
+      <div x-show="$store.ui.sidebarOpen"
+           x-transition:enter="transform transition ease-out duration-150"
+           x-transition:enter-start="-translate-x-full"
+           x-transition:enter-end="translate-x-0"
+           x-transition:leave="transform transition ease-in duration-100"
+           x-transition:leave-start="translate-x-0"
+           x-transition:leave-end="-translate-x-full"
+           class="relative w-4/5 max-w-xs bg-white h-full shadow-2xl flex flex-col justify-between z-10 safe-top safe-bottom" style="will-change: transform;">
+        
+        <div>
+          <!-- Sidebar Header / Profile Info -->
+          <div class="p-5 bg-gradient-to-br from-indigo-600 to-indigo-700 text-white relative overflow-hidden">
+            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+            
+            <div class="flex justify-between items-start mb-4">
+              <div class="relative">
+                <img :src="$store.auth.user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'" class="w-14 h-14 rounded-2xl object-cover border-2 border-white/40 shadow-md">
+                <span class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-400 border-2 border-white rounded-full"></span>
+              </div>
+              <button @click="$store.ui.closeSidebar()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white active:scale-95 transition-transform">
+                <i class="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+            
+            <h3 class="font-bold text-lg tracking-tight text-white truncate" x-text="$store.auth.user?.name || 'ผู้เยี่ยมชม'"></h3>
+            <p class="text-xs text-indigo-200 truncate mb-2" x-text="$store.auth.user?.email || 'demo@myfinance.app'"></p>
+            
+            <span class="inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-sm" x-text="$store.auth.user?.badge || '👤 Demo User'"></span>
+          </div>
+
+          <!-- Sidebar Menu Items -->
+          <div class="p-4 space-y-1">
+            <p class="text-xs font-bold text-slate-400 px-3 py-2 uppercase tracking-wider">เมนูหลัก</p>
+            
+            <button @click="$store.ui.setTab('finance'); $store.ui.closeSidebar()" 
+                    class="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-medium text-sm transition-colors"
+                    :class="$store.ui.activeTab === 'finance' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-600 hover:bg-slate-50'">
+              <i class="fa-solid fa-chart-pie text-lg w-5 text-center"></i>
+              <span>สรุปการเงิน</span>
+            </button>
+
+            <button @click="$store.ui.setTab('workspace'); $store.ui.closeSidebar()" 
+                    class="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-medium text-sm transition-colors"
+                    :class="$store.ui.activeTab === 'workspace' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-600 hover:bg-slate-50'">
+              <i class="fa-solid fa-list-check text-lg w-5 text-center"></i>
+              <span>พื้นที่ทำงาน</span>
+            </button>
+
+            <button @click="$store.ui.setTab('chat'); $store.ui.closeSidebar()" 
+                    class="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-medium text-sm transition-colors"
+                    :class="$store.ui.activeTab === 'chat' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-600 hover:bg-slate-50'">
+              <i class="fa-solid fa-robot text-lg w-5 text-center"></i>
+              <span>OpenClaw AI</span>
+            </button>
+
+            <hr class="my-3 border-slate-100">
+
+            <p class="text-xs font-bold text-slate-400 px-3 py-1 uppercase tracking-wider">ความปลอดภัย & การตั้งค่า</p>
+
+            <div class="px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <i class="fa-solid fa-shield-halved text-indigo-600 text-base"></i>
+                <div class="text-left">
+                  <p class="text-xs font-bold text-slate-800">Keypass / Face ID</p>
+                  <p class="text-[10px] text-slate-400">ล็อกแอปด้วย iPhone Keypass</p>
+                </div>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" :checked="$store.keypass.enabled" @change="$store.keypass.toggleKeypass($event.target.checked)" class="sr-only peer">
+                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+
+            <button @click="$store.ui.configModalOpen = true; $store.ui.closeSidebar()" 
+                    class="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-medium text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+              <i class="fa-solid fa-gear text-lg w-5 text-center"></i>
+              <span>ตั้งค่าการเงิน & PIN</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sidebar Footer / Logout Button -->
+        <div class="p-4 border-t border-slate-100">
+          <button @click="$store.auth.logout()" 
+                  class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 active:scale-95 font-bold text-sm transition-all">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>ออกจากระบบ (Logout)</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Tab Content Area -->
-    <div class="flex-1 overflow-y-auto no-scrollbar pb-[100px] safe-bottom px-4 pt-6 scroll-smooth" id="scroll-container">
+    <div class="flex-1 overflow-y-auto no-scrollbar pb-[100px] safe-bottom px-4 pt-4" id="scroll-container">
       
       <!-- TAB 1: Finance -->
       <div x-show="$store.ui.activeTab === 'finance'" 
-           x-transition:enter="transition ease-out duration-300"
-           x-transition:enter-start="opacity-0 translate-y-4"
-           x-transition:enter-end="opacity-100 translate-y-0"
+           x-transition:enter="transition ease-out duration-100"
+           x-transition:enter-start="opacity-0"
+           x-transition:enter-end="opacity-100"
            class="space-y-6">
            
         <!-- Header -->
         <div class="flex justify-between items-center">
           <h1 class="text-2xl font-bold tracking-tight text-slate-900">สรุปการเงิน</h1>
-          <button @click="$store.ui.configModalOpen = true; $store.finance.editConfig = {...$store.finance.config}" class="w-11 h-11 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-500 hover:text-indigo-600 active:scale-95 transition-transform">
-            <i class="fa-solid fa-gear text-lg"></i>
-          </button>
         </div>
 
         <!-- Net Balance Card -->
@@ -150,10 +289,10 @@
       </div>
 
       <!-- TAB 2: Workspace -->
-      <div x-show="$store.ui.activeTab === 'workspace'" style="display: none;"
-           x-transition:enter="transition ease-out duration-300"
-           x-transition:enter-start="opacity-0 translate-y-4"
-           x-transition:enter-end="opacity-100 translate-y-0"
+      <div x-show="$store.ui.activeTab === 'workspace'" x-cloak
+           x-transition:enter="transition ease-out duration-100"
+           x-transition:enter-start="opacity-0"
+           x-transition:enter-end="opacity-100"
            class="space-y-6">
         
         <h1 class="text-2xl font-bold tracking-tight text-slate-900">พื้นที่ทำงาน</h1>
@@ -214,11 +353,11 @@
       </div>
 
       <!-- TAB 3: Chat -->
-      <div x-show="$store.ui.activeTab === 'chat'" style="display: none;"
+      <div x-show="$store.ui.activeTab === 'chat'" x-cloak
            class="h-full flex flex-col relative"
-           x-transition:enter="transition ease-out duration-300"
-           x-transition:enter-start="opacity-0 translate-y-4"
-           x-transition:enter-end="opacity-100 translate-y-0">
+           x-transition:enter="transition ease-out duration-100"
+           x-transition:enter-start="opacity-0"
+           x-transition:enter-end="opacity-100">
         
         <div class="flex justify-between items-center mb-4 shrink-0">
           <h1 class="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
@@ -302,12 +441,12 @@
 
   <!-- Config Modal -->
   <div x-show="$store.ui.configModalOpen" style="display: none;" class="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">
-    <div x-show="$store.ui.configModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" @click="$store.ui.configModalOpen = false"></div>
+    <div x-show="$store.ui.configModalOpen" x-transition:enter="ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" @click="$store.ui.configModalOpen = false"></div>
 
-    <div x-show="$store.ui.configModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0" x-transition:leave="ease-in duration-200" x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full" class="bg-white rounded-t-3xl w-full max-w-md shadow-2xl relative z-10 safe-bottom">
+    <div x-show="$store.ui.configModalOpen" x-transition:enter="ease-out duration-150" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0" x-transition:leave="ease-in duration-100" x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full" class="bg-white rounded-t-3xl w-full max-w-md shadow-2xl relative z-10 safe-bottom max-h-[90vh] overflow-y-auto no-scrollbar" style="will-change: transform;">
       <div class="p-6">
         <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
-        <h3 class="text-xl font-bold text-slate-900 mb-6">⚙️ ตั้งค่าการเงิน</h3>
+        <h3 class="text-xl font-bold text-slate-900 mb-6">⚙️ ตั้งค่าการเงิน & ความปลอดภัย</h3>
         
         <form @submit.prevent="$store.finance.updateConfig()" class="space-y-4">
           <div>
@@ -324,18 +463,66 @@
           </div>
           
           <button type="submit" class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold shadow-md shadow-indigo-200 active:scale-95 transition-transform mt-2">
-            บันทึกการตั้งค่า
+            บันทึกการตั้งค่าการเงิน
           </button>
         </form>
+
+        <hr class="my-6 border-slate-100">
+
+        <!-- Keypass Settings Section -->
+        <div class="space-y-4">
+          <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-indigo-600"></i> ตั้งค่า Keypass & Face ID (iPhone)
+          </h4>
+
+          <div class="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-bold text-slate-800">เปิดใช้งาน Keypass ล็อกแอป</p>
+                <p class="text-xs text-slate-500">ต้องยืนยันตัวตนเมื่อเปิดใช้งานแอป</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" :checked="$store.keypass.enabled" @change="$store.keypass.toggleKeypass($event.target.checked)" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-indigo-100/60">
+              <div>
+                <p class="text-sm font-bold text-slate-800">ใช้สแกน Face ID / Biometrics</p>
+                <p class="text-xs text-slate-500">จำลองสแกนใบหน้าบน iPhone</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" :checked="$store.keypass.useFaceID" @change="$store.keypass.setUseFaceID($event.target.checked)" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+
+            <!-- PIN Code Change -->
+            <div class="pt-3 border-t border-indigo-100/60">
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">เปลี่ยนรหัส PIN (4 หลัก)</label>
+              <div class="flex gap-2">
+                <input type="password" maxlength="4" x-model="$store.keypass.newPinInput" placeholder="กรอก PIN 4 หลัก" class="flex-1 bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-center font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button type="button" @click="$store.keypass.updatePin()" class="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-sm active:scale-95 transition-transform">
+                  ตั้งรหัสใหม่
+                </button>
+              </div>
+              <template x-if="$store.keypass.pinSuccessMessage">
+                <p class="text-xs font-semibold text-emerald-600 mt-1.5" x-text="$store.keypass.pinSuccessMessage"></p>
+              </template>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
 
   <!-- Add Expense Modal -->
   <div x-show="$store.ui.addExpenseModalOpen" style="display: none;" class="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">
-    <div x-show="$store.ui.addExpenseModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" @click="$store.ui.addExpenseModalOpen = false"></div>
+    <div x-show="$store.ui.addExpenseModalOpen" x-transition:enter="ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" @click="$store.ui.addExpenseModalOpen = false"></div>
 
-    <div x-show="$store.ui.addExpenseModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0" x-transition:leave="ease-in duration-200" x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full" class="bg-white rounded-t-3xl w-full max-w-md shadow-2xl relative z-10 safe-bottom">
+    <div x-show="$store.ui.addExpenseModalOpen" x-transition:enter="ease-out duration-150" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0" x-transition:leave="ease-in duration-100" x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full" class="bg-white rounded-t-3xl w-full max-w-md shadow-2xl relative z-10 safe-bottom" style="will-change: transform;">
       <div class="p-6">
         <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
         <h3 class="text-xl font-bold text-slate-900 mb-6">➕ เพิ่มรายการรายจ่าย</h3>
@@ -377,5 +564,148 @@
     </div>
   </div>
 
+  <!-- Fullscreen Login View / Modal -->
+  <div x-show="!$store.auth.isLoggedIn()" 
+       x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
+    
+    <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl border border-slate-100 relative overflow-hidden">
+      
+      <!-- Background decoration -->
+      <div class="absolute -top-12 -right-12 w-36 h-36 bg-indigo-100 rounded-full blur-2xl opacity-70 pointer-events-none"></div>
+      <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-emerald-100 rounded-full blur-2xl opacity-60 pointer-events-none"></div>
+
+      <!-- Logo & Title -->
+      <div class="text-center mb-5 relative z-10">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center mx-auto mb-3 shadow-lg shadow-indigo-200 text-2xl font-black tracking-tight">
+          MF
+        </div>
+        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">เข้าสู่ระบบ MyFinance</h2>
+        <p class="text-xs text-slate-500 mt-1">ยินดีต้อนรับกลับเข้าสู่แดชบอร์ดจัดการการเงิน</p>
+      </div>
+
+      <!-- Demo Accounts Preset Chips -->
+      <div class="mb-5 bg-indigo-50/70 p-3.5 rounded-2xl border border-indigo-100 relative z-10">
+        <p class="text-xs font-bold text-indigo-900 mb-2.5 flex items-center justify-between">
+          <span>⚡ เลือกล็อกอินบัญชีทดลอง (1-Click)</span>
+        </p>
+        
+        <div class="space-y-2">
+          <template x-for="acc in $store.auth.demoAccounts" :key="acc.id">
+            <button @click="$store.auth.loginAsDemo(acc)" 
+                    class="w-full flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200/80 hover:border-indigo-500 hover:shadow-sm active:scale-95 transition-all text-left">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <img :src="acc.avatar" class="w-8 h-8 rounded-full object-cover shrink-0">
+                <div class="min-w-0">
+                  <p class="text-xs font-bold text-slate-800 truncate" x-text="acc.name"></p>
+                  <p class="text-[10px] text-slate-400 truncate" x-text="acc.email"></p>
+                </div>
+              </div>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 shrink-0" x-text="acc.badge"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="relative flex py-1 items-center mb-4">
+        <div class="flex-grow border-t border-slate-200"></div>
+        <span class="flex-shrink mx-3 text-[11px] text-slate-400 font-medium">หรือกรอกข้อมูลเข้าสู่ระบบ</span>
+        <div class="flex-grow border-t border-slate-200"></div>
+      </div>
+
+      <!-- Login Form -->
+      <form @submit.prevent="$store.auth.login()" class="space-y-3 relative z-10">
+        <template x-if="$store.auth.loginError">
+          <div class="p-2.5 rounded-xl bg-red-50 text-red-600 text-xs font-medium text-center" x-text="$store.auth.loginError"></div>
+        </template>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">อีเมล (Email)</label>
+          <input type="email" x-model="$store.auth.loginInput.email" placeholder="admin@myfinance.app" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors" required>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">รหัสผ่าน (Password)</label>
+          <input type="password" x-model="$store.auth.loginInput.password" placeholder="••••••••" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors" required>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-200 active:scale-95 transition-transform mt-2">
+          เข้าสู่ระบบ
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Keypass Lock Overlay (iPhone Passkey / Face ID / PIN) -->
+  <div x-show="$store.auth.isLoggedIn() && $store.keypass.enabled && $store.keypass.isLocked" 
+       x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-cloak
+       class="fixed inset-0 z-50 dark-glass-modal flex flex-col justify-between p-6 text-white safe-top safe-bottom">
+    
+    <!-- Top status bar -->
+    <div class="flex flex-col items-center pt-8">
+      <div class="w-14 h-14 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-2xl mb-4 border border-indigo-500/30 shadow-lg faceid-scan-ring">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <h2 class="text-xl font-bold tracking-tight">ยืนยันตัวตนก่อนเข้าใช้งาน</h2>
+      <p class="text-xs text-slate-400 mt-1">Keypass Security Guard for iOS</p>
+      
+      <!-- Status Message -->
+      <p class="text-xs font-semibold text-indigo-400 mt-3 h-4" x-text="$store.keypass.statusMessage"></p>
+    </div>
+
+    <!-- PIN Indicators Dots -->
+    <div class="flex items-center justify-center gap-4 my-6" :class="$store.keypass.errorShake ? 'animate-shake' : ''">
+      <template x-for="i in [0, 1, 2, 3]" :key="i">
+        <div class="w-4 h-4 rounded-full border-2 border-indigo-400 transition-all duration-200"
+             :class="$store.keypass.inputPin.length > i ? 'bg-indigo-400 scale-110 shadow-md shadow-indigo-400/50' : 'bg-transparent'"></div>
+      </template>
+    </div>
+
+    <!-- Numeric Keypad -->
+    <div class="w-full max-w-xs mx-auto mb-6">
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <template x-for="digit in ['1', '2', '3', '4', '5', '6', '7', '8', '9']" :key="digit">
+          <button @click="$store.keypass.pressDigit(digit)" 
+                  class="w-16 h-16 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-2xl font-medium mx-auto flex items-center justify-center active:scale-90 transition-all backdrop-blur-sm">
+            <span x-text="digit"></span>
+          </button>
+        </template>
+
+        <!-- Face ID Simulation Button -->
+        <button @click="$store.keypass.triggerFaceID()" 
+                class="w-16 h-16 rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-xl mx-auto flex items-center justify-center active:scale-90 transition-all border border-indigo-500/40">
+          <i class="fa-solid fa-face-smile"></i>
+        </button>
+
+        <!-- Digit 0 -->
+        <button @click="$store.keypass.pressDigit('0')" 
+                class="w-16 h-16 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-2xl font-medium mx-auto flex items-center justify-center active:scale-90 transition-all backdrop-blur-sm">
+          0
+        </button>
+
+        <!-- Delete Digit -->
+        <button @click="$store.keypass.deleteDigit()" 
+                class="w-16 h-16 rounded-full bg-white/5 hover:bg-white/15 text-slate-400 text-lg mx-auto flex items-center justify-center active:scale-90 transition-all">
+          <i class="fa-solid fa-delete-left"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bottom help link -->
+    <div class="text-center pb-2">
+      <button @click="$store.keypass.triggerFaceID()" class="text-xs text-indigo-300 hover:underline flex items-center justify-center gap-1.5 mx-auto">
+        <i class="fa-solid fa-expand"></i> สแกน Face ID / Touch ID ล็อกอิน
+      </button>
+    </div>
+  </div>
+
 </body>
 </html>
+

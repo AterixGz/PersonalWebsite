@@ -1,10 +1,188 @@
 document.addEventListener('alpine:init', () => {
+  // --- Auth Store ---
+  Alpine.store('auth', {
+    user: JSON.parse(localStorage.getItem('myfinance_user') || 'null'),
+    loginInput: { email: '', password: '' },
+    loginError: '',
+    
+    demoAccounts: [
+      {
+        id: 'admin',
+        name: 'ผู้ดูแลระบบ (Admin)',
+        email: 'admin@myfinance.app',
+        role: 'Administrator',
+        badge: '👑 Admin',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        password: '123456'
+      },
+      {
+        id: 'demo-user',
+        name: 'คุณสมชาย ใจดี',
+        email: 'demo@myfinance.app',
+        role: 'Demo Member',
+        badge: '👤 User',
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+        password: '123456'
+      }
+    ],
+
+    isLoggedIn() {
+      return !!this.user;
+    },
+
+    loginAsDemo(acc) {
+      this.user = { ...acc };
+      localStorage.setItem('myfinance_user', JSON.stringify(this.user));
+      this.loginError = '';
+      Alpine.store('ui').sidebarOpen = false;
+    },
+
+    login() {
+      const found = this.demoAccounts.find(
+        a => a.email.toLowerCase() === this.loginInput.email.trim().toLowerCase() && a.password === this.loginInput.password
+      );
+      if (found) {
+        this.loginAsDemo(found);
+        this.loginInput = { email: '', password: '' };
+      } else if (this.loginInput.email.trim() && this.loginInput.password) {
+        const customUser = {
+          id: 'custom',
+          name: this.loginInput.email.split('@')[0],
+          email: this.loginInput.email.trim(),
+          role: 'Member',
+          badge: '✨ Member',
+          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
+        };
+        this.loginAsDemo(customUser);
+        this.loginInput = { email: '', password: '' };
+      } else {
+        this.loginError = 'กรุณากรอกอีเมลและรหัสผ่านให้ถูกต้อง';
+      }
+    },
+
+    logout() {
+      this.user = null;
+      localStorage.removeItem('myfinance_user');
+      Alpine.store('ui').sidebarOpen = false;
+    }
+  });
+
+  // --- Keypass Store (iPhone Passkey / Face ID / PIN) ---
+  Alpine.store('keypass', {
+    enabled: localStorage.getItem('myfinance_keypass_enabled') === 'true',
+    pin: localStorage.getItem('myfinance_keypass_pin') || '1234',
+    useFaceID: localStorage.getItem('myfinance_keypass_bio') !== 'false',
+    isLocked: localStorage.getItem('myfinance_keypass_enabled') === 'true',
+    inputPin: '',
+    errorShake: false,
+    isScanningFace: false,
+    statusMessage: '',
+    newPinInput: '',
+    pinSuccessMessage: '',
+
+    init() {
+      if (this.enabled && this.isLocked && this.useFaceID) {
+        setTimeout(() => this.triggerFaceID(), 400);
+      }
+    },
+
+    pressDigit(digit) {
+      if (this.inputPin.length < 4) {
+        this.inputPin += digit;
+        if (this.inputPin.length === 4) {
+          this.verifyPin();
+        }
+      }
+    },
+
+    deleteDigit() {
+      if (this.inputPin.length > 0) {
+        this.inputPin = this.inputPin.slice(0, -1);
+      }
+    },
+
+    verifyPin() {
+      if (this.inputPin === this.pin) {
+        this.isLocked = false;
+        this.inputPin = '';
+        this.statusMessage = '';
+      } else {
+        this.errorShake = true;
+        this.statusMessage = 'รหัส PIN ไม่ถูกต้อง';
+        setTimeout(() => {
+          this.errorShake = false;
+          this.inputPin = '';
+        }, 500);
+      }
+    },
+
+    triggerFaceID() {
+      if (this.isScanningFace) return;
+      this.isScanningFace = true;
+      this.statusMessage = 'กำลังสแกน Face ID...';
+      
+      setTimeout(() => {
+        this.isScanningFace = false;
+        this.isLocked = false;
+        this.statusMessage = '';
+        this.inputPin = '';
+      }, 1200);
+    },
+
+    lockApp() {
+      if (this.enabled) {
+        this.isLocked = true;
+        this.inputPin = '';
+        if (this.useFaceID) {
+          setTimeout(() => this.triggerFaceID(), 300);
+        }
+      }
+    },
+
+    toggleKeypass(val) {
+      this.enabled = val;
+      localStorage.setItem('myfinance_keypass_enabled', val ? 'true' : 'false');
+      if (!val) {
+        this.isLocked = false;
+      } else {
+        this.isLocked = true;
+      }
+    },
+
+    setUseFaceID(val) {
+      this.useFaceID = val;
+      localStorage.setItem('myfinance_keypass_bio', val ? 'true' : 'false');
+    },
+
+    updatePin() {
+      if (this.newPinInput && this.newPinInput.length === 4) {
+        this.pin = this.newPinInput;
+        localStorage.setItem('myfinance_keypass_pin', this.newPinInput);
+        this.pinSuccessMessage = 'เปลี่ยนรหัส PIN สำเร็จแล้ว!';
+        this.newPinInput = '';
+        setTimeout(() => { this.pinSuccessMessage = ''; }, 3000);
+      } else {
+        this.pinSuccessMessage = 'กรุณาระบุ PIN 4 หลัก';
+      }
+    }
+  });
+
   // --- UI Store ---
   Alpine.store('ui', {
     activeTab: 'finance',
+    sidebarOpen: false,
     configModalOpen: false,
     addExpenseModalOpen: false,
+    keypassSettingsOpen: false,
     
+    toggleSidebar() {
+      this.sidebarOpen = !this.sidebarOpen;
+    },
+    
+    closeSidebar() {
+      this.sidebarOpen = false;
+    },
+
     setTab(tab) {
       this.activeTab = tab;
       
@@ -184,13 +362,10 @@ document.addEventListener('alpine:init', () => {
     },
 
     scrollToBottom() {
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         const container = document.getElementById('scroll-container');
-        const chatContainer = document.getElementById('chat-messages');
-        if (container && chatContainer) {
-            container.scrollTop = container.scrollHeight;
-        }
-      }, 50);
+        if (container) container.scrollTop = container.scrollHeight;
+      });
     },
 
     async loadHistory() {

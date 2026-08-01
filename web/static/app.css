@@ -29,6 +29,19 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeSpeed;
+}
+
+/* GPU-accelerate modals & overlays for instant feel */
+[x-show], [x-transition] {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Remove 300ms tap delay on mobile */
+button, a, [role="button"] {
+  touch-action: manipulation;
 }
 
 input, select, textarea {
@@ -40,3 +53,48 @@ nav, button, .no-select {
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* Face ID Pulse Scan Animation */
+@keyframes faceid-pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 15px rgba(99, 102, 241, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+}
+
+.faceid-scan-ring {
+  animation: faceid-pulse 2s infinite;
+}
+
+/* Shake Animation for incorrect PIN */
+@keyframes pin-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-10px); }
+  40%, 80% { transform: translateX(10px); }
+}
+
+.animate-shake {
+  animation: pin-shake 0.4s ease-in-out;
+}
+
+/* Glassmorphism modal background */
+.glass-modal {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+}
+
+.dark-glass-modal {
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+}
+
