@@ -1,14 +1,35 @@
 /* iOS Safari & Android safe area padding */
 .safe-top {
-  padding-top: env(safe-area-inset-top);
+  padding-top: 12px;
+  padding-top: env(safe-area-inset-top, 12px);
 }
 .safe-bottom {
-  padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
+  padding-bottom: 20px;
+  padding-bottom: env(safe-area-inset-bottom, 20px);
 }
 
-/* Raised Bottom Floating Nav Bar */
+/* Raised Bottom Floating Nav Bar (iOS PWA Compatible) */
 .raised-nav-container {
-  bottom: max(10px, env(safe-area-inset-bottom, 10px));
+  bottom: 16px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+/* iOS PWA Standalone Mode Specific Handling (Add to Home Screen) */
+@media all and (display-mode: standalone), (display-mode: fullscreen) {
+  .raised-nav-container {
+    bottom: calc(20px + env(safe-area-inset-bottom, 20px)) !important;
+  }
+}
+
+/* Standalone Fallback via JS Class */
+body.is-standalone .raised-nav-container,
+html.pwa-standalone .raised-nav-container {
+  bottom: calc(20px + env(safe-area-inset-bottom, 20px)) !important;
+}
+
+body.is-standalone #scroll-container,
+html.pwa-standalone #scroll-container {
+  padding-bottom: 140px !important;
 }
 
 /* Glassmorphism Navigation */
