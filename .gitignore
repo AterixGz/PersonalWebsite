@@ -1,0 +1,7 @@
+# Runtime data (DB lives outside repo, but in case it gets copied)
+data/
+bin/
+*.db
+*.db-shm
+*.db-wal
+app.exe

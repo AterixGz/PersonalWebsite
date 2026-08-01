@@ -3,6 +3,7 @@ package server
 import (
 	"html/template"
 	"io/fs"
+	"log"
 	"net/http"
 
 	"github.com/AterixGz/PersonalWebsite/internal/config"
@@ -68,21 +69,44 @@ func (s *Server) SetupRoutes() http.Handler {
 	mux.HandleFunc("POST /api/auth/turnstile-verify", handler.HandleTurnstileVerify())
 
 	// Middleware
-	return middleware(mux)
+	return middleware(recoverPanic(mux))
 }
 
 func middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// CORS
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		// Limit request body to 1MB (DoS protection)
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
+		// CORS — specific origin only
+		w.Header().Set("Access-Control-Allow-Origin", "https://thanpisit.online")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Max-Age", "86400")
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 
+		// Block TRACE/TRACK (XST attack prevention)
+		if r.Method == "TRACE" || r.Method == "TRACK" {
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// recoverPanic catches panics in handler chain
+func recoverPanic(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Printf("PANIC: %v %s %s", err, r.Method, r.URL.Path)
+				http.Error(w, "internal error", http.StatusInternalServerError)
+			}
+		}()
 		next.ServeHTTP(w, r)
 	})
 }

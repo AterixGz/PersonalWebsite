@@ -3,13 +3,18 @@ package handler
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
 
-const turnstileSecretKey = "0x4AAAAAAED23eYnf00kJvP0FNuIQedm_HY"
+// turnstileSecretKey is loaded from TURNSTILE_SECRET_KEY env var (set in systemd EnvironmentFile).
+// Repo is public — never hardcode secrets here.
+var turnstileSecretKey = os.Getenv("TURNSTILE_SECRET_KEY")
+
 const turnstileVerifyURL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 
 type TurnstileVerifyRequest struct {
@@ -34,6 +39,12 @@ func HandleTurnstileVerify() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+
+		if turnstileSecretKey == "" {
+			log.Println("WARN: TURNSTILE_SECRET_KEY not set — Turnstile verification disabled")
+			json.NewEncoder(w).Encode(TurnstileVerifyResponse{Success: false, Message: "Turnstile not configured on server"})
+			return
+		}
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
