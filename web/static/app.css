@@ -10,26 +10,41 @@
 
 /* Raised Bottom Floating Nav Bar (iOS PWA Compatible) */
 .raised-nav-container {
-  bottom: 16px;
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  bottom: 32px;
+  bottom: calc(32px + env(safe-area-inset-bottom, 0px));
 }
 
 /* iOS PWA Standalone Mode Specific Handling (Add to Home Screen) */
 @media all and (display-mode: standalone), (display-mode: fullscreen) {
   .raised-nav-container {
-    bottom: calc(20px + env(safe-area-inset-bottom, 20px)) !important;
+    bottom: calc(32px + env(safe-area-inset-bottom, 32px)) !important;
   }
 }
 
 /* Standalone Fallback via JS Class */
 body.is-standalone .raised-nav-container,
 html.pwa-standalone .raised-nav-container {
-  bottom: calc(20px + env(safe-area-inset-bottom, 20px)) !important;
+  bottom: calc(32px + env(safe-area-inset-bottom, 32px)) !important;
 }
 
 body.is-standalone #scroll-container,
 html.pwa-standalone #scroll-container {
-  padding-bottom: 140px !important;
+  padding-bottom: 170px !important;
+}
+
+/* Swipe gestures: keep vertical scroll native, horizontal gestures go to JS */
+#scroll-container, main {
+  touch-action: pan-y;
+}
+
+/* Light press feedback (iPhone-like tap) + no tap highlight */
+button, [role="button"], a, label {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+button:active, [role="button"]:active {
+  transform: scale(0.96);
+  transition: transform 0.12s ease;
 }
 
 /* Glassmorphism Navigation */
