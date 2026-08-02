@@ -61,7 +61,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=08ba41e', { updateViaCache: 'none' });
       });
     }
 
