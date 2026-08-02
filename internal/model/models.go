@@ -45,3 +45,16 @@ type ExpenseRequest struct {
 type ToggleRequest struct {
 	Month string `json:"month"`
 }
+
+type AIUsageItem struct {
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	UnitType   string  `json:"unit_type"`   // "tokens", "queries", "api_calls"
+	UsageCount float64 `json:"usage_count"` // e.g. 1500000 tokens or 450 queries
+	CostUSD    float64 `json:"cost_usd"`
+	CostTHB    float64 `json:"cost_thb"`
+	BillingDay int     `json:"billing_day"` // day of month (1-31)
+	Notes      string  `json:"notes"`
+	UpdatedAt  string  `json:"updated_at"`
+}
+
