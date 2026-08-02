@@ -318,7 +318,187 @@ document.addEventListener('alpine:init', () => {
     configModalOpen: false,
     addExpenseModalOpen: false,
     keypassSettingsOpen: false,
-    
+
+    // Swipe gesture state
+    tabOrder: ['finance', 'workspace', 'chat'],
+    _touchStartX: 0,
+    _touchStartY: 0,
+    _touchEndX: 0,
+    _swiping: false,
+    _edgeSwipe: false,
+
+    init() {
+      // Initialize swipe gestures after DOM is ready
+      requestAnimationFrame(() => {
+        this.initSwipe();
+        this.initSidebarSwipe();
+      });
+    },
+
+    // --- Tab Swipe (on scroll-container) ---
+    initSwipe() {
+      const el = document.getElementById('scroll-container');
+      if (!el || el._swipeBound) return;
+      el._swipeBound = true;
+      const self = this;
+
+      el.addEventListener('touchstart', function(e) {
+        if (self.sidebarOpen || Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen) return;
+        const t = e.touches[0];
+        self._touchStartX = t.clientX;
+        self._touchStartY = t.clientY;
+        self._swiping = false;
+        // Mark if touch started near left edge (sidebar open zone)
+        self._edgeSwipe = t.clientX < 30;
+      }, { passive: true });
+
+      el.addEventListener('touchmove', function(e) {
+        if (self.sidebarOpen || Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen) return;
+        const t = e.touches[0];
+        self._touchEndX = t.clientX;
+        const dx = Math.abs(t.clientX - self._touchStartX);
+        const dy = Math.abs(t.clientY - self._touchStartY);
+        if (dx > 20 && dx > dy * 1.5) {
+          self._swiping = true;
+        }
+      }, { passive: true });
+
+      el.addEventListener('touchend', function(e) {
+        if (!self._swiping) return;
+        self._swiping = false;
+        self.handleSwipe();
+      }, { passive: true });
+    },
+
+    handleSwipe() {
+      const dx = this._touchEndX - this._touchStartX;
+      const THRESHOLD = 60;
+
+      if (Math.abs(dx) < THRESHOLD) return;
+
+      // If swipe started from left edge → open sidebar instead of switching tab
+      if (this._edgeSwipe && dx > THRESHOLD) {
+        this.sidebarOpen = true;
+        return;
+      }
+
+      const currentIndex = this.tabOrder.indexOf(this.activeTab);
+      if (currentIndex === -1) return;
+
+      if (dx < -THRESHOLD && currentIndex < this.tabOrder.length - 1) {
+        this.setTab(this.tabOrder[currentIndex + 1]);
+      } else if (dx > THRESHOLD && currentIndex > 0) {
+        this.setTab(this.tabOrder[currentIndex - 1]);
+      } else if (dx > THRESHOLD && currentIndex === 0) {
+        // First tab + swipe right → open sidebar
+        this.sidebarOpen = true;
+      }
+    },
+
+    // --- Sidebar Swipe (swipe left on sidebar to close, swipe right from edge to open) ---
+    initSidebarSwipe() {
+      const mainEl = document.querySelector('main');
+      if (!mainEl || mainEl._sidebarSwipeBound) return;
+      mainEl._sidebarSwipeBound = true;
+      const self = this;
+
+      let sStartX = 0, sStartY = 0, sEndX = 0, sSwiping = false;
+
+      // Edge swipe to OPEN sidebar (listen on main container)
+      mainEl.addEventListener('touchstart', function(e) {
+        const t = e.touches[0];
+        sStartX = t.clientX;
+        sStartY = t.clientY;
+        sEndX = t.clientX;
+        sSwiping = false;
+      }, { passive: true });
+
+      mainEl.addEventListener('touchmove', function(e) {
+        const t = e.touches[0];
+        sEndX = t.clientX;
+        const dx = Math.abs(t.clientX - sStartX);
+        const dy = Math.abs(t.clientY - sStartY);
+        if (dx > 20 && dx > dy * 1.5) {
+          sSwiping = true;
+        }
+      }, { passive: true });
+
+      mainEl.addEventListener('touchend', function(e) {
+        if (!sSwiping) return;
+        sSwiping = false;
+        const dx = sEndX - sStartX;
+        // Swipe RIGHT from left edge → open sidebar
+        if (dx > 60 && sStartX < 30 && !self.sidebarOpen) {
+          // Don't open if any overlay is showing
+          if (Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen) return;
+          self.sidebarOpen = true;
+        }
+      }, { passive: true });
+
+      // Swipe LEFT on sidebar backdrop/drawer → close sidebar
+      // We use a MutationObserver to attach listeners once the sidebar DOM appears
+      const observer = new MutationObserver(() => {
+        // Find sidebar drawer when it's shown
+        const drawer = document.getElementById('sidebar-drawer');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        if (drawer && !drawer._sidebarCloseBound) {
+          drawer._sidebarCloseBound = true;
+          let dStartX = 0, dStartY = 0, dEndX = 0, dSwiping = false;
+
+          drawer.addEventListener('touchstart', function(e) {
+            const t = e.touches[0];
+            dStartX = t.clientX;
+            dStartY = t.clientY;
+            dSwiping = false;
+          }, { passive: true });
+
+          drawer.addEventListener('touchmove', function(e) {
+            const t = e.touches[0];
+            dEndX = t.clientX;
+            const dx = Math.abs(t.clientX - dStartX);
+            const dy = Math.abs(t.clientY - dStartY);
+            if (dx > 20 && dx > dy * 1.5) {
+              dSwiping = true;
+            }
+          }, { passive: true });
+
+          drawer.addEventListener('touchend', function(e) {
+            if (!dSwiping) return;
+            dSwiping = false;
+            const dx = dEndX - dStartX;
+            if (dx < -60) {
+              self.closeSidebar();
+            }
+          }, { passive: true });
+        }
+        // Also allow swipe-left on backdrop to close
+        if (backdrop && !backdrop._sidebarCloseBound) {
+          backdrop._sidebarCloseBound = true;
+          let bStartX = 0, bStartY = 0, bEndX = 0, bSwiping = false;
+
+          backdrop.addEventListener('touchstart', function(e) {
+            bStartX = e.touches[0].clientX;
+            bStartY = e.touches[0].clientY;
+            bSwiping = false;
+          }, { passive: true });
+
+          backdrop.addEventListener('touchmove', function(e) {
+            bEndX = e.touches[0].clientX;
+            const dx = Math.abs(e.touches[0].clientX - bStartX);
+            const dy = Math.abs(e.touches[0].clientY - bStartY);
+            if (dx > 20 && dx > dy * 1.5) bSwiping = true;
+          }, { passive: true });
+
+          backdrop.addEventListener('touchend', function(e) {
+            if (!bSwiping) return;
+            bSwiping = false;
+            if (bEndX - bStartX < -60) self.closeSidebar();
+          }, { passive: true });
+        }
+      });
+      observer.observe(mainEl, { childList: true, subtree: true });
+    },
+
     toggleSidebar() {
       this.sidebarOpen = !this.sidebarOpen;
     },

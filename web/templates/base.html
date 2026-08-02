@@ -98,7 +98,7 @@
     <!-- Mobile Sidebar Drawer -->
     <div x-show="$store.ui.sidebarOpen" style="display: none;" class="fixed inset-0 z-50 flex" role="dialog" aria-modal="true">
       <!-- Backdrop -->
-      <div x-show="$store.ui.sidebarOpen"
+      <div id="sidebar-backdrop" x-show="$store.ui.sidebarOpen"
            x-transition:enter="ease-out duration-150"
            x-transition:enter-start="opacity-0"
            x-transition:enter-end="opacity-100"
@@ -109,7 +109,7 @@
            @click="$store.ui.closeSidebar()"></div>
 
       <!-- Drawer Content -->
-      <div x-show="$store.ui.sidebarOpen"
+      <div id="sidebar-drawer" x-show="$store.ui.sidebarOpen"
            x-transition:enter="transform transition ease-out duration-150"
            x-transition:enter-start="-translate-x-full"
            x-transition:enter-end="translate-x-0"
