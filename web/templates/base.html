@@ -44,10 +44,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=26b0197">
+  <link rel="stylesheet" href="/static/app.css?v=cbb6afd">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=26b0197"></script>
+  <script src="/static/app.js?v=cbb6afd"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -61,7 +61,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=08ba41e', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=cbb6afd', { updateViaCache: 'none' });
       });
     }
 

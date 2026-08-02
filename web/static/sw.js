@@ -1,5 +1,5 @@
 const CACHE_NAME = 'myfinance-v3';
-const VERSION = '26b0197';
+const VERSION = "cbb6afd";
 const ASSETS = [
   '/',
   '/static/app.css?v=' + VERSION,
