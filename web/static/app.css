@@ -10,8 +10,13 @@
 
 /* Raised Bottom Floating Nav Bar (iOS PWA Compatible) */
 .raised-nav-container {
-  bottom: 32px;
-  bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  bottom: 12px; /* normal web: not too high */
+}
+@media (hover: none) and (pointer: coarse) {
+  .raised-nav-container {
+    bottom: 32px; /* iPhone 15: keep raised */
+    bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* iOS PWA Standalone Mode Specific Handling (Add to Home Screen) */
@@ -33,7 +38,7 @@ html.pwa-standalone #scroll-container {
 }
 
 /* Swipe gestures: keep vertical scroll native, horizontal gestures go to JS */
-#scroll-container, main {
+#scroll-container, main, #notification-modal {
   touch-action: pan-y;
 }
 

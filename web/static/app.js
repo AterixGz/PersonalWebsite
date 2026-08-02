@@ -137,6 +137,28 @@ document.addEventListener('alpine:init', () => {
     detailModalOpen: false,
     selectedItem: null,
 
+    init() {
+      // Swipe right on notification modal → go back (close)
+      requestAnimationFrame(() => {
+        const modal = document.getElementById('notification-modal');
+        if (!modal || modal._notifSwipeBound) return;
+        modal._notifSwipeBound = true;
+        let sx = 0, swiping = false;
+        modal.addEventListener('pointerdown', function(e) { sx = e.clientX; swiping = false; });
+        modal.addEventListener('pointermove', function(e) {
+          if (!sx) return;
+          if (Math.abs(e.clientX - sx) > 15) swiping = true;
+        });
+        modal.addEventListener('pointerup', function(e) {
+          if (!swiping) { sx = 0; return; }
+          const dx = e.clientX - sx;
+          sx = 0; swiping = false;
+          if (dx > 70) Alpine.store('notification').closeModal();
+        });
+        modal.addEventListener('pointercancel', function() { sx = 0; swiping = false; });
+      });
+    },
+
     items: [
       {
         id: 1,
