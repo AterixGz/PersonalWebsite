@@ -56,6 +56,17 @@ func runMigrations(db *sql.DB) error {
 			content TEXT,
 			created_at TEXT
 		)`,
+		`CREATE TABLE IF NOT EXISTS ai_usage (
+			id TEXT PRIMARY KEY,
+			name TEXT,
+			unit_type TEXT,
+			usage_count REAL,
+			cost_usd REAL,
+			cost_thb REAL,
+			billing_day INTEGER,
+			notes TEXT,
+			updated_at TEXT
+		)`,
 	}
 
 	for _, q := range queries {
@@ -78,8 +89,30 @@ func runMigrations(db *sql.DB) error {
 			return err
 		}
 	}
+
+	// Seed AI Usage default services if empty
+	var aiCount int
+	err = db.QueryRow("SELECT COUNT(*) FROM ai_usage").Scan(&aiCount)
+	if err == nil && aiCount == 0 {
+		now := time.Now().Format(time.RFC3339)
+		seeds := []struct {
+			id, name, unitType string
+			usageCount, usd, thb float64
+			billingDay int
+			notes string
+		}{
+			{"minimax-m3", "Minimax M3", "tokens", 2500000, 3.75, 131.25, 28, "Minimax M3 LLM API"},
+			{"deepseek-v4", "Deepseek V4 Flash", "tokens", 1800000, 0.45, 15.75, 15, "DeepSeek V4 Flash API"},
+			{"brave-search", "Brave API Search", "queries", 350, 1.75, 61.25, 1, "Brave Web Search API"},
+		}
+		for _, s := range seeds {
+			db.Exec("INSERT INTO ai_usage (id, name, unit_type, usage_count, cost_usd, cost_thb, billing_day, notes, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+				s.id, s.name, s.unitType, s.usageCount, s.usd, s.thb, s.billingDay, s.notes, now)
+		}
+	}
 	return nil
 }
+
 
 func (s *Store) GetIncomeConfig() (model.IncomeConfig, error) {
 	var c model.IncomeConfig
@@ -223,6 +256,43 @@ func (s *Store) GetChatHistory(limit int) ([]model.ChatMessage, error) {
 	return msgs, nil
 }
 
+func (s *Store) ListAIUsage() ([]model.AIUsageItem, error) {
+	rows, err := s.db.Query("SELECT id, name, unit_type, usage_count, cost_usd, cost_thb, billing_day, notes, updated_at FROM ai_usage ORDER BY billing_day ASC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []model.AIUsageItem
+	for rows.Next() {
+		var item model.AIUsageItem
+		if err := rows.Scan(&item.ID, &item.Name, &item.UnitType, &item.UsageCount, &item.CostUSD, &item.CostTHB, &item.BillingDay, &item.Notes, &item.UpdatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
+
+func (s *Store) UpsertAIUsage(item model.AIUsageItem) error {
+	now := time.Now().Format(time.RFC3339)
+	_, err := s.db.Exec(`
+		INSERT INTO ai_usage (id, name, unit_type, usage_count, cost_usd, cost_thb, billing_day, notes, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(id) DO UPDATE SET
+			name=excluded.name,
+			unit_type=excluded.unit_type,
+			usage_count=excluded.usage_count,
+			cost_usd=excluded.cost_usd,
+			cost_thb=excluded.cost_thb,
+			billing_day=excluded.billing_day,
+			notes=excluded.notes,
+			updated_at=excluded.updated_at
+	`, item.ID, item.Name, item.UnitType, item.UsageCount, item.CostUSD, item.CostTHB, item.BillingDay, item.Notes, now)
+	return err
+}
+
 func (s *Store) Close() error {
 	return s.db.Close()
 }
+

@@ -98,7 +98,7 @@
     <!-- Mobile Sidebar Drawer -->
     <div x-show="$store.ui.sidebarOpen" style="display: none;" class="fixed inset-0 z-50 flex" role="dialog" aria-modal="true">
       <!-- Backdrop -->
-      <div x-show="$store.ui.sidebarOpen"
+      <div id="sidebar-backdrop" x-show="$store.ui.sidebarOpen"
            x-transition:enter="ease-out duration-150"
            x-transition:enter-start="opacity-0"
            x-transition:enter-end="opacity-100"
@@ -109,7 +109,7 @@
            @click="$store.ui.closeSidebar()"></div>
 
       <!-- Drawer Content -->
-      <div x-show="$store.ui.sidebarOpen"
+      <div id="sidebar-drawer" x-show="$store.ui.sidebarOpen"
            x-transition:enter="transform transition ease-out duration-150"
            x-transition:enter-start="-translate-x-full"
            x-transition:enter-end="translate-x-0"
@@ -159,9 +159,10 @@
             <button @click="$store.ui.setTab('chat'); $store.ui.closeSidebar()" 
                     class="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-medium text-sm transition-colors"
                     :class="$store.ui.activeTab === 'chat' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-600 hover:bg-slate-50'">
-              <i class="fa-solid fa-robot text-lg w-5 text-center"></i>
-              <span>OpenClaw AI</span>
+              <i class="fa-solid fa-microchip text-lg w-5 text-center"></i>
+              <span>การใช้งาน AI & Token</span>
             </button>
+
 
             <hr class="my-3 border-slate-100">
 
@@ -240,6 +241,19 @@
             <h1 class="text-2xl font-bold tracking-tight text-slate-900">สรุปการเงิน</h1>
           </div>
           <div class="flex items-center gap-2">
+            <!-- Notification Bell Icon -->
+            <button @click="$store.notification.toggleModal()" 
+                    class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0" 
+                    title="การแจ้งเตือน">
+              <i class="fa-regular fa-bell text-sm"></i>
+              <template x-if="$store.notification.unreadCount() > 0">
+                <span class="absolute -top-0.5 -right-0.5 flex h-4 w-4">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-[9px] font-bold items-center justify-center" x-text="$store.notification.unreadCount()"></span>
+                </span>
+              </template>
+            </button>
+
             <template x-if="$store.keypass.enabled">
               <button @click="$store.keypass.lockApp()" title="ล็อกแอปด้วย Keypass" class="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm active:scale-95 transition-transform border border-indigo-100">
                 <i class="fa-solid fa-shield-halved"></i>
@@ -251,6 +265,7 @@
               <span>ตั้งค่ารายได้</span>
             </button>
           </div>
+
         </div>
 
         <!-- Net Balance Card -->
@@ -377,6 +392,19 @@
             <h1 class="text-2xl font-bold tracking-tight text-slate-900">พื้นที่ทำงาน</h1>
           </div>
           <div class="flex items-center gap-2">
+            <!-- Notification Bell Icon -->
+            <button @click="$store.notification.toggleModal()" 
+                    class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0" 
+                    title="การแจ้งเตือน">
+              <i class="fa-regular fa-bell text-sm"></i>
+              <template x-if="$store.notification.unreadCount() > 0">
+                <span class="absolute -top-0.5 -right-0.5 flex h-4 w-4">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-[9px] font-bold items-center justify-center" x-text="$store.notification.unreadCount()"></span>
+                </span>
+              </template>
+            </button>
+
             <template x-if="$store.keypass.enabled">
               <button @click="$store.keypass.lockApp()" title="ล็อกแอปด้วย Keypass" class="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm active:scale-95 transition-transform border border-indigo-100">
                 <i class="fa-solid fa-shield-halved"></i>
@@ -387,6 +415,7 @@
               <i class="fa-solid fa-rotate-right"></i>
             </button>
           </div>
+
         </div>
 
         <!-- Quick Connect All Banner if not all connected -->
@@ -579,51 +608,88 @@
         </template>
       </div>
 
-      <!-- TAB 3: Chat -->
+      <!-- TAB 3: AI Token Usage -->
       <div x-show="$store.ui.activeTab === 'chat'" x-cloak
-           class="h-full flex flex-col relative space-y-6"
+           class="h-full flex flex-col relative space-y-4 pb-24"
            x-transition:enter="transition ease-out duration-100"
            x-transition:enter-start="opacity-0"
            x-transition:enter-end="opacity-100">
         
+        <!-- Header -->
         <div class="flex justify-between items-center shrink-0">
           <div class="flex items-center gap-3">
             <button @click="$store.ui.toggleSidebar()" class="w-10 h-10 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-700 hover:text-indigo-600 active:scale-90 transition-all">
               <i class="fa-solid fa-bars text-base"></i>
             </button>
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-              OpenClaw AI <span class="text-indigo-500 text-sm">✨</span>
-            </h1>
+            <h1 class="text-xl font-bold tracking-tight text-slate-900">AI Token Usage</h1>
           </div>
-          <template x-if="$store.keypass.enabled">
-            <button @click="$store.keypass.lockApp()" title="ล็อกแอปด้วย Keypass" class="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm active:scale-95 transition-transform border border-indigo-100">
-              <i class="fa-solid fa-shield-halved"></i>
+          <div class="flex items-center gap-2">
+            <!-- Notification Bell Icon -->
+            <button @click="$store.notification.toggleModal()" 
+                    class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0" 
+                    title="การแจ้งเตือน">
+              <i class="fa-regular fa-bell text-sm"></i>
+              <template x-if="$store.notification.unreadCount() > 0">
+                <span class="absolute -top-0.5 -right-0.5 flex h-4 w-4">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-[9px] font-bold items-center justify-center" x-text="$store.notification.unreadCount()"></span>
+                </span>
+              </template>
             </button>
+
+            <button @click="$store.aiUsage.openAddModal()" 
+                    class="w-9 h-9 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm shadow-sm active:scale-95 transition-all flex items-center justify-center">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Summary Row -->
+        <div class="flex gap-2">
+          <div class="flex-1 bg-white p-3 rounded-xl border border-slate-100">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase block">ค่าใช้จ่ายรวม</span>
+            <span class="text-lg font-bold text-slate-900" x-text="'$' + $store.aiUsage.totalCostUSD()"></span>
+            <span class="text-[10px] text-slate-400 ml-0.5" x-text="'≈ ฿' + $store.aiUsage.totalCostTHB()"></span>
+          </div>
+          <div class="flex-1 bg-white p-3 rounded-xl border border-slate-100">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Tokens</span>
+            <span class="text-lg font-bold text-slate-900" x-text="$store.aiUsage.totalTokensFormatted()"></span>
+          </div>
+          <div class="flex-1 bg-white p-3 rounded-xl border border-slate-100">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Queries</span>
+            <span class="text-lg font-bold text-slate-900" x-text="$store.aiUsage.totalQueriesFormatted()"></span>
+          </div>
+        </div>
+
+        <!-- Service List -->
+        <div class="space-y-2">
+          <template x-for="item in $store.aiUsage.items" :key="item.id">
+            <div @click="$store.aiUsage.openEditModal(item)" class="bg-white rounded-xl p-3.5 border border-slate-100 active:scale-[0.98] transition-transform cursor-pointer">
+              
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0 border"
+                       :class="$store.aiUsage.getBgClass(item.id)">
+                    <i :class="$store.aiUsage.getIconClass(item.id)"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <h3 class="font-bold text-slate-900 text-sm truncate" x-text="item.name"></h3>
+                    <p class="text-[11px] text-slate-400" x-text="$store.aiUsage.formatNumber(item.usage_count) + ' ' + item.unit_type"></p>
+                  </div>
+                </div>
+                <div class="text-right shrink-0 pl-3">
+                  <span class="text-sm font-bold text-slate-900 block" x-text="'$' + (item.cost_usd || 0).toFixed(2)"></span>
+                  <span class="text-[10px] text-slate-400 block" x-text="$store.aiUsage.getDaysUntilBilling(item.billing_day)"></span>
+                </div>
+              </div>
+
+            </div>
           </template>
         </div>
 
-        <!-- Not Available Yet Card Container -->
-        <div class="flex-1 flex flex-col items-center justify-center text-center p-6 bg-white rounded-3xl border border-slate-100 shadow-sm space-y-4 my-auto min-h-[360px]">
-          <div class="w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-4xl shadow-inner relative">
-            <i class="fa-solid fa-robot"></i>
-            <span class="absolute -top-1 -right-1 flex h-4 w-4">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-4 w-4 bg-amber-500"></span>
-            </span>
-          </div>
-
-          <div class="space-y-1.5 max-w-xs">
-            <h3 class="text-xl font-bold text-slate-900">ยังไม่พร้อมให้บริการ</h3>
-            <p class="text-xs text-slate-500 leading-relaxed">
-              ระบบวิเคราะห์การเงินและช่วยเหลือด้วย AI (OpenClaw AI) อยู่ในระหว่างการพัฒนา และจะเปิดให้บริการในเร็วๆ นี้
-            </p>
-          </div>
-
-          <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-50 text-amber-700 font-bold text-xs border border-amber-200/60">
-            <i class="fa-solid fa-wrench text-xs"></i> กำลังปรับปรุงระบบ
-          </span>
-        </div>
       </div>
+
 
     </div>
 
@@ -642,12 +708,13 @@
         </button>
 
         <button @click="$store.ui.setTab('chat')" class="flex flex-col items-center justify-center w-full gap-1 active:scale-90 transition-transform">
-          <i class="fa-solid fa-robot text-xl transition-colors" :class="$store.ui.activeTab === 'chat' ? 'text-indigo-600' : 'text-slate-400'"></i>
-          <span class="text-[11px] font-bold transition-colors" :class="$store.ui.activeTab === 'chat' ? 'text-indigo-600' : 'text-slate-400'">AI</span>
+          <i class="fa-solid fa-microchip text-xl transition-colors" :class="$store.ui.activeTab === 'chat' ? 'text-indigo-600' : 'text-slate-400'"></i>
+          <span class="text-[11px] font-bold transition-colors" :class="$store.ui.activeTab === 'chat' ? 'text-indigo-600' : 'text-slate-400'">AI Token</span>
         </button>
         
       </div>
     </nav>
+
   </main>
 
   <!-- Modals -->
@@ -895,6 +962,251 @@
     </div>
   </div>
 
+  <!-- AI Usage Edit/Add Modal -->
+
+  <div x-show="$store.aiUsage.editModalOpen" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" x-cloak>
+    <div x-show="$store.aiUsage.editModalOpen" 
+         x-transition:enter="ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" 
+         x-transition:leave="ease-in duration-100" 
+         class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" 
+         @click="$store.aiUsage.closeEditModal()"></div>
+
+    <div x-show="$store.aiUsage.editModalOpen" 
+         x-transition:enter="ease-out duration-150" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100" 
+         x-transition:leave="ease-in duration-100" 
+         class="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl relative z-10 space-y-4 max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square text-indigo-600"></i>
+          <span x-text="$store.aiUsage.editItem.name ? `แก้ไขข้อมูล: ${$store.aiUsage.editItem.name}` : 'เพิ่มบริการ API ใหม่'"></span>
+        </h3>
+        <button @click="$store.aiUsage.closeEditModal()" class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form @submit.prevent="$store.aiUsage.saveItem()" class="space-y-3 text-xs">
+        
+        <!-- Service Name -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">ชื่อบริการ (Service Name)</label>
+          <input type="text" x-model="$store.aiUsage.editItem.name" placeholder="เช่น Minimax M3, Deepseek V4, Brave Search" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+        </div>
+
+        <!-- Unit Type -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">หน่วยนับ (Unit Type)</label>
+          <select x-model="$store.aiUsage.editItem.unit_type" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="tokens">Tokens</option>
+            <option value="queries">Queries</option>
+            <option value="api_calls">API Calls</option>
+          </select>
+        </div>
+
+        <!-- Usage Count -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">ปริมาณที่ใช้ไปแล้ว (Usage Count)</label>
+          <input type="number" step="any" x-model.number="$store.aiUsage.editItem.usage_count" placeholder="เช่น 2500000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+        </div>
+
+        <!-- Cost USD & Cost THB Grid -->
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">ค่าบริการ (USD $)</label>
+            <input type="number" step="0.01" x-model.number="$store.aiUsage.editItem.cost_usd" placeholder="3.75" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">ค่าบริการ (THB ฿)</label>
+            <input type="number" step="0.01" x-model.number="$store.aiUsage.editItem.cost_thb" placeholder="131.25" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+
+        <!-- Billing Day -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">รอบวันตัดชำระเงินของเดือน (วันที่ 1 - 31)</label>
+          <input type="number" min="1" max="31" x-model.number="$store.aiUsage.editItem.billing_day" placeholder="28" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">คำอธิบายเพิ่มเติม (Notes)</label>
+          <input type="text" x-model="$store.aiUsage.editItem.notes" placeholder="รายละเอียดของ API Key หรือแพ็กเกจ" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <div class="pt-3 flex gap-2">
+          <button type="submit" class="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-200 active:scale-95 transition-all">
+            💾 บันทึกข้อมูล
+          </button>
+          <button type="button" @click="$store.aiUsage.closeEditModal()" class="px-4 py-3 rounded-xl bg-slate-100 text-slate-600 font-semibold text-xs hover:bg-slate-200 active:scale-95 transition-all">
+            ยกเลิก
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Notification View (Mobile-First Full Screen) -->
+  <div x-show="$store.notification.modalOpen" style="display: none;" 
+       class="fixed inset-0 z-50 bg-slate-50 flex flex-col w-full h-full" 
+       role="dialog" aria-modal="true" x-cloak
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0 translate-y-full md:translate-y-0 md:scale-95"
+       x-transition:enter-end="opacity-100 translate-y-0 md:scale-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100 translate-y-0"
+       x-transition:leave-end="opacity-0 translate-y-full md:translate-y-0 md:scale-95">
+    
+    <!-- Top Bar (Mobile-First Header) -->
+    <div class="bg-white px-4 py-3.5 border-b border-slate-200/80 shadow-xs flex items-center justify-between shrink-0 sticky top-0 z-10">
+      <div class="flex items-center gap-3">
+        <button @click="$store.notification.closeModal()" 
+                class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 active:scale-90 transition-transform">
+          <i class="fa-solid fa-arrow-left text-base"></i>
+        </button>
+        <div>
+          <h2 class="font-bold text-slate-900 text-base leading-tight flex items-center gap-2">
+            ศูนย์การแจ้งเตือน
+            <template x-if="$store.notification.unreadCount() > 0">
+              <span class="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-extrabold" x-text="$store.notification.unreadCount() + ' ใหม่'"></span>
+            </template>
+          </h2>
+          <p class="text-[11px] text-slate-400">อัปเดตระบบ ข้อมูลการเงิน และ AI Token</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions Sub-bar -->
+    <div class="bg-white/80 backdrop-blur-md px-4 py-2 border-b border-slate-100 flex items-center justify-between text-xs shrink-0">
+      <button @click="$store.notification.markAllAsRead()" class="text-indigo-600 hover:underline font-bold flex items-center gap-1.5">
+        <i class="fa-solid fa-check-double"></i> อ่านแล้วทั้งหมด
+      </button>
+      <button @click="$store.notification.requestAndTest()" 
+              :disabled="$store.notification.testing"
+              class="text-slate-500 hover:text-indigo-600 font-bold flex items-center gap-1.5 disabled:opacity-50 transition-colors">
+        <i class="fa-solid fa-paper-plane" :class="$store.notification.testing ? 'animate-pulse' : ''"></i>
+        <span x-text="$store.notification.testing ? 'กำลังส่ง...' : 'ทดสอบแจ้งเตือน'"></span>
+      </button>
+    </div>
+    <!-- Push Notification Status Message -->
+    <template x-if="$store.notification.statusMessage">
+      <div class="px-4 py-2 text-xs font-semibold text-center border-b border-slate-100"
+           :class="$store.notification.statusMessage.startsWith('✅') ? 'bg-emerald-50 text-emerald-700' : $store.notification.statusMessage.startsWith('❌') || $store.notification.statusMessage.startsWith('⚠️') ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'"
+           x-text="$store.notification.statusMessage"></div>
+    </template>
+
+    <!-- Main Full Screen Content Scroll Area -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-3 max-w-lg mx-auto w-full">
+      <template x-if="$store.notification.items.length === 0">
+        <div class="text-center py-20 space-y-3">
+          <div class="w-16 h-16 rounded-3xl bg-white border border-slate-100 text-slate-300 flex items-center justify-center mx-auto text-3xl shadow-sm">
+            <i class="fa-regular fa-bell-slash"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-700 text-sm">ไม่มีการแจ้งเตือนในขณะนี้</h3>
+            <p class="text-xs text-slate-400 mt-1">เมื่อมีการอัปเดตระบบ หรือครบรอบบิล รายการจะแสดงขึ้นที่นี่</p>
+          </div>
+        </div>
+      </template>
+
+      <template x-for="item in $store.notification.items" :key="item.id">
+        <div @click="$store.notification.openDetail(item)" 
+             class="bg-white rounded-2xl p-4 border transition-all flex items-start gap-3.5 relative cursor-pointer shadow-xs hover:shadow-md active:scale-[0.98]"
+             :class="item.unread ? 'border-indigo-200 bg-indigo-50/20' : 'border-slate-100'">
+          
+          <span x-show="item.unread" class="w-2.5 h-2.5 rounded-full bg-indigo-600 absolute top-4 right-4 shadow-sm"></span>
+          
+          <div class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 text-base border"
+               :class="item.type === 'ai' ? 'bg-purple-50 text-purple-600 border-purple-100' : item.type === 'finance' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-blue-50 text-blue-600 border-blue-100'">
+            <i :class="item.type === 'ai' ? 'fa-solid fa-robot' : item.type === 'finance' ? 'fa-solid fa-wallet' : 'fa-solid fa-shield-halved'"></i>
+          </div>
+
+          <div class="flex-1 min-w-0 pr-3">
+            <h4 class="text-sm font-bold text-slate-900 truncate" x-text="item.title"></h4>
+            <p class="text-xs text-slate-500 leading-relaxed mt-1" x-text="item.message"></p>
+            <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-50">
+              <span class="text-[10px] text-slate-400 font-medium" x-text="item.time"></span>
+              <span class="text-[11px] font-bold text-indigo-600 flex items-center gap-1">
+                อ่านเพิ่มเติม <i class="fa-solid fa-chevron-right text-[9px]"></i>
+              </span>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+
+  <!-- Notification Detail View (Mobile-First Full Screen) -->
+  <div x-show="$store.notification.detailModalOpen" style="display: none;" 
+       class="fixed inset-0 z-50 bg-slate-50 flex flex-col w-full h-full" 
+       role="dialog" aria-modal="true" x-cloak
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0 translate-x-full"
+       x-transition:enter-end="opacity-100 translate-x-0"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100 translate-x-0"
+       x-transition:leave-end="opacity-0 translate-x-full">
+    
+    <!-- Top Navigation Bar -->
+    <div class="bg-white px-4 py-3.5 border-b border-slate-200/80 shadow-xs flex items-center justify-between shrink-0 sticky top-0 z-10">
+      <div class="flex items-center gap-3">
+        <button @click="$store.notification.closeDetail()" 
+                class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-90 transition-all">
+          <i class="fa-solid fa-chevron-left text-sm"></i>
+        </button>
+        <h2 class="font-bold text-slate-900 text-base">รายละเอียดการแจ้งเตือน</h2>
+      </div>
+    </div>
+
+
+    <!-- Detail Scroll Area -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-4 max-w-lg mx-auto w-full">
+      <!-- Header Info Card -->
+      <div class="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs space-y-3">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shrink-0 border"
+               :class="$store.notification.selectedItem?.type === 'ai' ? 'bg-purple-50 text-purple-600 border-purple-100' : $store.notification.selectedItem?.type === 'finance' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-blue-50 text-blue-600 border-blue-100'">
+            <i :class="$store.notification.selectedItem?.type === 'ai' ? 'fa-solid fa-robot' : $store.notification.selectedItem?.type === 'finance' ? 'fa-solid fa-wallet' : 'fa-solid fa-shield-halved'"></i>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block" x-text="$store.notification.selectedItem?.time"></span>
+            <h3 class="font-bold text-slate-900 text-base" x-text="$store.notification.selectedItem?.title"></h3>
+          </div>
+        </div>
+        <div class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-50 text-slate-600 border border-slate-100 inline-block"
+             x-text="`ประเภท: ${$store.notification.selectedItem?.type === 'ai' ? 'AI & Token' : $store.notification.selectedItem?.type === 'finance' ? 'ระบบการเงิน' : 'ความปลอดภัย'}`">
+        </div>
+      </div>
+
+      <!-- Detailed Content Card -->
+      <div class="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs space-y-2">
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">เนื้อหาการแจ้งเตือน</h4>
+        <p class="text-sm text-slate-700 leading-relaxed font-medium pt-1" 
+           x-text="$store.notification.selectedItem?.detailMessage || $store.notification.selectedItem?.message">
+        </p>
+      </div>
+    </div>
+
+    <!-- Bottom Action Footer -->
+    <div class="bg-white p-4 border-t border-slate-200/80 shrink-0 space-y-2 max-w-lg mx-auto w-full">
+      <template x-if="$store.notification.selectedItem?.targetTab">
+        <button @click="$store.notification.goToTarget()" 
+                class="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-200 active:scale-95 transition-all flex items-center justify-center gap-2">
+          <i class="fa-solid fa-arrow-right-to-bracket text-sm"></i>
+          <span>ไปยังหน้าต่างที่เกี่ยวข้อง</span>
+        </button>
+      </template>
+
+    </div>
+
+  </div>
+
 </body>
 </html>
+
+
+
+
 

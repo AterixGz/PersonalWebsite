@@ -83,6 +83,82 @@ document.addEventListener('alpine:init', () => {
     permissionStatus: typeof Notification !== 'undefined' ? Notification.permission : 'unsupported',
     statusMessage: '',
     testing: false,
+    modalOpen: false,
+    detailModalOpen: false,
+    selectedItem: null,
+
+    items: [
+      {
+        id: 1,
+        title: '🤖 Minimax M3 & Deepseek V4',
+        message: 'ครบรอบบิลค่าบริการ AI API ในอีก 13 วัน ($4.20)',
+        detailMessage: 'ยอดชำระประมาณการสำหรับ Minimax M3 ($3.75) และ Deepseek V4 Flash ($0.45) รวมทั้งหมด $4.20 (ประมาณ ฿147.00) โดยระบบจะทำการตัดรอบในวันที่ 15 และ 28 ของเดือนตามลำดับ',
+        time: '10 นาทีที่แล้ว',
+        unread: true,
+        type: 'ai',
+        targetTab: 'chat'
+      },
+      {
+        id: 2,
+        title: '💰 สรุปการเงินประจำเดือน',
+        message: 'รายได้สุทธิประจำเดือนนี้คำนวณเรียบร้อยแล้ว',
+        detailMessage: 'รายได้รวม (Active + Passive) ประจำเดือนนี้ได้รับการสรุปยอดเรียบร้อยแล้ว พร้อมคำนวณหักค่าใช้จ่ายประจำเดือน และอัปเดตความคืบหน้าเป้าหมาย Passive Income 100,000 บาท',
+        time: '2 ชั่วโมงที่แล้ว',
+        unread: true,
+        type: 'finance',
+        targetTab: 'finance'
+      },
+      {
+        id: 3,
+        title: '🛡️ ระบบความปลอดภัย',
+        message: 'เข้าสู่ระบบด้วย Admin และยืนยัน Turnstile สำเร็จ',
+        detailMessage: 'การยืนยันตัวตนแอดมิน (Admin Session) ผ่านการตรวจสอบ Cloudflare Turnstile Anti-Bot Security และยืนยันรหัสผ่านเรียบร้อย ปลอดภัย 100%',
+        time: 'เมื่อวานนี้',
+        unread: false,
+        type: 'security',
+        targetTab: ''
+      }
+    ],
+
+    toggleModal() {
+      this.modalOpen = !this.modalOpen;
+    },
+
+    closeModal() {
+      this.modalOpen = false;
+    },
+
+    openDetail(item) {
+      this.selectedItem = item;
+      item.unread = false;
+      this.detailModalOpen = true;
+    },
+
+    closeDetail() {
+      this.detailModalOpen = false;
+      this.selectedItem = null;
+    },
+
+    goToTarget() {
+      if (this.selectedItem && this.selectedItem.targetTab) {
+        Alpine.store('ui').setTab(this.selectedItem.targetTab);
+        this.closeDetail();
+        this.closeModal();
+      }
+    },
+
+    unreadCount() {
+      return this.items.filter(item => item.unread).length;
+    },
+
+    markAllAsRead() {
+      this.items.forEach(item => item.unread = false);
+    },
+
+    clearAll() {
+      this.items = [];
+    },
+
 
     async requestAndTest() {
       this.testing = true;
@@ -112,12 +188,10 @@ document.addEventListener('alpine:init', () => {
             renotify: true
           };
 
-          // Try Service Worker registration first (standard for PWA & iOS)
           if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
             const reg = await navigator.serviceWorker.ready;
             await reg.showNotification(title, options);
           } else {
-            // Fallback for standard Web Notification API
             new Notification(title, options);
           }
 
@@ -135,6 +209,7 @@ document.addEventListener('alpine:init', () => {
       this.testing = false;
     }
   });
+
 
   // --- Keypass Store (iPhone Passkey / Face ID / PIN) ---
   Alpine.store('keypass', {
@@ -243,7 +318,187 @@ document.addEventListener('alpine:init', () => {
     configModalOpen: false,
     addExpenseModalOpen: false,
     keypassSettingsOpen: false,
-    
+
+    // Swipe gesture state
+    tabOrder: ['finance', 'workspace', 'chat'],
+    _touchStartX: 0,
+    _touchStartY: 0,
+    _touchEndX: 0,
+    _swiping: false,
+    _edgeSwipe: false,
+
+    init() {
+      // Initialize swipe gestures after DOM is ready
+      requestAnimationFrame(() => {
+        this.initSwipe();
+        this.initSidebarSwipe();
+      });
+    },
+
+    // --- Tab Swipe (on scroll-container) ---
+    initSwipe() {
+      const el = document.getElementById('scroll-container');
+      if (!el || el._swipeBound) return;
+      el._swipeBound = true;
+      const self = this;
+
+      el.addEventListener('touchstart', function(e) {
+        if (self.sidebarOpen || Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen) return;
+        const t = e.touches[0];
+        self._touchStartX = t.clientX;
+        self._touchStartY = t.clientY;
+        self._swiping = false;
+        // Mark if touch started near left edge (sidebar open zone)
+        self._edgeSwipe = t.clientX < 30;
+      }, { passive: true });
+
+      el.addEventListener('touchmove', function(e) {
+        if (self.sidebarOpen || Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen) return;
+        const t = e.touches[0];
+        self._touchEndX = t.clientX;
+        const dx = Math.abs(t.clientX - self._touchStartX);
+        const dy = Math.abs(t.clientY - self._touchStartY);
+        if (dx > 20 && dx > dy * 1.5) {
+          self._swiping = true;
+        }
+      }, { passive: true });
+
+      el.addEventListener('touchend', function(e) {
+        if (!self._swiping) return;
+        self._swiping = false;
+        self.handleSwipe();
+      }, { passive: true });
+    },
+
+    handleSwipe() {
+      const dx = this._touchEndX - this._touchStartX;
+      const THRESHOLD = 60;
+
+      if (Math.abs(dx) < THRESHOLD) return;
+
+      // If swipe started from left edge → open sidebar instead of switching tab
+      if (this._edgeSwipe && dx > THRESHOLD) {
+        this.sidebarOpen = true;
+        return;
+      }
+
+      const currentIndex = this.tabOrder.indexOf(this.activeTab);
+      if (currentIndex === -1) return;
+
+      if (dx < -THRESHOLD && currentIndex < this.tabOrder.length - 1) {
+        this.setTab(this.tabOrder[currentIndex + 1]);
+      } else if (dx > THRESHOLD && currentIndex > 0) {
+        this.setTab(this.tabOrder[currentIndex - 1]);
+      } else if (dx > THRESHOLD && currentIndex === 0) {
+        // First tab + swipe right → open sidebar
+        this.sidebarOpen = true;
+      }
+    },
+
+    // --- Sidebar Swipe (swipe left on sidebar to close, swipe right from edge to open) ---
+    initSidebarSwipe() {
+      const mainEl = document.querySelector('main');
+      if (!mainEl || mainEl._sidebarSwipeBound) return;
+      mainEl._sidebarSwipeBound = true;
+      const self = this;
+
+      let sStartX = 0, sStartY = 0, sEndX = 0, sSwiping = false;
+
+      // Edge swipe to OPEN sidebar (listen on main container)
+      mainEl.addEventListener('touchstart', function(e) {
+        const t = e.touches[0];
+        sStartX = t.clientX;
+        sStartY = t.clientY;
+        sEndX = t.clientX;
+        sSwiping = false;
+      }, { passive: true });
+
+      mainEl.addEventListener('touchmove', function(e) {
+        const t = e.touches[0];
+        sEndX = t.clientX;
+        const dx = Math.abs(t.clientX - sStartX);
+        const dy = Math.abs(t.clientY - sStartY);
+        if (dx > 20 && dx > dy * 1.5) {
+          sSwiping = true;
+        }
+      }, { passive: true });
+
+      mainEl.addEventListener('touchend', function(e) {
+        if (!sSwiping) return;
+        sSwiping = false;
+        const dx = sEndX - sStartX;
+        // Swipe RIGHT from left edge → open sidebar
+        if (dx > 60 && sStartX < 30 && !self.sidebarOpen) {
+          // Don't open if any overlay is showing
+          if (Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen) return;
+          self.sidebarOpen = true;
+        }
+      }, { passive: true });
+
+      // Swipe LEFT on sidebar backdrop/drawer → close sidebar
+      // We use a MutationObserver to attach listeners once the sidebar DOM appears
+      const observer = new MutationObserver(() => {
+        // Find sidebar drawer when it's shown
+        const drawer = document.getElementById('sidebar-drawer');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        if (drawer && !drawer._sidebarCloseBound) {
+          drawer._sidebarCloseBound = true;
+          let dStartX = 0, dStartY = 0, dEndX = 0, dSwiping = false;
+
+          drawer.addEventListener('touchstart', function(e) {
+            const t = e.touches[0];
+            dStartX = t.clientX;
+            dStartY = t.clientY;
+            dSwiping = false;
+          }, { passive: true });
+
+          drawer.addEventListener('touchmove', function(e) {
+            const t = e.touches[0];
+            dEndX = t.clientX;
+            const dx = Math.abs(t.clientX - dStartX);
+            const dy = Math.abs(t.clientY - dStartY);
+            if (dx > 20 && dx > dy * 1.5) {
+              dSwiping = true;
+            }
+          }, { passive: true });
+
+          drawer.addEventListener('touchend', function(e) {
+            if (!dSwiping) return;
+            dSwiping = false;
+            const dx = dEndX - dStartX;
+            if (dx < -60) {
+              self.closeSidebar();
+            }
+          }, { passive: true });
+        }
+        // Also allow swipe-left on backdrop to close
+        if (backdrop && !backdrop._sidebarCloseBound) {
+          backdrop._sidebarCloseBound = true;
+          let bStartX = 0, bStartY = 0, bEndX = 0, bSwiping = false;
+
+          backdrop.addEventListener('touchstart', function(e) {
+            bStartX = e.touches[0].clientX;
+            bStartY = e.touches[0].clientY;
+            bSwiping = false;
+          }, { passive: true });
+
+          backdrop.addEventListener('touchmove', function(e) {
+            bEndX = e.touches[0].clientX;
+            const dx = Math.abs(e.touches[0].clientX - bStartX);
+            const dy = Math.abs(e.touches[0].clientY - bStartY);
+            if (dx > 20 && dx > dy * 1.5) bSwiping = true;
+          }, { passive: true });
+
+          backdrop.addEventListener('touchend', function(e) {
+            if (!bSwiping) return;
+            bSwiping = false;
+            if (bEndX - bStartX < -60) self.closeSidebar();
+          }, { passive: true });
+        }
+      });
+      observer.observe(mainEl, { childList: true, subtree: true });
+    },
+
     toggleSidebar() {
       this.sidebarOpen = !this.sidebarOpen;
     },
@@ -256,8 +511,8 @@ document.addEventListener('alpine:init', () => {
       this.activeTab = tab;
       
       // Load data on demand
-      if (tab === 'chat' && Alpine.store('chat').messages.length === 0) {
-        Alpine.store('chat').loadHistory();
+      if (tab === 'chat') {
+        Alpine.store('aiUsage').loadData();
       }
       
       // Scroll to top
@@ -265,6 +520,7 @@ document.addEventListener('alpine:init', () => {
       if (scrollContainer) scrollContainer.scrollTop = 0;
     }
   });
+
 
   // --- Finance Store ---
   Alpine.store('finance', {
@@ -723,4 +979,149 @@ document.addEventListener('alpine:init', () => {
       this.scrollToBottom();
     }
   });
+
+  // --- AI Usage Store ---
+  Alpine.store('aiUsage', {
+    items: [
+      { id: 'minimax-m3', name: 'Minimax M3', unit_type: 'tokens', usage_count: 2500000, cost_usd: 3.75, cost_thb: 131.25, billing_day: 28, notes: 'Minimax M3 LLM API' },
+      { id: 'deepseek-v4', name: 'Deepseek V4 Flash', unit_type: 'tokens', usage_count: 1800000, cost_usd: 0.45, cost_thb: 15.75, billing_day: 15, notes: 'DeepSeek V4 Flash API' },
+      { id: 'brave-search', name: 'Brave API Search', unit_type: 'queries', usage_count: 350, cost_usd: 1.75, cost_thb: 61.25, billing_day: 1, notes: 'Brave Web Search API' }
+    ],
+    loading: false,
+    editModalOpen: false,
+    editItem: {
+      id: '',
+      name: '',
+      unit_type: 'tokens',
+      usage_count: 0,
+      cost_usd: 0,
+      cost_thb: 0,
+      billing_day: 1,
+      notes: ''
+    },
+
+    async loadData() {
+      this.loading = true;
+      try {
+        const res = await fetch('/api/ai-usage');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            this.items = data;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load AI usage data:', err);
+      }
+      this.loading = false;
+    },
+
+    openAddModal() {
+      this.editItem = {
+        id: 'api-' + Date.now(),
+        name: '',
+        unit_type: 'tokens',
+        usage_count: 0,
+        cost_usd: 0,
+        cost_thb: 0,
+        billing_day: 1,
+        notes: ''
+      };
+      this.editModalOpen = true;
+    },
+
+    openEditModal(item) {
+      this.editItem = JSON.parse(JSON.stringify(item));
+      this.editModalOpen = true;
+    },
+
+    closeEditModal() {
+      this.editModalOpen = false;
+    },
+
+    async saveItem() {
+      if (!this.editItem.name.trim()) return;
+      
+      // Auto-calculate THB if 0 and USD is set
+      if (this.editItem.cost_usd > 0 && (!this.editItem.cost_thb || this.editItem.cost_thb === 0)) {
+        this.editItem.cost_thb = parseFloat((this.editItem.cost_usd * 35).toFixed(2));
+      }
+
+      try {
+        const res = await fetch('/api/ai-usage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.editItem)
+        });
+
+        if (res.ok) {
+          await this.loadData();
+          this.closeEditModal();
+        }
+      } catch (err) {
+        console.error('Error saving AI usage item:', err);
+      }
+    },
+
+    totalCostUSD() {
+      return this.items.reduce((sum, item) => sum + (item.cost_usd || 0), 0).toFixed(2);
+    },
+
+    totalCostTHB() {
+      return this.items.reduce((sum, item) => sum + (item.cost_thb || 0), 0).toFixed(2);
+    },
+
+    totalTokensFormatted() {
+      const totalTokens = this.items
+        .filter(item => item.unit_type === 'tokens')
+        .reduce((sum, item) => sum + (item.usage_count || 0), 0);
+      return this.formatNumber(totalTokens);
+    },
+
+    totalQueriesFormatted() {
+      const totalQueries = this.items
+        .filter(item => item.unit_type === 'queries' || item.unit_type === 'api_calls')
+        .reduce((sum, item) => sum + (item.usage_count || 0), 0);
+      return this.formatNumber(totalQueries);
+    },
+
+    formatNumber(num) {
+      if (num === undefined || num === null) return '0';
+      return Number(num).toLocaleString('th-TH');
+    },
+
+    getIconClass(id) {
+      if (id.includes('minimax')) return 'fa-solid fa-brain text-purple-600';
+      if (id.includes('deepseek')) return 'fa-solid fa-bolt text-sky-600';
+      if (id.includes('brave')) return 'fa-solid fa-compass text-amber-600';
+      return 'fa-solid fa-microchip text-indigo-600';
+    },
+
+    getBgClass(id) {
+      if (id.includes('minimax')) return 'bg-purple-50 border-purple-100';
+      if (id.includes('deepseek')) return 'bg-sky-50 border-sky-100';
+      if (id.includes('brave')) return 'bg-amber-50 border-amber-100';
+      return 'bg-indigo-50 border-indigo-100';
+    },
+
+    getDaysUntilBilling(billingDay) {
+      const today = new Date();
+      const currentDay = today.getDate();
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+
+      let targetDate = new Date(currentYear, currentMonth, billingDay);
+      if (currentDay > billingDay) {
+        targetDate = new Date(currentYear, currentMonth + 1, billingDay);
+      }
+
+      const diffTime = targetDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) return 'วันนี้ครบกำหนด';
+      if (diffDays === 1) return 'พรุ่งนี้ครบกำหนด';
+      return `อีก ${diffDays} วัน (วันที่ ${billingDay})`;
+    }
+  });
 });
+

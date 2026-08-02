@@ -11,9 +11,16 @@ import (
 	"time"
 )
 
-// turnstileSecretKey is loaded from TURNSTILE_SECRET_KEY env var (set in systemd EnvironmentFile).
+// turnstileSecretKey is loaded from TURNSTILE_SECRET_KEY env var.
 // Repo is public — never hardcode secrets here.
-var turnstileSecretKey = os.Getenv("TURNSTILE_SECRET_KEY")
+var turnstileSecretKey = ""
+
+func getTurnstileSecretKey() string {
+	if turnstileSecretKey == "" {
+		turnstileSecretKey = os.Getenv("TURNSTILE_SECRET_KEY")
+	}
+	return turnstileSecretKey
+}
 
 const turnstileVerifyURL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 
@@ -40,7 +47,8 @@ func HandleTurnstileVerify() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		if turnstileSecretKey == "" {
+		key := getTurnstileSecretKey()
+		if key == "" {
 			log.Println("WARN: TURNSTILE_SECRET_KEY not set — Turnstile verification disabled")
 			json.NewEncoder(w).Encode(TurnstileVerifyResponse{Success: false, Message: "Turnstile not configured on server"})
 			return
@@ -61,7 +69,7 @@ func HandleTurnstileVerify() http.HandlerFunc {
 
 		// Call Cloudflare siteverify API
 		formData := url.Values{}
-		formData.Set("secret", turnstileSecretKey)
+		formData.Set("secret", key)
 		formData.Set("response", req.Token)
 
 		// Extract client IP

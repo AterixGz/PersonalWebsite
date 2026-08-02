@@ -5,3 +5,7 @@ bin/
 *.db-shm
 *.db-wal
 app.exe
+
+# Secret files
+.env
+.env.local

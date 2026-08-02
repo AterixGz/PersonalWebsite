@@ -60,6 +60,10 @@ func (s *Server) SetupRoutes() http.Handler {
 	mux.HandleFunc("POST /api/chat", handler.HandleChat(s.store, s.config.OpenClawURL, s.config.OpenClawModel))
 	mux.HandleFunc("GET /api/chat/history", handler.HandleChatHistory(s.store))
 
+	// AI Usage API routes
+	mux.HandleFunc("GET /api/ai-usage", handler.HandleListAIUsage(s.store))
+	mux.HandleFunc("POST /api/ai-usage", handler.HandleSaveAIUsage(s.store))
+
 	// Workspace stubs
 	mux.HandleFunc("GET /api/workspace/trello", handler.HandleTrello())
 	mux.HandleFunc("GET /api/workspace/calendar", handler.HandleCalendar())
