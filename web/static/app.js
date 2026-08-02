@@ -6,9 +6,38 @@ document.addEventListener('alpine:init', () => {
     loginError: '',
     turnstileToken: '',
     loginLoading: false,
+    SESSION_TTL: 24 * 60 * 60 * 1000, // 24h
 
     isLoggedIn() {
-      return !!this.user;
+      return !!this.user && !this.isSessionExpired();
+    },
+
+    isSessionExpired() {
+      if (!this.user || !this.user.expiresAt) return false;
+      return Date.now() > this.user.expiresAt;
+    },
+
+    // Force logout (called on session expiry or API 401)
+    forceLogout() {
+      this.user = null;
+      localStorage.removeItem('myfinance_user');
+      Alpine.store('ui').sidebarOpen = false;
+    },
+
+    checkSession() {
+      if (this.user && this.isSessionExpired()) {
+        this.forceLogout();
+        return true;
+      }
+      return false;
+    },
+
+    init() {
+      // Auto-logout when session expires (check every 30s + on visibility)
+      setInterval(() => this.checkSession(), 30 * 1000);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) this.checkSession();
+      });
     },
 
     async login() {
@@ -49,7 +78,8 @@ document.addEventListener('alpine:init', () => {
             name: 'ผู้ดูแลระบบ (Admin)',
             email: 'admin@myfinance.app',
             role: 'Administrator',
-            badge: '👑 Admin'
+            badge: '👑 Admin',
+            expiresAt: Date.now() + this.SESSION_TTL
           };
           localStorage.setItem('myfinance_user', JSON.stringify(this.user));
           this.loginError = '';
@@ -72,11 +102,21 @@ document.addEventListener('alpine:init', () => {
     },
 
     logout() {
-      this.user = null;
-      localStorage.removeItem('myfinance_user');
-      Alpine.store('ui').sidebarOpen = false;
+      this.forceLogout();
     }
   });
+
+  // Global: any API 401 → session expired → force logout
+  (function() {
+    const origFetch = window.fetch;
+    window.fetch = async function(...args) {
+      const res = await origFetch.apply(this, args);
+      if (res.status === 401 && window.Alpine && Alpine.store('auth')) {
+        Alpine.store('auth').forceLogout();
+      }
+      return res;
+    };
+  })();
 
   // --- Notification Store (iPhone iOS / Web Push Notifications) ---
   Alpine.store('notification', {
