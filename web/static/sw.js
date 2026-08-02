@@ -1,8 +1,9 @@
-const CACHE_NAME = 'myfinance-v2';
+const CACHE_NAME = 'myfinance-v3';
+const VERSION = '26b0197';
 const ASSETS = [
   '/',
-  '/static/app.css',
-  '/static/app.js',
+  '/static/app.css?v=' + VERSION,
+  '/static/app.js?v=' + VERSION,
   '/static/vendor/tailwind.js',
   '/static/vendor/alpine.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
@@ -36,6 +37,18 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
+  
+  // HTML navigations - Network first (always fresh), fallback to cache
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        return response;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
   
   // API Calls - Network first, fallback to empty/error
   if (url.pathname.startsWith('/api/')) {
