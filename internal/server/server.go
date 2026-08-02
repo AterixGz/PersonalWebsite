@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/AterixGz/PersonalWebsite/internal/config"
 	"github.com/AterixGz/PersonalWebsite/internal/handler"
@@ -56,7 +57,7 @@ func (s *Server) SetupRoutes() http.Handler {
 	mux.HandleFunc("PUT /api/finance/expenses/{id}", handler.HandleUpdateExpense(s.store))
 	mux.HandleFunc("DELETE /api/finance/expenses/{id}", handler.HandleDeleteExpense(s.store))
 	mux.HandleFunc("PATCH /api/finance/expenses/{id}/toggle", handler.HandleToggleExpense(s.store))
-	
+
 	mux.HandleFunc("POST /api/chat", handler.HandleChat(s.store, s.config.OpenClawURL, s.config.OpenClawModel))
 	mux.HandleFunc("GET /api/chat/history", handler.HandleChatHistory(s.store))
 
@@ -80,6 +81,16 @@ func middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Limit request body to 1MB (DoS protection)
 		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
+		// Cache control: never cache SW / HTML / app assets (prevents stale PWA)
+		switch {
+		case strings.HasPrefix(r.URL.Path, "/static/sw.js"):
+			w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		case r.URL.Path == "/" || r.URL.Path == "/index.html":
+			w.Header().Set("Cache-Control", "no-cache, must-revalidate")
+		case strings.HasPrefix(r.URL.Path, "/static/app.js") || strings.HasPrefix(r.URL.Path, "/static/app.css"):
+			w.Header().Set("Cache-Control", "no-cache, must-revalidate")
+		}
 
 		// CORS — specific origin only
 		w.Header().Set("Access-Control-Allow-Origin", "https://thanpisit.online")
