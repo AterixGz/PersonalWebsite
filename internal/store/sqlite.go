@@ -67,6 +67,16 @@ func runMigrations(db *sql.DB) error {
 			notes TEXT,
 			updated_at TEXT
 		)`,
+		`CREATE TABLE IF NOT EXISTS oauth_tokens (
+			provider TEXT NOT NULL,
+			user_email TEXT NOT NULL,
+			access_token TEXT,
+			refresh_token TEXT,
+			scope TEXT,
+			expires_at INTEGER,
+			updated_at TEXT,
+			PRIMARY KEY (provider, user_email)
+		)`,
 	}
 
 	for _, q := range queries {
@@ -96,10 +106,10 @@ func runMigrations(db *sql.DB) error {
 	if err == nil && aiCount == 0 {
 		now := time.Now().Format(time.RFC3339)
 		seeds := []struct {
-			id, name, unitType string
+			id, name, unitType   string
 			usageCount, usd, thb float64
-			billingDay int
-			notes string
+			billingDay           int
+			notes                string
 		}{
 			{"minimax-m3", "Minimax M3", "tokens", 2500000, 3.75, 131.25, 28, "Minimax M3 LLM API"},
 			{"deepseek-v4", "Deepseek V4 Flash", "tokens", 1800000, 0.45, 15.75, 15, "DeepSeek V4 Flash API"},
@@ -112,7 +122,6 @@ func runMigrations(db *sql.DB) error {
 	}
 	return nil
 }
-
 
 func (s *Store) GetIncomeConfig() (model.IncomeConfig, error) {
 	var c model.IncomeConfig
@@ -217,12 +226,12 @@ func (s *Store) ToggleExpensePaid(id int, month string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	newMonth := month
 	if currentPaidMonth == month {
 		newMonth = ""
 	}
-	
+
 	_, err = s.db.Exec("UPDATE expenses SET paid_month=? WHERE id=?", newMonth, id)
 	return err
 }
@@ -248,11 +257,11 @@ func (s *Store) GetChatHistory(limit int) ([]model.ChatMessage, error) {
 		}
 		msgs = append(msgs, m)
 	}
-	
+
 	for i, j := 0, len(msgs)-1; i < j; i, j = i+1, j-1 {
 		msgs[i], msgs[j] = msgs[j], msgs[i]
 	}
-	
+
 	return msgs, nil
 }
 
@@ -292,7 +301,36 @@ func (s *Store) UpsertAIUsage(item model.AIUsageItem) error {
 	return err
 }
 
+func (s *Store) UpsertOAuthToken(t model.OAuthToken) error {
+	now := time.Now().Format(time.RFC3339)
+	_, err := s.db.Exec(`
+		INSERT INTO oauth_tokens (provider, user_email, access_token, refresh_token, scope, expires_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(provider, user_email) DO UPDATE SET
+			access_token=excluded.access_token,
+			refresh_token=excluded.refresh_token,
+			scope=excluded.scope,
+			expires_at=excluded.expires_at,
+			updated_at=excluded.updated_at
+	`, t.Provider, t.UserEmail, t.AccessToken, t.RefreshToken, t.Scope, t.ExpiresAt, now)
+	return err
+}
+
+func (s *Store) GetOAuthToken(provider, userEmail string) (*model.OAuthToken, error) {
+	var t model.OAuthToken
+	err := s.db.QueryRow("SELECT provider, user_email, access_token, refresh_token, scope, expires_at, updated_at FROM oauth_tokens WHERE provider=? AND user_email=?",
+		provider, userEmail).Scan(&t.Provider, &t.UserEmail, &t.AccessToken, &t.RefreshToken, &t.Scope, &t.ExpiresAt, &t.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (s *Store) DeleteOAuthToken(provider, userEmail string) error {
+	_, err := s.db.Exec("DELETE FROM oauth_tokens WHERE provider=? AND user_email=?", provider, userEmail)
+	return err
+}
+
 func (s *Store) Close() error {
 	return s.db.Close()
 }
-

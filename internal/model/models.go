@@ -58,3 +58,12 @@ type AIUsageItem struct {
 	UpdatedAt  string  `json:"updated_at"`
 }
 
+type OAuthToken struct {
+	Provider     string `json:"provider"`
+	UserEmail    string `json:"user_email"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	Scope        string `json:"scope"`
+	ExpiresAt    int64  `json:"expires_at"`
+	UpdatedAt    string `json:"updated_at"`
+}

@@ -11,6 +11,12 @@ type Config struct {
 	DBPath        string
 	OpenClawURL   string
 	OpenClawModel string
+	SiteBaseURL   string
+
+	GoogleClientID     string
+	GoogleClientSecret string
+	GoogleRedirectURI  string
+	TrelloAPIKey       string
 }
 
 func Load() Config {
@@ -32,12 +38,26 @@ func Load() Config {
 	if openClawModel == "" {
 		openClawModel = "openclaw"
 	}
+	siteBaseURL := os.Getenv("SITE_BASE_URL")
+	if siteBaseURL == "" {
+		siteBaseURL = "https://thanpisit.online"
+	}
+
+	googleRedirect := os.Getenv("GOOGLE_REDIRECT_URI")
+	if googleRedirect == "" {
+		googleRedirect = siteBaseURL + "/api/workspace/oauth2/google/callback"
+	}
 
 	return Config{
-		Port:          port,
-		DBPath:        dbPath,
-		OpenClawURL:   openClawURL,
-		OpenClawModel: openClawModel,
+		Port:               port,
+		DBPath:             dbPath,
+		OpenClawURL:        openClawURL,
+		OpenClawModel:      openClawModel,
+		SiteBaseURL:        siteBaseURL,
+		GoogleClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		GoogleRedirectURI:  googleRedirect,
+		TrelloAPIKey:       os.Getenv("TRELLO_API_KEY"),
 	}
 }
 
