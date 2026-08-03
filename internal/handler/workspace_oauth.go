@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -17,7 +18,8 @@ import (
 const (
 	googleAuthURL  = "https://accounts.google.com/o/oauth2/v2/auth"
 	googleTokenURL = "https://oauth2.googleapis.com/token"
-	calendarAPI    = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
+	calendarAPI     = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
+	calendarListAPI = "https://www.googleapis.com/calendar/v3/users/me/calendarList"
 	gmailListAPI   = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
 	gmailGetAPI    = "https://gmail.googleapis.com/gmail/v1/users/me/messages/%s"
 	trelloAPI      = "https://api.trello.com/1/members/me/cards"
@@ -317,7 +319,7 @@ func HandleTrelloData(st *store.Store, cfg config.Config) http.HandlerFunc {
 	}
 }
 
-// GET /api/workspace/calendar?user=... — upcoming events
+// GET /api/workspace/calendar?user=... — upcoming events (all calendars, not just primary)
 func HandleCalendarData(st *store.Store, cfg config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		u := userEmail(r)
@@ -326,53 +328,107 @@ func HandleCalendarData(st *store.Store, cfg config.Config) http.HandlerFunc {
 			http.Error(w, "not connected", http.StatusUnauthorized)
 			return
 		}
-		req, _ := http.NewRequest("GET", calendarAPI, nil)
-		q := req.URL.Query()
-		q.Set("maxResults", "10")
-		q.Set("orderBy", "startTime")
-		q.Set("singleEvents", "true")
-		q.Set("timeMin", time.Now().Format(time.RFC3339))
-		q.Set("timeMax", time.Now().Add(7*24*time.Hour).Format(time.RFC3339))
-		req.URL.RawQuery = q.Encode()
-		req.Header.Set("Authorization", "Bearer "+token)
 
-		resp, err := http.DefaultClient.Do(req)
+		// List all calendars — imported calendars (e.g. "ปฏิทิน") hold run/event schedules too
+		listReq, _ := http.NewRequest("GET", calendarListAPI, nil)
+		listReq.Header.Set("Authorization", "Bearer "+token)
+		listResp, err := http.DefaultClient.Do(listReq)
 		if err != nil {
-			http.Error(w, "calendar api error", http.StatusBadGateway)
+			http.Error(w, "calendar list api error", http.StatusBadGateway)
 			return
 		}
-		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-		if resp.StatusCode != 200 {
-			http.Error(w, "calendar api: "+string(body), resp.StatusCode)
+		lbody, _ := io.ReadAll(listResp.Body)
+		listResp.Body.Close()
+		if listResp.StatusCode != 200 {
+			http.Error(w, "calendar list api: "+string(lbody), listResp.StatusCode)
 			return
 		}
-		var ev struct {
+		var cl struct {
 			Items []struct {
 				ID      string `json:"id"`
-				Summary string `json:"summary"`
-				Start   struct {
-					DateTime string `json:"dateTime"`
-					Date     string `json:"date"`
-				} `json:"start"`
+				Primary bool   `json:"primary"`
 			} `json:"items"`
 		}
-		json.Unmarshal(body, &ev)
+		json.Unmarshal(lbody, &cl)
 
-		var out []map[string]any
-		for _, it := range ev.Items {
-			t := it.Start.DateTime
-			if t == "" {
-				t = it.Start.Date
-			}
-			label := t
-			if pt, err := time.Parse(time.RFC3339, t); err == nil {
-				label = pt.Format("02/01 15:04")
-			}
-			out = append(out, map[string]any{"id": it.ID, "name": it.Summary, "time": label})
+		now := time.Now()
+		timeMin := now.Format(time.RFC3339)
+		timeMax := now.Add(7 * 24 * time.Hour).Format(time.RFC3339)
+
+		type calEvent struct {
+			id      string
+			name    string
+			label   string
+			sortKey time.Time
 		}
-		if out == nil {
-			out = []map[string]any{}
+		var events []calEvent
+		seen := map[string]bool{}
+
+		for _, c := range cl.Items {
+			if c.ID == "" {
+				continue
+			}
+			req, _ := http.NewRequest("GET", "https://www.googleapis.com/calendar/v3/calendars/"+url.PathEscape(c.ID)+"/events", nil)
+			q := req.URL.Query()
+			q.Set("maxResults", "10")
+			q.Set("orderBy", "startTime")
+			q.Set("singleEvents", "true")
+			q.Set("timeMin", timeMin)
+			q.Set("timeMax", timeMax)
+			req.URL.RawQuery = q.Encode()
+			req.Header.Set("Authorization", "Bearer "+token)
+
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				continue
+			}
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if resp.StatusCode != 200 {
+				continue
+			}
+			var ev struct {
+				Items []struct {
+					ID      string `json:"id"`
+					Summary string `json:"summary"`
+					Start   struct {
+						DateTime string `json:"dateTime"`
+						Date     string `json:"date"`
+					} `json:"start"`
+				} `json:"items"`
+			}
+			json.Unmarshal(body, &ev)
+
+			for _, it := range ev.Items {
+				if it.ID == "" || seen[it.ID] {
+					continue
+				}
+				seen[it.ID] = true
+				t := it.Start.DateTime
+				if t == "" {
+					t = it.Start.Date
+				}
+				label := t
+				var sortKey time.Time
+				if pt, err := time.Parse(time.RFC3339, t); err == nil {
+					label = pt.Format("02/01 15:04")
+					sortKey = pt
+				} else if pd, err := time.Parse("2006-01-02", t); err == nil {
+					label = pd.Format("02/01")
+					sortKey = pd
+				}
+				events = append(events, calEvent{id: it.ID, name: it.Summary, label: label, sortKey: sortKey})
+			}
+		}
+
+		sort.Slice(events, func(i, j int) bool { return events[i].sortKey.Before(events[j].sortKey) })
+		if len(events) > 10 {
+			events = events[:10]
+		}
+
+		out := []map[string]any{}
+		for _, e := range events {
+			out = append(out, map[string]any{"id": e.id, "name": e.name, "time": e.label})
 		}
 		writeJSON(w, http.StatusOK, out)
 	}
