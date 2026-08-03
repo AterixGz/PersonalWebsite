@@ -44,10 +44,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth3">
+  <link rel="stylesheet" href="/static/app.css?v=oauth4">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth3"></script>
+  <script src="/static/app.js?v=oauth4"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -402,7 +402,9 @@
                 <i class="fa-solid fa-shield-halved"></i>
               </button>
             </template>
-            <span x-show="$store.workspace.lastUpdated" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200/60 whitespace-nowrap">อัพเดทล่าสุด <span x-text="$store.workspace.lastUpdatedLabel()"></span></span>
+            <span x-show="$store.workspace.lastUpdated" title="อัพเดทล่าสุด" class="text-xs font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200/60 whitespace-nowrap flex items-center gap-1">
+              <i class="fa-regular fa-clock text-[10px]"></i><span x-text="$store.workspace.lastUpdatedLabel()"></span>
+            </span>
             <button @click="$store.workspace.openSettings()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm transition-colors" title="ตั้งค่าการแสดงผล">
               <i class="fa-solid fa-gear"></i>
             </button>
@@ -628,11 +630,16 @@
         
         <!-- Header -->
         <div class="flex justify-between items-center shrink-0">
-          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3">
             <button @click="$store.ui.toggleSidebar()" class="w-10 h-10 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-700 hover:text-indigo-600 active:scale-90 transition-all">
               <i class="fa-solid fa-bars text-base"></i>
             </button>
-            <h1 class="text-xl font-bold tracking-tight text-slate-900">AI Token Usage</h1>
+            <div>
+              <h1 class="text-xl font-bold tracking-tight text-slate-900 leading-tight">AI Token Usage</h1>
+              <span x-show="$store.aiUsage.lastUpdated" class="text-[10px] font-semibold text-slate-400 flex items-center gap-1 mt-0.5">
+                <i class="fa-regular fa-clock text-[9px]"></i><span x-text="$store.aiUsage.lastUpdatedLabel()"></span>
+              </span>
+            </div>
           </div>
           <div class="flex items-center gap-2">
             <!-- Notification Bell Icon -->
@@ -704,6 +711,13 @@
     </div>
 
     <!-- Floating Raised Bottom Navigation Bar (Glassmorphism) -->
+    <!-- Pull-to-refresh indicator -->
+    <div id="ptr-indicator" class="fixed inset-x-0 top-0 z-40 flex justify-center pointer-events-none opacity-0" style="margin-top: calc(env(safe-area-inset-top, 12px) + 8px);">
+      <div id="ptr-indicator-inner" class="w-9 h-9 rounded-full bg-white shadow-lg border border-slate-100 flex items-center justify-center text-indigo-600 text-sm" style="transform: translateY(-70px); transition: transform .2s ease, opacity .2s ease;">
+        <i class="fa-solid fa-arrow-down"></i>
+      </div>
+    </div>
+
     <nav class="absolute left-4 right-4 raised-nav-container glass-nav rounded-2xl border border-slate-200/80 shadow-lg z-30 py-2.5">
       <div class="flex justify-around items-center px-2">
         
@@ -1223,7 +1237,7 @@
        x-transition:leave-end="opacity-0 translate-x-full">
     
     <!-- Top Navigation Bar -->
-    <div class="bg-white px-4 py-3.5 border-b border-slate-200/80 shadow-xs flex items-center justify-between shrink-0 sticky top-0 z-10">
+    <div class="bg-white px-4 py-3.5 border-b border-slate-200/80 shadow-xs flex items-center justify-between shrink-0 sticky top-0 z-10 safe-top">
       <div class="flex items-center gap-3">
         <button @click="$store.notification.closeDetail()" 
                 class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-90 transition-all">

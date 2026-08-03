@@ -404,7 +404,80 @@ document.addEventListener('alpine:init', () => {
       requestAnimationFrame(() => {
         this.initSwipe();
         this.initSidebarSwipe();
+        this.initPullToRefresh();
       });
+    },
+
+    // --- Pull-to-refresh (workspace + AI token tabs) ---
+    initPullToRefresh() {
+      const el = document.getElementById('scroll-container');
+      if (!el || el._ptrBound) return;
+      el._ptrBound = true;
+      const self = this;
+      let startY = 0, pulling = false, dist = 0;
+      const THRESHOLD = 70;
+      const inner = document.getElementById('ptr-indicator-inner');
+      const outer = document.getElementById('ptr-indicator');
+
+      const reset = () => {
+        pulling = false; dist = 0;
+        if (outer) outer.style.opacity = '0';
+        if (inner) { inner.style.transform = 'translateY(-70px)'; inner.style.transition = 'transform .2s ease, opacity .2s ease'; }
+      };
+
+      el.addEventListener('touchstart', (e) => {
+        if (self.sidebarOpen || Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen) return;
+        const t = self.activeTab;
+        if (t !== 'workspace' && t !== 'chat') return;
+        if (el.scrollTop > 0) { startY = 0; return; }
+        startY = e.touches[0].clientY;
+        pulling = true;
+        dist = 0;
+        if (inner) inner.style.transition = 'none';
+      }, { passive: true });
+
+      el.addEventListener('touchmove', (e) => {
+        if (!pulling || !startY) return;
+        const dy = e.touches[0].clientY - startY;
+        if (dy <= 0 || el.scrollTop > 0) { reset(); return; }
+        dist = Math.min(dy * 0.5, 80);
+        if (outer) outer.style.opacity = dist > 8 ? 1 : 0;
+        if (inner) inner.style.transform = `translateY(${dist - 70}px)`;
+        if (dist > 8) e.preventDefault();
+      }, { passive: false });
+
+      el.addEventListener('touchend', async () => {
+        if (!pulling) return;
+        const willRefresh = dist >= THRESHOLD;
+        pulling = false; startY = 0;
+        if (willRefresh) {
+          if (inner) {
+            const icon = inner.querySelector('i');
+            if (icon) icon.className = 'fa-solid fa-spinner fa-spin';
+            inner.style.transform = 'translateY(0px)';
+            inner.style.transition = 'transform .2s ease, opacity .2s ease';
+          }
+          if (outer) outer.style.opacity = '1';
+          try {
+            await self.pullRefresh();
+          } catch (err) { console.error('pull refresh failed', err); }
+          if (inner) { const icon = inner.querySelector('i'); if (icon) icon.className = 'fa-solid fa-arrow-down'; }
+        }
+        reset();
+        dist = 0;
+      });
+
+      el.addEventListener('touchcancel', reset);
+    },
+
+    async pullRefresh() {
+      const t = this.activeTab;
+      if (t === 'workspace') {
+        const ws = Alpine.store('workspace');
+        await Promise.allSettled([ws.loadTrello(), ws.loadCalendar(), ws.loadGmail()]);
+      } else if (t === 'chat') {
+        await Alpine.store('aiUsage').loadData();
+      }
     },
 
     // --- Tab Swipe (pointer events + touch-action: pan-y) ---
@@ -846,7 +919,7 @@ document.addEventListener('alpine:init', () => {
       if (!this.lastUpdated) return '';
       const d = new Date(this.lastUpdated);
       const pad = n => String(n).padStart(2, '0');
-      return `${pad(d.getHours())}:${pad(d.getMinutes())} น.`;
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
     },
 
     orderIndex(provider) { return this.order.indexOf(provider); },
@@ -1112,6 +1185,7 @@ document.addEventListener('alpine:init', () => {
       { id: 'brave-search', name: 'Brave API Search', unit_type: 'queries', usage_count: 350, cost_usd: 1.75, cost_thb: 61.25, billing_day: 1, notes: 'Brave Web Search API' }
     ],
     loading: false,
+    lastUpdated: null,
     editModalOpen: false,
     editItem: {
       id: '',
@@ -1133,11 +1207,19 @@ document.addEventListener('alpine:init', () => {
           if (Array.isArray(data) && data.length > 0) {
             this.items = data;
           }
+          this.lastUpdated = Date.now();
         }
       } catch (err) {
         console.error('Failed to load AI usage data:', err);
       }
       this.loading = false;
+    },
+
+    lastUpdatedLabel() {
+      if (!this.lastUpdated) return '';
+      const d = new Date(this.lastUpdated);
+      const pad = n => String(n).padStart(2, '0');
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
     },
 
     openAddModal() {
