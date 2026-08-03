@@ -225,10 +225,8 @@ func HandleTrelloData(st *store.Store, cfg config.Config) http.HandlerFunc {
 		q := req.URL.Query()
 		q.Set("key", cfg.TrelloAPIKey)
 		q.Set("token", tok.AccessToken)
-		q.Set("fields", "name,due,dueComplete,url")
+		q.Set("fields", "name,due,dueComplete,url,idBoard")
 		q.Set("filter", "all")
-		q.Set("board", "true")
-		q.Set("board_fields", "name")
 		req.URL.RawQuery = q.Encode()
 
 		resp, err := http.DefaultClient.Do(req)
@@ -247,11 +245,38 @@ func HandleTrelloData(st *store.Store, cfg config.Config) http.HandlerFunc {
 			Name        string `json:"name"`
 			Due         string `json:"due"`
 			DueComplete bool   `json:"dueComplete"`
-			Board       struct {
-				Name string `json:"name"`
-			} `json:"board"`
+			IDBoard     string `json:"idBoard"`
 		}
 		json.Unmarshal(body, &cards)
+
+		// fetch board names (unique ids)
+		boardNames := map[string]string{}
+		for _, c := range cards {
+			if c.IDBoard == "" {
+				continue
+			}
+			if _, ok := boardNames[c.IDBoard]; ok {
+				continue
+			}
+			breq, _ := http.NewRequest("GET", "https://api.trello.com/1/boards/"+c.IDBoard, nil)
+			bq := breq.URL.Query()
+			bq.Set("key", cfg.TrelloAPIKey)
+			bq.Set("token", tok.AccessToken)
+			bq.Set("fields", "name")
+			breq.URL.RawQuery = bq.Encode()
+			bresp, err := http.DefaultClient.Do(breq)
+			if err != nil {
+				continue
+			}
+			var b struct {
+				Name string `json:"name"`
+			}
+			bjson, _ := io.ReadAll(bresp.Body)
+			bresp.Body.Close()
+			if json.Unmarshal(bjson, &b) == nil {
+				boardNames[c.IDBoard] = b.Name
+			}
+		}
 
 		now := time.Now()
 		var out []map[string]any
@@ -278,7 +303,7 @@ func HandleTrelloData(st *store.Store, cfg config.Config) http.HandlerFunc {
 			} else if days <= 2 {
 				level = "soon"
 			}
-			out = append(out, map[string]any{"id": c.ID, "name": c.Name, "status": status, "level": level, "board": c.Board.Name})
+			out = append(out, map[string]any{"id": c.ID, "name": c.Name, "status": status, "level": level, "board": boardNames[c.IDBoard]})
 			if len(out) >= 10 {
 				break
 			}
@@ -390,8 +415,8 @@ func HandleGmailData(st *store.Store, cfg config.Config) http.HandlerFunc {
 			greq, _ := http.NewRequest("GET", fmt.Sprintf(gmailGetAPI, m.ID), nil)
 			gq := greq.URL.Query()
 			gq.Set("format", "metadata")
-			gq.Set("metadataHeaders", "From")
-			gq.Set("metadataHeaders", "Subject")
+			gq.Add("metadataHeaders", "From")
+			gq.Add("metadataHeaders", "Subject")
 			greq.URL.RawQuery = gq.Encode()
 			greq.Header.Set("Authorization", "Bearer "+token)
 
