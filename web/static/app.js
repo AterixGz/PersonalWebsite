@@ -170,7 +170,7 @@ document.addEventListener('alpine:init', () => {
       (ws.trello || []).forEach(t => {
         if (t.level === 'overdue' || t.level === 'soon') {
           const id = 'trello-' + t.id;
-          if (!seen.has(id)) {
+          if (!seen.has(id) && !this.readIds.includes(id)) {
             built.push({
               id,
               title: '📋 Trello: ' + t.name,
@@ -189,7 +189,7 @@ document.addEventListener('alpine:init', () => {
       (ws.calendar || []).forEach(ev => {
         if (typeof ev.days === 'number' && ev.days <= 1) {
           const id = 'cal-' + ev.id;
-          if (!seen.has(id)) {
+          if (!seen.has(id) && !this.readIds.includes(id)) {
             built.push({
               id,
               title: '📅 ' + ev.name,
@@ -207,7 +207,7 @@ document.addEventListener('alpine:init', () => {
       // Gmail: new unread emails
       (ws.gmail || []).forEach(m => {
         const id = 'gmail-' + m.id;
-        if (!seen.has(id)) {
+        if (!seen.has(id) && !this.readIds.includes(id)) {
           built.push({
             id,
             title: '✉️ ' + m.sender,
@@ -226,9 +226,9 @@ document.addEventListener('alpine:init', () => {
         // best-effort web push for new items
         if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
           try {
-            const title = built.length === 1 ? built[0].title : 'MyFinance: มี ' + built.length + ' รายการใหม่';
+            const title = built.length === 1 ? built[0].title : 'FinFlow: มี ' + built.length + ' รายการใหม่';
             const body = built.length === 1 ? built[0].message : 'ตรวจสอบศูนย์การแจ้งเตือน';
-            const opts = { body, icon: '/static/icons/icon-512x512.jpg', badge: '/static/icons/icon-512x512.jpg', tag: 'myfinance-new', renotify: true };
+            const opts = { body, icon: '/static/icons/icon-512x512.png', badge: '/static/icons/icon-512x512.png', tag: 'finflow-new', renotify: true };
             if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
               navigator.serviceWorker.ready.then(reg => reg.showNotification(title, opts)).catch(() => {});
             } else {
@@ -293,6 +293,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     items: [],
+    readIds: [],
 
     toggleModal() {
       this.modalOpen = !this.modalOpen;
@@ -305,6 +306,8 @@ document.addEventListener('alpine:init', () => {
     openDetail(item) {
       this.selectedItem = item;
       item.unread = false;
+      if (!this.readIds.includes(item.id)) this.readIds.push(item.id);
+      this.items = this.items.filter(i => i.id !== item.id);
       this.detailModalOpen = true;
     },
 
@@ -326,7 +329,11 @@ document.addEventListener('alpine:init', () => {
     },
 
     markAllAsRead() {
-      this.items.forEach(item => item.unread = false);
+      this.items.forEach(item => {
+        item.unread = false;
+        if (!this.readIds.includes(item.id)) this.readIds.push(item.id);
+      });
+      this.items = [];
     },
 
     clearAll() {
@@ -352,11 +359,11 @@ document.addEventListener('alpine:init', () => {
         this.permissionStatus = perm;
 
         if (perm === 'granted') {
-          const title = '🔔 ทดสอบการแจ้งเตือน MyFinance';
+          const title = '🔔 ทดสอบการแจ้งเตือน FinFlow';
           const options = {
             body: 'ระบบแจ้งเตือนบน iPhone ทำงานได้จริงสมบูรณ์แบบ! 🎉',
-            icon: '/static/icons/icon-512x512.jpg',
-            badge: '/static/icons/icon-512x512.jpg',
+            icon: '/static/icons/icon-512x512.png',
+            badge: '/static/icons/icon-512x512.png',
             vibrate: [200, 100, 200],
             tag: 'myfinance-test-notif',
             renotify: true

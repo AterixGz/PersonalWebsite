@@ -64,7 +64,7 @@ func HandleWorkspaceConnectTrello(cfg config.Config) http.HandlerFunc {
 		u := userEmail(r)
 		params := url.Values{}
 		params.Set("key", cfg.TrelloAPIKey)
-		params.Set("name", "MyFinance")
+		params.Set("name", "FinFlow")
 		params.Set("expiration", "never")
 		params.Set("scope", "read")
 		params.Set("response_type", "token")

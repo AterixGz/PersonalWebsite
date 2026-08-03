@@ -1,5 +1,5 @@
-const CACHE_NAME = 'myfinance-v4';
-const VERSION = "oauth6";
+const CACHE_NAME = 'finflow-v1';
+const VERSION = "oauth7";
 const ASSETS = [
   '/',
   '/static/app.css?v=' + VERSION,
@@ -90,14 +90,14 @@ self.addEventListener('fetch', event => {
 
 // iOS Web Push & Local Notification Click Handlers
 self.addEventListener('push', event => {
-  let data = { title: '🔔 การแจ้งเตือน MyFinance', body: 'ระบบแจ้งเตือนบน iPhone ทำงานได้จริงสมบูรณ์แบบ! 🎉' };
+  let data = { title: '🔔 การแจ้งเตือน FinFlow', body: 'ระบบแจ้งเตือนบน iPhone ทำงานได้จริงสมบูรณ์แบบ! 🎉' };
   if (event.data) {
     try { data = event.data.json(); } catch(e) { data.body = event.data.text(); }
   }
   const options = {
     body: data.body,
-    icon: '/static/icons/icon-512x512.jpg',
-    badge: '/static/icons/icon-512x512.jpg',
+    icon: '/static/icons/icon-512x512.png',
+    badge: '/static/icons/icon-512x512.png',
     vibrate: [200, 100, 200],
     data: data.url || '/'
   };

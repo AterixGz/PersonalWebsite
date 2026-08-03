@@ -3,16 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>MyFinance — แดชบอร์ดการเงิน</title>
+  <title>FinFlow — แดชบอร์ดการเงิน</title>
   
   <!-- iOS PWA Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="MyFinance">
+  <meta name="apple-mobile-web-app-title" content="FinFlow">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#f8fafc">
   
-  <!-- Apple Touch Icon -->
-  <link rel="apple-touch-icon" href="/static/icons/icon-512x512.jpg">
+  <!-- Apple Touch Icon + Favicon -->
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
   <link rel="manifest" href="/static/manifest.json">
   
   <!-- Minimal Fonts: Nunito (English) & IBM Plex Sans Thai (Thai) -->
@@ -44,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth6">
+  <link rel="stylesheet" href="/static/app.css?v=oauth7">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth6"></script>
+  <script src="/static/app.js?v=oauth7"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -61,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth1', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth7', { updateViaCache: 'none' });
       });
     }
 
@@ -832,7 +834,7 @@
         <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center mx-auto mb-3 shadow-lg shadow-indigo-200 text-2xl font-black tracking-tight">
           MF
         </div>
-        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">เข้าสู่ระบบ MyFinance</h2>
+        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">เข้าสู่ระบบ FinFlow</h2>
         <p class="text-xs text-slate-500 mt-1">กรอกชื่อผู้ใช้ admin เพื่อเข้าใช้งานระบบ</p>
       </div>
 
