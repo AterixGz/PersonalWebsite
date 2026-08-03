@@ -402,9 +402,9 @@
                 <i class="fa-solid fa-shield-halved"></i>
               </button>
             </template>
-            <span class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200/60" x-text="`เชื่อมต่อแล้ว ${$store.workspace.connectedCount()}/3`"></span>
-            <button @click="$store.workspace.resetAll()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs transition-colors" title="รีเซ็ตสถานะการเชื่อมต่อทั้งหมด">
-              <i class="fa-solid fa-rotate-right"></i>
+            <span x-show="$store.workspace.lastUpdated" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200/60 whitespace-nowrap">อัพเดทล่าสุด <span x-text="$store.workspace.lastUpdatedLabel()"></span></span>
+            <button @click="$store.workspace.openSettings()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm transition-colors" title="ตั้งค่าการแสดงผล">
+              <i class="fa-solid fa-gear"></i>
             </button>
           </div>
 
@@ -423,10 +423,10 @@
           </div>
         </template>
 
-        <div class="space-y-5">
+        <div class="flex flex-col gap-5">
             
             <!-- 1. Trello Section -->
-            <div class="space-y-3">
+            <div class="space-y-3" :style="'order:' + $store.workspace.orderIndex('trello')">
               <div class="flex justify-between items-center">
                 <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                   <i class="fa-brands fa-trello text-blue-600"></i> Trello งาน
@@ -434,7 +434,7 @@
                 <template x-if="$store.workspace.trelloConnected">
                   <div class="flex items-center gap-2">
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">เชื่อมต่อแล้ว</span>
-                    <button @click="$store.workspace.disconnectService('trello')" class="text-xs text-slate-400 hover:text-red-500" title="ยกเลิกการเชื่อมต่อ">
+                    <button @click="$store.workspace.requestDisconnect('trello')" class="text-xs text-slate-400 hover:text-red-500" title="ยกเลิกการเชื่อมต่อ">
                       <i class="fa-solid fa-link-slash"></i>
                     </button>
                   </div>
@@ -494,7 +494,7 @@
             </div>
 
             <!-- 2. Google Calendar Section -->
-            <div class="space-y-3">
+            <div class="space-y-3" :style="'order:' + $store.workspace.orderIndex('calendar')">
               <div class="flex justify-between items-center">
                 <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                   <i class="fa-regular fa-calendar-check text-indigo-600"></i> Google Calendar
@@ -502,7 +502,7 @@
                 <template x-if="$store.workspace.calendarConnected">
                   <div class="flex items-center gap-2">
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">เชื่อมต่อแล้ว</span>
-                    <button @click="$store.workspace.disconnectService('calendar')" class="text-xs text-slate-400 hover:text-red-500" title="ยกเลิกการเชื่อมต่อ">
+                    <button @click="$store.workspace.requestDisconnect('calendar')" class="text-xs text-slate-400 hover:text-red-500" title="ยกเลิกการเชื่อมต่อ">
                       <i class="fa-solid fa-link-slash"></i>
                     </button>
                   </div>
@@ -555,7 +555,7 @@
             </div>
 
             <!-- 3. Gmail Section -->
-            <div class="space-y-3">
+            <div class="space-y-3" :style="'order:' + $store.workspace.orderIndex('gmail')">
               <div class="flex justify-between items-center">
                 <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                   <i class="fa-regular fa-envelope text-red-500"></i> Gmail อีเมลสำคัญ
@@ -563,7 +563,7 @@
                 <template x-if="$store.workspace.gmailConnected">
                   <div class="flex items-center gap-2">
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">เชื่อมต่อแล้ว</span>
-                    <button @click="$store.workspace.disconnectService('gmail')" class="text-xs text-slate-400 hover:text-red-500" title="ยกเลิกการเชื่อมต่อ">
+                    <button @click="$store.workspace.requestDisconnect('gmail')" class="text-xs text-slate-400 hover:text-red-500" title="ยกเลิกการเชื่อมต่อ">
                       <i class="fa-solid fa-link-slash"></i>
                     </button>
                   </div>
@@ -622,7 +622,7 @@
 
       <!-- TAB 3: AI Token Usage -->
       <div x-show="$store.ui.activeTab === 'chat'" x-cloak
-           class="h-full flex flex-col relative space-y-4 pb-24"
+           class="space-y-4 pb-24"
            x-transition:enter="transition ease-out duration-100"
            x-transition:enter-start="opacity-0"
            x-transition:enter-end="opacity-100">
@@ -969,6 +969,69 @@
         </button>
         <button @click="$store.workspace.closeConnectModal()" class="w-full py-2.5 rounded-xl bg-slate-100 text-slate-600 font-semibold text-xs hover:bg-slate-200 active:scale-95 transition-all">
           ยกเลิก
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workspace Settings Modal (order) -->
+  <div x-show="$store.workspace.settingsOpen" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" x-cloak>
+    <div x-show="$store.workspace.settingsOpen" x-transition:enter="ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="$store.workspace.closeSettings()"></div>
+
+    <div x-show="$store.workspace.settingsOpen" x-transition:enter="ease-out duration-150" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100" x-transition:leave="ease-in duration-100" class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl relative z-10 space-y-4">
+      
+      <div class="text-center">
+        <h3 class="text-lg font-bold text-slate-900">ตั้งค่าการแสดงผล</h3>
+        <p class="text-xs text-slate-500 mt-1">เลือกตำแหน่งการแสดงของแต่ละแอป (บนสุด = เห็นก่อน)</p>
+      </div>
+
+      <div class="space-y-2">
+        <template x-for="(provider, idx) in $store.workspace.order" :key="provider">
+          <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-bold text-slate-400 w-4" x-text="idx + 1"></span>
+              <i :class="provider === 'trello' ? 'fa-brands fa-trello text-blue-600' : provider === 'calendar' ? 'fa-regular fa-calendar-check text-indigo-600' : 'fa-regular fa-envelope text-red-500'"></i>
+              <span class="text-sm font-semibold text-slate-800" x-text="provider === 'trello' ? 'Trello' : provider === 'calendar' ? 'Google Calendar' : 'Gmail'"></span>
+            </div>
+            <div class="flex items-center gap-1">
+              <button @click="$store.workspace.moveUp(provider)" :disabled="idx === 0" class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-500 flex items-center justify-center disabled:opacity-30 hover:bg-indigo-50 active:scale-90 transition-all">
+                <i class="fa-solid fa-chevron-up text-xs"></i>
+              </button>
+              <button @click="$store.workspace.moveDown(provider)" :disabled="idx === $store.workspace.order.length - 1" class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-500 flex items-center justify-center disabled:opacity-30 hover:bg-indigo-50 active:scale-90 transition-all">
+                <i class="fa-solid fa-chevron-down text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <button @click="$store.workspace.closeSettings()" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-200 active:scale-95 transition-all">
+        เสร็จสิ้น
+      </button>
+    </div>
+  </div>
+
+  <!-- Disconnect Confirm Modal -->
+  <div x-show="$store.workspace.disconnectConfirm" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" x-cloak>
+    <div x-show="$store.workspace.disconnectConfirm" x-transition:enter="ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="$store.workspace.cancelDisconnect()"></div>
+
+    <div x-show="$store.workspace.disconnectConfirm" x-transition:enter="ease-out duration-150" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100" x-transition:leave="ease-in duration-100" class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl relative z-10 text-center space-y-4">
+      
+      <div class="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center text-3xl bg-red-50 text-red-500 shadow-inner">
+        <i class="fa-solid fa-link-slash"></i>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-bold text-slate-900">ยกเลิกการเชื่อมต่อ?</h3>
+        <p class="text-xs text-slate-500 mt-1">คุณต้องการยกเลิกการเชื่อมต่อ <span class="font-bold text-slate-700" x-text="$store.workspace.disconnectConfirm === 'trello' ? 'Trello' : $store.workspace.disconnectConfirm === 'calendar' ? 'Google Calendar' : 'Gmail'"></span> หรือไม่? ข้อมูลจะหยุดอัพเดททันที</p>
+      </div>
+
+      <div class="space-y-2 pt-2">
+        <button @click="$store.workspace.confirmDisconnect()" class="w-full py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-xs shadow-md shadow-red-200 active:scale-95 transition-all">
+          ยืนยันยกเลิกการเชื่อมต่อ
+        </button>
+        <button @click="$store.workspace.cancelDisconnect()" class="w-full py-2.5 rounded-xl bg-slate-100 text-slate-600 font-semibold text-xs hover:bg-slate-200 active:scale-95 transition-all">
+          กลับไป
         </button>
       </div>
     </div>

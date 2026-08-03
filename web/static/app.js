@@ -755,7 +755,15 @@ document.addEventListener('alpine:init', () => {
     trelloConnected: localStorage.getItem('ws_trello') === 'true',
     calendarConnected: localStorage.getItem('ws_calendar') === 'true',
     gmailConnected: localStorage.getItem('ws_gmail') === 'true',
-    
+    lastUpdated: null,
+
+    // display order (settings)
+    order: (() => { try { const o = JSON.parse(localStorage.getItem('ws_order')); return Array.isArray(o) && o.length === 3 ? o : ['trello', 'calendar', 'gmail']; } catch (e) { return ['trello', 'calendar', 'gmail']; } })(),
+    settingsOpen: false,
+
+    // disconnect confirmation
+    disconnectConfirm: null,
+
     connecting: { trello: false, calendar: false, gmail: false },
     connectModalOpen: false,
     selectedService: null,
@@ -834,6 +842,41 @@ document.addEventListener('alpine:init', () => {
       return count;
     },
 
+    lastUpdatedLabel() {
+      if (!this.lastUpdated) return '';
+      const d = new Date(this.lastUpdated);
+      const pad = n => String(n).padStart(2, '0');
+      return `${pad(d.getHours())}:${pad(d.getMinutes())} น.`;
+    },
+
+    orderIndex(provider) { return this.order.indexOf(provider); },
+
+    moveUp(provider) {
+      const i = this.order.indexOf(provider);
+      if (i <= 0) return;
+      [this.order[i - 1], this.order[i]] = [this.order[i], this.order[i - 1]];
+      localStorage.setItem('ws_order', JSON.stringify(this.order));
+    },
+
+    moveDown(provider) {
+      const i = this.order.indexOf(provider);
+      if (i < 0 || i >= this.order.length - 1) return;
+      [this.order[i + 1], this.order[i]] = [this.order[i], this.order[i + 1]];
+      localStorage.setItem('ws_order', JSON.stringify(this.order));
+    },
+
+    openSettings() { this.settingsOpen = true; },
+    closeSettings() { this.settingsOpen = false; },
+
+    requestDisconnect(service) { this.disconnectConfirm = service; },
+    cancelDisconnect() { this.disconnectConfirm = null; },
+
+    async confirmDisconnect() {
+      const service = this.disconnectConfirm;
+      this.disconnectConfirm = null;
+      if (service) await this.disconnectService(service);
+    },
+
     openConnectModal(service) {
       this.selectedService = service;
       this.connectModalOpen = true;
@@ -883,6 +926,7 @@ document.addEventListener('alpine:init', () => {
         this.gmail = [];
         localStorage.setItem('ws_gmail', 'false');
       }
+      this.lastUpdated = Date.now();
     },
 
     resetAll() {
@@ -907,7 +951,7 @@ document.addEventListener('alpine:init', () => {
       this.loadingTrello = true;
       try {
         const res = await fetch('/api/workspace/trello');
-        if (res.ok) this.trello = await res.json();
+        if (res.ok) { this.trello = await res.json(); this.lastUpdated = Date.now(); }
       } catch (err) {
         console.error('Failed to load trello', err);
       } finally {
@@ -919,7 +963,7 @@ document.addEventListener('alpine:init', () => {
       this.loadingCalendar = true;
       try {
         const res = await fetch('/api/workspace/calendar');
-        if (res.ok) this.calendar = await res.json();
+        if (res.ok) { this.calendar = await res.json(); this.lastUpdated = Date.now(); }
       } catch (err) {
         console.error('Failed to load calendar', err);
       } finally {
@@ -931,7 +975,7 @@ document.addEventListener('alpine:init', () => {
       this.loadingGmail = true;
       try {
         const res = await fetch('/api/workspace/gmail');
-        if (res.ok) this.gmail = await res.json();
+        if (res.ok) { this.gmail = await res.json(); this.lastUpdated = Date.now(); }
       } catch (err) {
         console.error('Failed to load gmail', err);
       } finally {
