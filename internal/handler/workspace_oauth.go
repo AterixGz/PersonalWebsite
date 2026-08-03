@@ -160,6 +160,7 @@ func HandleTrelloToken(st *store.Store) http.HandlerFunc {
 			ExpiresAt:   time.Now().Add(365 * 24 * time.Hour).Unix(),
 		}
 		st.UpsertOAuthToken(tok)
+		InvalidateWorkspaceCache(req.User)
 		writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 	}
 }
@@ -173,6 +174,7 @@ func HandleWorkspaceDisconnect(st *store.Store) http.HandlerFunc {
 			provider = "google"
 		}
 		st.DeleteOAuthToken(provider, u)
+		InvalidateWorkspaceCache(u)
 		writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 	}
 }

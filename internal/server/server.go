@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/AterixGz/PersonalWebsite/internal/config"
 	"github.com/AterixGz/PersonalWebsite/internal/handler"
@@ -71,9 +72,9 @@ func (s *Server) SetupRoutes() http.Handler {
 	mux.HandleFunc("GET /api/workspace/connect/google", handler.HandleWorkspaceConnectGoogle(s.config))
 	mux.HandleFunc("GET /api/workspace/oauth2/google/callback", handler.HandleGoogleOAuthCallback(s.store, s.config))
 	mux.HandleFunc("POST /api/workspace/trello/token", handler.HandleTrelloToken(s.store))
-	mux.HandleFunc("GET /api/workspace/trello", handler.HandleTrelloData(s.store, s.config))
-	mux.HandleFunc("GET /api/workspace/calendar", handler.HandleCalendarData(s.store, s.config))
-	mux.HandleFunc("GET /api/workspace/gmail", handler.HandleGmailData(s.store, s.config))
+	mux.HandleFunc("GET /api/workspace/trello", handler.Cache(30*time.Second, handler.HandleTrelloData(s.store, s.config)))
+	mux.HandleFunc("GET /api/workspace/calendar", handler.Cache(30*time.Second, handler.HandleCalendarData(s.store, s.config)))
+	mux.HandleFunc("GET /api/workspace/gmail", handler.Cache(30*time.Second, handler.HandleGmailData(s.store, s.config)))
 	mux.HandleFunc("DELETE /api/workspace/{provider}", handler.HandleWorkspaceDisconnect(s.store))
 
 	// Cloudflare Turnstile verification
