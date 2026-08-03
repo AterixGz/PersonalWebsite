@@ -734,7 +734,20 @@ document.addEventListener('alpine:init', () => {
     draggedIndex: null,
     hoverIndex: null,
     incomes: [],
-    newIncome: { name: '', amount: 0, category: 'active' },
+    newIncome: { name: '', amount: 0, category: 'active', sub_category: '' },
+    incomeExpanded: true,
+    passiveSubCategories: [
+      { value: 'dividend', label: 'หุ้นปันผล', emoji: '💰' },
+      { value: 'reit', label: 'REIT/กองทุนอสังหา', emoji: '🏢' },
+      { value: 'rent', label: 'ค่าเช่า', emoji: '🏠' },
+      { value: 'interest', label: 'ดอกเบี้ย/พันธบัตร', emoji: '🏦' },
+      { value: 'affiliate', label: 'Affiliate', emoji: '🤝' },
+      { value: 'youtube', label: 'YouTube/คอนเทนต์', emoji: '🎬' },
+      { value: 'online', label: 'ขายของออนไลน์', emoji: '🛒' },
+      { value: 'crypto', label: 'คริปโต', emoji: '🪙' },
+      { value: 'royalty', label: 'ค่าลิขสิทธิ์', emoji: '📚' },
+      { value: 'other', label: 'อื่นๆ', emoji: '📦' }
+    ],
     
     init() {
       this.editConfig = { ...this.config };
@@ -751,15 +764,57 @@ document.addEventListener('alpine:init', () => {
     },
 
     totalIncome() {
-      return this.incomes.reduce((sum, inc) => sum + inc.amount, 0);
+      return this.activeIncomeTotal() + this.passiveIncomeTotal();
     },
 
-    incomeEmoji(category) {
-      return category === 'passive' ? '📈' : '💼';
+    activeIncomeTotal() {
+      const sum = this.incomes.filter(i => i.category === 'active').reduce((s, inc) => s + inc.amount, 0);
+      return sum > 0 ? sum : (this.config.active_income || 0);
     },
 
-    incomeCategoryLabel(category) {
-      return category === 'passive' ? 'รายได้อัตโนมัติ (Passive)' : 'รายได้ประจำ (Active)';
+    passiveIncomeTotal() {
+      const sum = this.incomes.filter(i => i.category === 'passive').reduce((s, inc) => s + inc.amount, 0);
+      return sum > 0 ? sum : (this.config.passive_income || 0);
+    },
+
+    passiveSubLabel(value) {
+      const t = this.passiveSubCategories.find(t => t.value === value);
+      return t ? t.label : 'อื่นๆ';
+    },
+
+    passiveSubEmoji(value) {
+      const t = this.passiveSubCategories.find(t => t.value === value);
+      return t ? t.emoji : '📦';
+    },
+
+    // Group passive income by business type → [{key,label,emoji,total}]
+    passiveBreakdown() {
+      const map = {};
+      this.incomes.filter(i => i.category === 'passive').forEach(inc => {
+        const key = inc.sub_category || 'other';
+        if (!map[key]) map[key] = 0;
+        map[key] += inc.amount;
+      });
+      return Object.entries(map).map(([key, total]) => ({
+        key,
+        label: this.passiveSubLabel(key),
+        emoji: this.passiveSubEmoji(key),
+        total
+      })).sort((a, b) => b.total - a.total);
+    },
+
+    incomeEmoji(income) {
+      if (income.category === 'passive') return this.passiveSubEmoji(income.sub_category);
+      return '💼';
+    },
+
+    incomeCategoryLabel(income) {
+      if (income.category === 'passive') return '📈 ' + this.passiveSubLabel(income.sub_category);
+      return '💼 รายได้ประจำ (Active)';
+    },
+
+    toggleIncome() {
+      this.incomeExpanded = !this.incomeExpanded;
     },
 
     async addIncome() {
@@ -780,7 +835,7 @@ document.addEventListener('alpine:init', () => {
         console.error('Failed to add income', err);
         this.incomes.push({ ...this.newIncome, id: Date.now() });
       }
-      this.newIncome = { name: '', amount: 0, category: 'active' };
+      this.newIncome = { name: '', amount: 0, category: 'active', sub_category: '' };
       Alpine.store('ui').addIncomeModalOpen = false;
     },
 
@@ -886,25 +941,25 @@ document.addEventListener('alpine:init', () => {
     },
     
     formattedNetBalance() {
-      const net = (this.config.active_income + this.config.passive_income) - this.totalExpenses();
+      const net = (this.activeIncomeTotal() + this.passiveIncomeTotal()) - this.totalExpenses();
       return this.formatMoney(net);
     },
     
     activeIncomePercent() {
-      const total = this.config.active_income + this.config.passive_income;
+      const total = this.activeIncomeTotal() + this.passiveIncomeTotal();
       if (total === 0) return 0;
-      return (this.config.active_income / total) * 100;
+      return (this.activeIncomeTotal() / total) * 100;
     },
     
     passiveIncomePercent() {
-      const total = this.config.active_income + this.config.passive_income;
+      const total = this.activeIncomeTotal() + this.passiveIncomeTotal();
       if (total === 0) return 0;
-      return (this.config.passive_income / total) * 100;
+      return (this.passiveIncomeTotal() / total) * 100;
     },
     
     freedomPercent() {
       if (this.config.passive_goal === 0) return 0;
-      const p = (this.config.passive_income / this.config.passive_goal) * 100;
+      const p = (this.passiveIncomeTotal() / this.config.passive_goal) * 100;
       return p > 100 ? 100 : Math.round(p);
     },
     

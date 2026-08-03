@@ -46,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth8">
+  <link rel="stylesheet" href="/static/app.css?v=oauth9">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth8"></script>
+  <script src="/static/app.js?v=oauth9"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth8', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth9', { updateViaCache: 'none' });
       });
     }
 
@@ -181,7 +181,7 @@
             <button @click="$store.ui.configModalOpen = true; $store.ui.closeSidebar()" 
                     class="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-medium text-sm text-slate-600 hover:bg-slate-50 transition-colors">
               <i class="fa-solid fa-gear text-lg w-5 text-center"></i>
-              <span>ตั้งค่ารายได้ & เป้าหมาย</span>
+              <span>ตั้งค่าเป้าหมายการเงิน</span>
             </button>
           </div>
         </div>
@@ -238,7 +238,7 @@
             <button @click="$store.ui.configModalOpen = true; $store.finance.editConfig = {...$store.finance.config}" 
                     class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white shadow-sm border border-slate-200/80 text-xs font-bold text-slate-700 hover:text-indigo-600 active:scale-95 transition-all">
               <i class="fa-solid fa-gear text-indigo-600"></i>
-              <span>ตั้งค่ารายได้</span>
+              <span>ตั้งค่าเป้าหมาย</span>
             </button>
           </div>
 
@@ -257,14 +257,16 @@
         <div class="space-y-4 bg-white rounded-3xl p-5 border border-slate-100 shadow-sm relative">
           <div class="flex justify-between items-center pb-1">
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">💰 สรุปรายได้ประจำเดือน</h3>
-            <button @click="$store.ui.configModalOpen = true; $store.finance.editConfig = {...$store.finance.config}" class="text-xs font-semibold text-indigo-600 hover:underline flex items-center gap-1">
-              <i class="fa-solid fa-pen-to-square"></i> แก้ไขรายได้
+            <button @click="$store.finance.toggleIncome()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 active:scale-90 transition-transform">
+              <i class="fa-solid" :class="$store.finance.incomeExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
             </button>
           </div>
+
+          <div x-show="$store.finance.incomeExpanded" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="space-y-4">
           <div>
             <div class="flex justify-between text-sm font-medium mb-2">
               <span class="text-slate-600">รายได้ประจำ (Active)</span>
-              <span class="text-slate-900 font-bold" x-text="$store.finance.formatMoney($store.finance.config.active_income)"></span>
+              <span class="text-slate-900 font-bold" x-text="$store.finance.formatMoney($store.finance.activeIncomeTotal())"></span>
             </div>
             <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
               <div class="bg-indigo-500 h-3 rounded-full transition-all duration-700 ease-out" :style="`width: ${$store.finance.activeIncomePercent()}%`"></div>
@@ -273,12 +275,27 @@
           <div>
             <div class="flex justify-between text-sm font-medium mb-2">
               <span class="text-slate-600">รายได้อัตโนมัติ (Passive)</span>
-              <span class="text-slate-900 font-bold" x-text="$store.finance.formatMoney($store.finance.config.passive_income)"></span>
+              <span class="text-slate-900 font-bold" x-text="$store.finance.formatMoney($store.finance.passiveIncomeTotal())"></span>
             </div>
             <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
               <div class="bg-emerald-500 h-3 rounded-full transition-all duration-700 ease-out" :style="`width: ${$store.finance.passiveIncomePercent()}%`"></div>
             </div>
           </div>
+
+          <!-- Passive Income Breakdown by Business Type -->
+          <template x-if="$store.finance.passiveBreakdown().length > 0">
+            <div class="pt-2 border-t border-slate-100">
+              <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">🏢 ประเภท Passive Income</h4>
+              <div class="space-y-1.5">
+                <template x-for="item in $store.finance.passiveBreakdown()" :key="item.key">
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-slate-600" x-text="item.emoji + ' ' + item.label"></span>
+                    <span class="font-bold text-emerald-600" x-text="$store.finance.formatMoney(item.total)"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
 
           <!-- Income Entries List -->
           <div class="pt-3 border-t border-slate-100">
@@ -291,10 +308,10 @@
             </template>
             <template x-for="income in $store.finance.incomes" :key="income.id">
               <div class="flex items-center gap-2.5 py-2 border-b border-slate-50 last:border-0">
-                <div class="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center text-lg shrink-0" x-text="$store.finance.incomeEmoji(income.category)"></div>
+                <div class="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center text-lg shrink-0" x-text="$store.finance.incomeEmoji(income)"></div>
                 <div class="flex-1 min-w-0">
                   <h4 class="text-sm font-bold text-slate-900 truncate" x-text="income.name"></h4>
-                  <p class="text-[11px] text-slate-400" x-text="$store.finance.incomeCategoryLabel(income.category)"></p>
+                  <p class="text-[11px] text-slate-400" x-text="$store.finance.incomeCategoryLabel(income)"></p>
                 </div>
                 <span class="text-sm font-bold text-emerald-600 shrink-0" x-text="'+' + $store.finance.formatMoney(income.amount)"></span>
                 <button @click="$store.finance.deleteIncome(income.id)" class="w-8 h-8 rounded-full bg-red-50 text-red-400 flex items-center justify-center active:scale-90 transition-transform shrink-0">
@@ -305,6 +322,7 @@
             <button @click="$store.ui.addIncomeModalOpen = true" class="w-full mt-2 py-3 rounded-2xl border-2 border-dashed border-slate-200 text-slate-500 font-medium hover:border-emerald-300 hover:text-emerald-600 active:bg-slate-50 transition-colors flex items-center justify-center gap-2 text-sm">
               <i class="fa-solid fa-plus"></i> เพิ่มรายได้
             </button>
+          </div>
           </div>
         </div>
 
@@ -319,7 +337,7 @@
             <div class="bg-white h-2.5 rounded-full transition-all duration-700 ease-out" :style="`width: ${$store.finance.freedomPercent()}%`"></div>
           </div>
           <div class="flex justify-between text-xs text-indigo-200 font-medium relative z-10">
-            <span x-text="$store.finance.formatMoney($store.finance.config.passive_income)"></span>
+            <span x-text="$store.finance.formatMoney($store.finance.passiveIncomeTotal())"></span>
             <span x-text="$store.finance.formatMoney($store.finance.config.passive_goal)"></span>
           </div>
         </div>
@@ -762,23 +780,12 @@
       <div class="p-6">
         <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
         <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-          <span>💰</span> ตั้งค่ารายได้ & เป้าหมายการเงิน
+          <span>🎯</span> ตั้งค่าเป้าหมายการเงิน
         </h3>
         
         <form @submit.prevent="$store.finance.updateConfig()" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">รายได้ประจำ (Active Income)</label>
-            <div class="relative">
-              <input type="number" x-model.number="$store.finance.editConfig.active_income" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors" required>
-              <span class="absolute right-4 top-3.5 text-xs font-bold text-slate-400">บาท</span>
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">รายได้อัตโนมัติ (Passive Income)</label>
-            <div class="relative">
-              <input type="number" x-model.number="$store.finance.editConfig.passive_income" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors" required>
-              <span class="absolute right-4 top-3.5 text-xs font-bold text-slate-400">บาท</span>
-            </div>
+          <div class="text-sm text-slate-500 bg-slate-50 rounded-xl px-4 py-3">
+            💡 รายได้ (Active/Passive) เพิ่มได้ที่การ์ดสรุปรายได้ — กด "＋ เพิ่มรายได้"
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">เป้าหมายอิสรภาพทางการเงิน (Passive Goal)</label>
@@ -789,7 +796,7 @@
           </div>
           
           <button type="submit" class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold shadow-md shadow-indigo-200 active:scale-95 transition-transform mt-2">
-            บันทึกการตั้งค่ารายได้
+            บันทึกเป้าหมาย
           </button>
         </form>
 
@@ -866,6 +873,15 @@
             <select x-model="$store.finance.newIncome.category" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-colors appearance-none">
               <option value="active">💼 รายได้ประจำ (Active)</option>
               <option value="passive">📈 รายได้อัตโนมัติ (Passive)</option>
+            </select>
+          </div>
+          <div x-show="$store.finance.newIncome.category === 'passive'">
+            <label class="block text-sm font-medium text-slate-700 mb-1">ประเภทธุรกิจ Passive</label>
+            <select x-model="$store.finance.newIncome.sub_category" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-colors appearance-none">
+              <option value="">-- เลือกประเภทธุรกิจ --</option>
+              <template x-for="t in $store.finance.passiveSubCategories" :key="t.value">
+                <option :value="t.value" x-text="t.emoji + ' ' + t.label"></option>
+              </template>
             </select>
           </div>
           

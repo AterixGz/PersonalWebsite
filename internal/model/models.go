@@ -43,18 +43,20 @@ type ExpenseRequest struct {
 }
 
 type Income struct {
-	ID        int     `json:"id"`
-	Name      string  `json:"name"`
-	Amount    float64 `json:"amount"`
-	Category  string  `json:"category"` // "active" | "passive"
-	CreatedAt string  `json:"created_at"`
-	SortOrder int     `json:"sort_order"`
+	ID          int     `json:"id"`
+	Name        string  `json:"name"`
+	Amount      float64 `json:"amount"`
+	Category    string  `json:"category"` // "active" | "passive"
+	SubCategory string  `json:"sub_category"`
+	CreatedAt   string  `json:"created_at"`
+	SortOrder   int     `json:"sort_order"`
 }
 
 type IncomeRequest struct {
-	Name     string  `json:"name"`
-	Amount   float64 `json:"amount"`
-	Category string  `json:"category"`
+	Name        string  `json:"name"`
+	Amount      float64 `json:"amount"`
+	Category    string  `json:"category"`
+	SubCategory string  `json:"sub_category"`
 }
 
 type ToggleRequest struct {

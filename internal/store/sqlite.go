@@ -55,6 +55,7 @@ func runMigrations(db *sql.DB) error {
 			name TEXT,
 			amount REAL,
 			category TEXT,
+			sub_category TEXT DEFAULT '',
 			created_at TEXT,
 			sort_order INTEGER DEFAULT 0
 		)`,
@@ -95,6 +96,7 @@ func runMigrations(db *sql.DB) error {
 
 	// Safe migration: Add sort_order column if upgrading existing DB
 	db.Exec("ALTER TABLE expenses ADD COLUMN sort_order INTEGER DEFAULT 0;")
+	db.Exec("ALTER TABLE incomes ADD COLUMN sub_category TEXT DEFAULT '';")
 
 	var count int
 	err := db.QueryRow("SELECT COUNT(*) FROM income_config WHERE id = 1").Scan(&count)
@@ -229,7 +231,7 @@ func (s *Store) DeleteExpense(id int) error {
 }
 
 func (s *Store) ListIncomes() ([]model.Income, error) {
-	rows, err := s.db.Query("SELECT id, name, amount, category, created_at, sort_order FROM incomes ORDER BY sort_order ASC, id ASC")
+	rows, err := s.db.Query("SELECT id, name, amount, category, sub_category, created_at, sort_order FROM incomes ORDER BY sort_order ASC, id ASC")
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +240,7 @@ func (s *Store) ListIncomes() ([]model.Income, error) {
 	var incomes []model.Income
 	for rows.Next() {
 		var inc model.Income
-		if err := rows.Scan(&inc.ID, &inc.Name, &inc.Amount, &inc.Category, &inc.CreatedAt, &inc.SortOrder); err != nil {
+		if err := rows.Scan(&inc.ID, &inc.Name, &inc.Amount, &inc.Category, &inc.SubCategory, &inc.CreatedAt, &inc.SortOrder); err != nil {
 			return nil, err
 		}
 		incomes = append(incomes, inc)
@@ -252,8 +254,8 @@ func (s *Store) CreateIncome(req model.IncomeRequest) (model.Income, error) {
 	_ = s.db.QueryRow("SELECT COALESCE(MAX(sort_order), 0) FROM incomes").Scan(&maxOrder)
 	newOrder := maxOrder + 1
 
-	res, err := s.db.Exec("INSERT INTO incomes (name, amount, category, created_at, sort_order) VALUES (?, ?, ?, ?, ?)",
-		req.Name, req.Amount, req.Category, now, newOrder)
+	res, err := s.db.Exec("INSERT INTO incomes (name, amount, category, sub_category, created_at, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+		req.Name, req.Amount, req.Category, req.SubCategory, now, newOrder)
 	if err != nil {
 		return model.Income{}, err
 	}
@@ -262,12 +264,13 @@ func (s *Store) CreateIncome(req model.IncomeRequest) (model.Income, error) {
 		return model.Income{}, err
 	}
 	return model.Income{
-		ID:        int(id),
-		Name:      req.Name,
-		Amount:    req.Amount,
-		Category:  req.Category,
-		CreatedAt: now,
-		SortOrder: newOrder,
+		ID:          int(id),
+		Name:        req.Name,
+		Amount:      req.Amount,
+		Category:    req.Category,
+		SubCategory: req.SubCategory,
+		CreatedAt:   now,
+		SortOrder:   newOrder,
 	}, nil
 }
 
