@@ -428,7 +428,11 @@ func HandleCalendarData(st *store.Store, cfg config.Config) http.HandlerFunc {
 
 		out := []map[string]any{}
 		for _, e := range events {
-			out = append(out, map[string]any{"id": e.id, "name": e.name, "time": e.label})
+			days := int(e.sortKey.Sub(now).Hours() / 24)
+			if days < 0 {
+				days = 0
+			}
+			out = append(out, map[string]any{"id": e.id, "name": e.name, "time": e.label, "days": days})
 		}
 		writeJSON(w, http.StatusOK, out)
 	}

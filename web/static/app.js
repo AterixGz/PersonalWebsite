@@ -159,38 +159,140 @@ document.addEventListener('alpine:init', () => {
       });
     },
 
-    items: [
-      {
-        id: 1,
-        title: '🤖 Minimax M3 & Deepseek V4',
-        message: 'ครบรอบบิลค่าบริการ AI API ในอีก 13 วัน ($4.20)',
-        detailMessage: 'ยอดชำระประมาณการสำหรับ Minimax M3 ($3.75) และ Deepseek V4 Flash ($0.45) รวมทั้งหมด $4.20 (ประมาณ ฿147.00) โดยระบบจะทำการตัดรอบในวันที่ 15 และ 28 ของเดือนตามลำดับ',
-        time: '10 นาทีที่แล้ว',
-        unread: true,
-        type: 'ai',
-        targetTab: 'chat'
-      },
-      {
-        id: 2,
-        title: '💰 สรุปการเงินประจำเดือน',
-        message: 'รายได้สุทธิประจำเดือนนี้คำนวณเรียบร้อยแล้ว',
-        detailMessage: 'รายได้รวม (Active + Passive) ประจำเดือนนี้ได้รับการสรุปยอดเรียบร้อยแล้ว พร้อมคำนวณหักค่าใช้จ่ายประจำเดือน และอัปเดตความคืบหน้าเป้าหมาย Passive Income 100,000 บาท',
-        time: '2 ชั่วโมงที่แล้ว',
-        unread: true,
-        type: 'finance',
-        targetTab: 'finance'
-      },
-      {
-        id: 3,
-        title: '🛡️ ระบบความปลอดภัย',
-        message: 'เข้าสู่ระบบด้วย Admin และยืนยัน Turnstile สำเร็จ',
-        detailMessage: 'การยืนยันตัวตนแอดมิน (Admin Session) ผ่านการตรวจสอบ Cloudflare Turnstile Anti-Bot Security และยืนยันรหัสผ่านเรียบร้อย ปลอดภัย 100%',
-        time: 'เมื่อวานนี้',
-        unread: false,
-        type: 'security',
-        targetTab: ''
+    // Build notification items from workspace data (Trello / Calendar / Gmail)
+    refreshFromWorkspace() {
+      const ws = Alpine.store('workspace');
+      if (!ws) return;
+      const seen = new Set(this.items.map(i => i.id));
+      const built = [];
+
+      // Trello: overdue or near due
+      (ws.trello || []).forEach(t => {
+        if (t.level === 'overdue' || t.level === 'soon') {
+          const id = 'trello-' + t.id;
+          if (!seen.has(id)) {
+            built.push({
+              id,
+              title: '📋 Trello: ' + t.name,
+              message: t.status + (t.board ? ' · ' + t.board : ''),
+              detailMessage: 'การ์ด Trello "' + t.name + '" ' + t.status + (t.board ? ' (บอร์ด ' + t.board + ')' : '') + ' — กดเพื่อไปยังหน้างาน',
+              time: t.status,
+              unread: true,
+              type: 'trello',
+              targetTab: 'workspace'
+            });
+          }
+        }
+      });
+
+      // Calendar: today / upcoming (days <= 1)
+      (ws.calendar || []).forEach(ev => {
+        if (typeof ev.days === 'number' && ev.days <= 1) {
+          const id = 'cal-' + ev.id;
+          if (!seen.has(id)) {
+            built.push({
+              id,
+              title: '📅 ' + ev.name,
+              message: ev.time + (ev.days === 0 ? ' (วันนี้)' : ''),
+              detailMessage: 'กิจกรรม "' + ev.name + '" ตามกำหนด ' + ev.time + (ev.days === 0 ? ' (วันนี้)' : '') + ' — กดเพื่อไปยังหน้างาน',
+              time: ev.time,
+              unread: true,
+              type: 'calendar',
+              targetTab: 'workspace'
+            });
+          }
+        }
+      });
+
+      // Gmail: new unread emails
+      (ws.gmail || []).forEach(m => {
+        const id = 'gmail-' + m.id;
+        if (!seen.has(id)) {
+          built.push({
+            id,
+            title: '✉️ ' + m.sender,
+            message: m.subject || '(ไม่มีหัวเรื่อง)',
+            detailMessage: 'จาก ' + m.sender + '\n' + (m.preview || m.subject || ''),
+            time: 'ใหม่',
+            unread: true,
+            type: 'gmail',
+            targetTab: 'workspace'
+          });
+        }
+      });
+
+      if (built.length) {
+        this.items = [...built, ...this.items];
+        // best-effort web push for new items
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          try {
+            const title = built.length === 1 ? built[0].title : 'MyFinance: มี ' + built.length + ' รายการใหม่';
+            const body = built.length === 1 ? built[0].message : 'ตรวจสอบศูนย์การแจ้งเตือน';
+            const opts = { body, icon: '/static/icons/icon-512x512.jpg', badge: '/static/icons/icon-512x512.jpg', tag: 'myfinance-new', renotify: true };
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+              navigator.serviceWorker.ready.then(reg => reg.showNotification(title, opts)).catch(() => {});
+            } else {
+              new Notification(title, opts);
+            }
+          } catch (e) { console.error('notify error', e); }
+        }
       }
-    ],
+    },
+
+    // Refresh latest notifications from workspace data (notification center button)
+    async refreshLatest() {
+      this.statusMessage = '';
+      // request push permission on first use
+      if ('Notification' in window && Notification.permission === 'default') {
+        try {
+          this.permissionStatus = await Notification.requestPermission();
+        } catch (e) { console.error(e); }
+      }
+      const ws = Alpine.store('workspace');
+      if (ws) {
+        await Promise.allSettled([ws.loadTrello(), ws.loadCalendar(), ws.loadGmail()]);
+      }
+      this.refreshFromWorkspace();
+      this.statusMessage = '✅ อัปเดตการแจ้งเตือนล่าสุดแล้ว';
+    },
+
+    typeClass(type) {
+      const map = {
+        ai: 'bg-purple-50 text-purple-600 border-purple-100',
+        finance: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+        trello: 'bg-sky-50 text-sky-600 border-sky-100',
+        calendar: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+        gmail: 'bg-red-50 text-red-500 border-red-100',
+        security: 'bg-blue-50 text-blue-600 border-blue-100'
+      };
+      return map[type] || map.security;
+    },
+
+    typeIcon(type) {
+      const map = {
+        ai: 'fa-solid fa-robot',
+        finance: 'fa-solid fa-wallet',
+        trello: 'fa-brands fa-trello',
+        calendar: 'fa-regular fa-calendar-check',
+        gmail: 'fa-regular fa-envelope',
+        security: 'fa-solid fa-shield-halved'
+      };
+      return map[type] || map.security;
+    },
+
+    typeLabel(type) {
+      const map = {
+        ai: 'AI & Token',
+        finance: 'ระบบการเงิน',
+        trello: 'Trello งาน',
+        calendar: 'Google Calendar',
+        gmail: 'Gmail',
+        security: 'ความปลอดภัย'
+      };
+      return map[type] || 'อื่นๆ';
+    },
+
+    items: [],
 
     toggleModal() {
       this.modalOpen = !this.modalOpen;
@@ -1025,6 +1127,7 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/api/workspace/trello');
         if (res.ok) { this.trello = await res.json(); this.lastUpdated = Date.now(); }
+        if (Alpine.store('notification')) Alpine.store('notification').refreshFromWorkspace();
       } catch (err) {
         console.error('Failed to load trello', err);
       } finally {
@@ -1037,6 +1140,7 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/api/workspace/calendar');
         if (res.ok) { this.calendar = await res.json(); this.lastUpdated = Date.now(); }
+        if (Alpine.store('notification')) Alpine.store('notification').refreshFromWorkspace();
       } catch (err) {
         console.error('Failed to load calendar', err);
       } finally {
@@ -1049,6 +1153,7 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/api/workspace/gmail');
         if (res.ok) { this.gmail = await res.json(); this.lastUpdated = Date.now(); }
+        if (Alpine.store('notification')) Alpine.store('notification').refreshFromWorkspace();
       } catch (err) {
         console.error('Failed to load gmail', err);
       } finally {
