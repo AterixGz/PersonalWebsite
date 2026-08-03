@@ -749,6 +749,9 @@ document.addEventListener('alpine:init', () => {
   // --- Workspace Store ---
   Alpine.store('workspace', {
     loading: false,
+    loadingTrello: false,
+    loadingCalendar: false,
+    loadingGmail: false,
     trelloConnected: localStorage.getItem('ws_trello') === 'true',
     calendarConnected: localStorage.getItem('ws_calendar') === 'true',
     gmailConnected: localStorage.getItem('ws_gmail') === 'true',
@@ -901,29 +904,38 @@ document.addEventListener('alpine:init', () => {
     },
 
     async loadTrello() {
+      this.loadingTrello = true;
       try {
         const res = await fetch('/api/workspace/trello');
         if (res.ok) this.trello = await res.json();
       } catch (err) {
         console.error('Failed to load trello', err);
+      } finally {
+        this.loadingTrello = false;
       }
     },
 
     async loadCalendar() {
+      this.loadingCalendar = true;
       try {
         const res = await fetch('/api/workspace/calendar');
         if (res.ok) this.calendar = await res.json();
       } catch (err) {
         console.error('Failed to load calendar', err);
+      } finally {
+        this.loadingCalendar = false;
       }
     },
 
     async loadGmail() {
+      this.loadingGmail = true;
       try {
         const res = await fetch('/api/workspace/gmail');
         if (res.ok) this.gmail = await res.json();
       } catch (err) {
         console.error('Failed to load gmail', err);
+      } finally {
+        this.loadingGmail = false;
       }
     }
   });

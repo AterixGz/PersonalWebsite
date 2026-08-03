@@ -44,10 +44,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth1">
+  <link rel="stylesheet" href="/static/app.css?v=oauth2">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth1"></script>
+  <script src="/static/app.js?v=oauth2"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -423,16 +423,7 @@
           </div>
         </template>
 
-        <template x-if="$store.workspace.loading">
-          <div class="space-y-4">
-            <div class="h-24 bg-slate-200 animate-pulse rounded-2xl"></div>
-            <div class="h-24 bg-slate-200 animate-pulse rounded-2xl"></div>
-            <div class="h-24 bg-slate-200 animate-pulse rounded-2xl"></div>
-          </div>
-        </template>
-
-        <template x-if="!$store.workspace.loading">
-          <div class="space-y-5">
+        <div class="space-y-5">
             
             <!-- 1. Trello Section -->
             <div class="space-y-3">
@@ -477,13 +468,31 @@
               <!-- Connected State: Show Tasks -->
               <template x-if="$store.workspace.trelloConnected">
                 <div class="space-y-2">
-                  <template x-for="task in $store.workspace.trello" :key="task.id">
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-start">
-                      <span class="font-medium text-slate-800 text-sm" x-text="task.name"></span>
-                      <span class="text-[10px] font-bold px-2.5 py-1 rounded-full" 
-                            :class="task.status === 'เสร็จแล้ว' ? 'bg-emerald-100 text-emerald-700' : task.status === 'กำลังทำ' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'"
-                            x-text="task.status"></span>
+                  <!-- Skeleton while loading -->
+                  <template x-if="$store.workspace.loadingTrello">
+                    <div class="space-y-2">
+                      <div class="h-16 bg-slate-100 animate-pulse rounded-2xl"></div>
+                      <div class="h-16 bg-slate-100 animate-pulse rounded-2xl"></div>
+                      <div class="h-16 bg-slate-100 animate-pulse rounded-2xl"></div>
                     </div>
+                  </template>
+                  <template x-if="!$store.workspace.loadingTrello">
+                    <template x-if="$store.workspace.trello.length === 0">
+                      <div class="bg-white p-4 rounded-2xl border border-dashed border-slate-200 text-center text-xs text-slate-400">ไม่มีงานใกล้กำหนด</div>
+                    </template>
+                    <template x-for="task in $store.workspace.trello" :key="task.id">
+                      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-start gap-2">
+                        <div class="min-w-0">
+                          <span class="font-medium text-slate-800 text-sm" x-text="task.name"></span>
+                          <span class="block text-[10px] text-slate-400 mt-0.5 truncate" x-show="task.board">
+                            <i class="fa-brands fa-trello text-blue-500 mr-1"></i><span x-text="task.board"></span>
+                          </span>
+                        </div>
+                        <span class="text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0" 
+                              :class="task.level === 'overdue' ? 'bg-red-100 text-red-700' : task.level === 'soon' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'"
+                              x-text="task.status"></span>
+                      </div>
+                    </template>
                   </template>
                 </div>
               </template>
@@ -532,11 +541,24 @@
               <!-- Connected State: Show Events -->
               <template x-if="$store.workspace.calendarConnected">
                 <div class="space-y-2">
-                  <template x-for="event in $store.workspace.calendar" :key="event.id">
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-l-indigo-500 flex flex-col gap-1">
-                      <span class="font-medium text-slate-800 text-sm" x-text="event.name"></span>
-                      <span class="text-xs text-slate-500" x-text="event.time"></span>
+                  <!-- Skeleton while loading -->
+                  <template x-if="$store.workspace.loadingCalendar">
+                    <div class="space-y-2">
+                      <div class="h-16 bg-slate-100 animate-pulse rounded-2xl"></div>
+                      <div class="h-16 bg-slate-100 animate-pulse rounded-2xl"></div>
+                      <div class="h-16 bg-slate-100 animate-pulse rounded-2xl"></div>
                     </div>
+                  </template>
+                  <template x-if="!$store.workspace.loadingCalendar">
+                    <template x-if="$store.workspace.calendar.length === 0">
+                      <div class="bg-white p-4 rounded-2xl border border-dashed border-slate-200 text-center text-xs text-slate-400">ไม่มีนัดหมายใน 7 วันข้างหน้า</div>
+                    </template>
+                    <template x-for="event in $store.workspace.calendar" :key="event.id">
+                      <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-l-indigo-500 flex flex-col gap-1">
+                        <span class="font-medium text-slate-800 text-sm" x-text="event.name"></span>
+                        <span class="text-xs text-slate-500" x-text="event.time"></span>
+                      </div>
+                    </template>
                   </template>
                 </div>
               </template>
@@ -585,19 +607,32 @@
               <!-- Connected State: Show Emails -->
               <template x-if="$store.workspace.gmailConnected">
                 <div class="space-y-2">
-                  <template x-for="email in $store.workspace.gmail" :key="email.id">
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-1 overflow-hidden">
-                      <span class="font-bold text-slate-900 text-sm" x-text="email.sender"></span>
-                      <span class="font-medium text-slate-700 text-sm truncate" x-text="email.subject"></span>
-                      <span class="text-xs text-slate-500 truncate" x-text="email.preview"></span>
+                  <!-- Skeleton while loading -->
+                  <template x-if="$store.workspace.loadingGmail">
+                    <div class="space-y-2">
+                      <div class="h-16 bg-slate-100 animate-pulse rounded-2xl"></div>
+                      <div class="h-16 bg-slate-100 animate-pulse rounded-2xl"></div>
+                      <div class="h-16 bg-slate-100 animate-pulse rounded-2xl"></div>
                     </div>
+                  </template>
+                  <template x-if="!$store.workspace.loadingGmail">
+                    <template x-if="$store.workspace.gmail.length === 0">
+                      <div class="bg-white p-4 rounded-2xl border border-dashed border-slate-200 text-center text-xs text-slate-400">ไม่มีอีเมลที่ยังไม่ได้อ่าน</div>
+                    </template>
+                    <template x-for="email in $store.workspace.gmail" :key="email.id">
+                      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-1 overflow-hidden">
+                        <span class="font-bold text-slate-900 text-sm" x-text="email.sender"></span>
+                        <span class="font-medium text-slate-700 text-sm truncate" x-text="email.subject"></span>
+                        <span class="text-xs text-slate-500 truncate" x-text="email.preview"></span>
+                      </div>
+                    </template>
                   </template>
                 </div>
               </template>
             </div>
 
           </div>
-        </template>
+        </div>
       </div>
 
       <!-- TAB 3: AI Token Usage -->

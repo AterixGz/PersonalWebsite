@@ -227,6 +227,8 @@ func HandleTrelloData(st *store.Store, cfg config.Config) http.HandlerFunc {
 		q.Set("token", tok.AccessToken)
 		q.Set("fields", "name,due,dueComplete,url")
 		q.Set("filter", "all")
+		q.Set("board", "true")
+		q.Set("board_fields", "name")
 		req.URL.RawQuery = q.Encode()
 
 		resp, err := http.DefaultClient.Do(req)
@@ -245,6 +247,9 @@ func HandleTrelloData(st *store.Store, cfg config.Config) http.HandlerFunc {
 			Name        string `json:"name"`
 			Due         string `json:"due"`
 			DueComplete bool   `json:"dueComplete"`
+			Board       struct {
+				Name string `json:"name"`
+			} `json:"board"`
 		}
 		json.Unmarshal(body, &cards)
 
@@ -263,12 +268,17 @@ func HandleTrelloData(st *store.Store, cfg config.Config) http.HandlerFunc {
 				continue
 			}
 			status := "อีก " + fmt.Sprint(days) + " วัน"
+			level := "normal"
 			if days < 0 {
 				status = "เกินกำหนด"
+				level = "overdue"
 			} else if days == 0 {
 				status = "ครบกำหนดวันนี้"
+				level = "soon"
+			} else if days <= 2 {
+				level = "soon"
 			}
-			out = append(out, map[string]any{"id": c.ID, "name": c.Name, "status": status})
+			out = append(out, map[string]any{"id": c.ID, "name": c.Name, "status": status, "level": level, "board": c.Board.Name})
 			if len(out) >= 10 {
 				break
 			}
@@ -295,6 +305,7 @@ func HandleCalendarData(st *store.Store, cfg config.Config) http.HandlerFunc {
 		q.Set("orderBy", "startTime")
 		q.Set("singleEvents", "true")
 		q.Set("timeMin", time.Now().Format(time.RFC3339))
+		q.Set("timeMax", time.Now().Add(7*24*time.Hour).Format(time.RFC3339))
 		req.URL.RawQuery = q.Encode()
 		req.Header.Set("Authorization", "Bearer "+token)
 
@@ -352,7 +363,7 @@ func HandleGmailData(st *store.Store, cfg config.Config) http.HandlerFunc {
 		req, _ := http.NewRequest("GET", gmailListAPI, nil)
 		q := req.URL.Query()
 		q.Set("q", "in:inbox is:unread")
-		q.Set("maxResults", "10")
+		q.Set("maxResults", "5")
 		req.URL.RawQuery = q.Encode()
 		req.Header.Set("Authorization", "Bearer "+token)
 
@@ -410,9 +421,23 @@ func HandleGmailData(st *store.Store, cfg config.Config) http.HandlerFunc {
 					subject = h.Value
 				}
 			}
-			// strip email <...> wrapper
-			if i := strings.Index(sender, "<"); i > 0 {
-				sender = strings.TrimSpace(sender[:i])
+			// parse display name + email, fallback to domain as company name
+			displayName, emailAddr := sender, ""
+			if i, j := strings.Index(sender, "<"), strings.Index(sender, ">"); i >= 0 && j > i {
+				displayName = strings.TrimSpace(sender[:i])
+				emailAddr = sender[i+1 : j]
+			} else if strings.Contains(sender, "@") {
+				emailAddr = sender
+				displayName = ""
+			}
+			sender = strings.Trim(displayName, `"' `)
+			if sender == "" && emailAddr != "" {
+				if at := strings.Index(emailAddr, "@"); at >= 0 {
+					domain := emailAddr[at+1:]
+					if domain != "" {
+						sender = domain
+					}
+				}
 			}
 			if sender == "" {
 				sender = "ไม่ทราบผู้ส่ง"
