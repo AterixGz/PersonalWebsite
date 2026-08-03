@@ -58,6 +58,9 @@ func (s *Server) SetupRoutes() http.Handler {
 	mux.HandleFunc("PUT /api/finance/expenses/{id}", handler.HandleUpdateExpense(s.store))
 	mux.HandleFunc("DELETE /api/finance/expenses/{id}", handler.HandleDeleteExpense(s.store))
 	mux.HandleFunc("PATCH /api/finance/expenses/{id}/toggle", handler.HandleToggleExpense(s.store))
+	mux.HandleFunc("GET /api/finance/incomes", handler.HandleListIncomes(s.store))
+	mux.HandleFunc("POST /api/finance/incomes", handler.HandleCreateIncome(s.store))
+	mux.HandleFunc("DELETE /api/finance/incomes/{id}", handler.HandleDeleteIncome(s.store))
 
 	mux.HandleFunc("POST /api/chat", handler.HandleChat(s.store, s.config.OpenClawURL, s.config.OpenClawModel))
 	mux.HandleFunc("GET /api/chat/history", handler.HandleChatHistory(s.store))

@@ -46,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth7">
+  <link rel="stylesheet" href="/static/app.css?v=oauth8">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth7"></script>
+  <script src="/static/app.js?v=oauth8"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth7', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth8', { updateViaCache: 'none' });
       });
     }
 
@@ -278,6 +278,33 @@
             <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
               <div class="bg-emerald-500 h-3 rounded-full transition-all duration-700 ease-out" :style="`width: ${$store.finance.passiveIncomePercent()}%`"></div>
             </div>
+          </div>
+
+          <!-- Income Entries List -->
+          <div class="pt-3 border-t border-slate-100">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">📥 รายการรายได้</h4>
+              <span class="text-sm font-bold text-emerald-600" x-text="$store.finance.formatMoney($store.finance.totalIncome())"></span>
+            </div>
+            <template x-if="$store.finance.incomes.length === 0">
+              <div class="text-center py-4 text-slate-400 text-xs">ยังไม่มีรายการรายได้</div>
+            </template>
+            <template x-for="income in $store.finance.incomes" :key="income.id">
+              <div class="flex items-center gap-2.5 py-2 border-b border-slate-50 last:border-0">
+                <div class="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center text-lg shrink-0" x-text="$store.finance.incomeEmoji(income.category)"></div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="text-sm font-bold text-slate-900 truncate" x-text="income.name"></h4>
+                  <p class="text-[11px] text-slate-400" x-text="$store.finance.incomeCategoryLabel(income.category)"></p>
+                </div>
+                <span class="text-sm font-bold text-emerald-600 shrink-0" x-text="'+' + $store.finance.formatMoney(income.amount)"></span>
+                <button @click="$store.finance.deleteIncome(income.id)" class="w-8 h-8 rounded-full bg-red-50 text-red-400 flex items-center justify-center active:scale-90 transition-transform shrink-0">
+                  <i class="fa-solid fa-trash-can text-[11px]"></i>
+                </button>
+              </div>
+            </template>
+            <button @click="$store.ui.addIncomeModalOpen = true" class="w-full mt-2 py-3 rounded-2xl border-2 border-dashed border-slate-200 text-slate-500 font-medium hover:border-emerald-300 hover:text-emerald-600 active:bg-slate-50 transition-colors flex items-center justify-center gap-2 text-sm">
+              <i class="fa-solid fa-plus"></i> เพิ่มรายได้
+            </button>
           </div>
         </div>
 
@@ -810,6 +837,40 @@
           
           <button type="submit" class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold shadow-md shadow-indigo-200 active:scale-95 transition-transform mt-2" x-text="$store.finance.editingExpenseId ? 'บันทึกการแก้ไข' : 'เพิ่มรายการ'">
             เพิ่มรายการ
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Income Modal -->
+  <div x-show="$store.ui.addIncomeModalOpen" style="display: none;" class="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">
+    <div x-show="$store.ui.addIncomeModalOpen" x-transition:enter="ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" @click="$store.ui.addIncomeModalOpen = false"></div>
+
+    <div x-show="$store.ui.addIncomeModalOpen" x-transition:enter="ease-out duration-150" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0" x-transition:leave="ease-in duration-100" x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full" class="bg-white rounded-t-3xl w-full max-w-md shadow-2xl relative z-10 safe-bottom" style="will-change: transform;">
+      <div class="p-6">
+        <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
+        <h3 class="text-xl font-bold text-slate-900 mb-6">➕ เพิ่มรายการรายได้</h3>
+        
+        <form @submit.prevent="$store.finance.addIncome()" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">ชื่อรายการ</label>
+            <input type="text" x-model="$store.finance.newIncome.name" placeholder="เช่น เงินเดือน, ค่าเช่า, ปันผล" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-colors" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">จำนวนเงิน (บาท)</label>
+            <input type="number" x-model.number="$store.finance.newIncome.amount" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-colors" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">ประเภท</label>
+            <select x-model="$store.finance.newIncome.category" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-colors appearance-none">
+              <option value="active">💼 รายได้ประจำ (Active)</option>
+              <option value="passive">📈 รายได้อัตโนมัติ (Passive)</option>
+            </select>
+          </div>
+          
+          <button type="submit" class="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-bold shadow-md shadow-emerald-200 active:scale-95 transition-transform mt-2">
+            เพิ่มรายได้
           </button>
         </form>
       </div>

@@ -498,6 +498,7 @@ document.addEventListener('alpine:init', () => {
     sidebarOpen: false,
     configModalOpen: false,
     addExpenseModalOpen: false,
+    addIncomeModalOpen: false,
     keypassSettingsOpen: false,
 
     // Swipe gesture state
@@ -732,9 +733,64 @@ document.addEventListener('alpine:init', () => {
     editingExpenseId: null,
     draggedIndex: null,
     hoverIndex: null,
+    incomes: [],
+    newIncome: { name: '', amount: 0, category: 'active' },
     
     init() {
       this.editConfig = { ...this.config };
+      this.loadIncomes();
+    },
+
+    async loadIncomes() {
+      try {
+        const res = await fetch('/api/finance/incomes');
+        if (res.ok) this.incomes = await res.json();
+      } catch (err) {
+        console.error('Failed to load incomes', err);
+      }
+    },
+
+    totalIncome() {
+      return this.incomes.reduce((sum, inc) => sum + inc.amount, 0);
+    },
+
+    incomeEmoji(category) {
+      return category === 'passive' ? '📈' : '💼';
+    },
+
+    incomeCategoryLabel(category) {
+      return category === 'passive' ? 'รายได้อัตโนมัติ (Passive)' : 'รายได้ประจำ (Active)';
+    },
+
+    async addIncome() {
+      try {
+        const payload = { ...this.newIncome };
+        const res = await fetch('/api/finance/incomes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          const added = await res.json();
+          this.incomes.push({ ...payload, id: added.id || Date.now() });
+        } else {
+          throw new Error('Failed');
+        }
+      } catch (err) {
+        console.error('Failed to add income', err);
+        this.incomes.push({ ...this.newIncome, id: Date.now() });
+      }
+      this.newIncome = { name: '', amount: 0, category: 'active' };
+      Alpine.store('ui').addIncomeModalOpen = false;
+    },
+
+    async deleteIncome(id) {
+      try {
+        await fetch(`/api/finance/incomes/${id}`, { method: 'DELETE' });
+      } catch (err) {
+        console.error(err);
+      }
+      this.incomes = this.incomes.filter(i => i.id !== id);
     },
 
     // Drag & Drop Reorder (JS-native touch with non-passive listeners)

@@ -131,6 +131,58 @@ func HandleToggleExpense(st *store.Store) http.HandlerFunc {
 	}
 }
 
+func HandleListIncomes(st *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		incomes, err := st.ListIncomes()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if incomes == nil {
+			incomes = []model.Income{}
+		}
+		writeJSON(w, http.StatusOK, incomes)
+	}
+}
+
+func HandleCreateIncome(st *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req model.IncomeRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		inc, err := st.CreateIncome(req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, http.StatusCreated, inc)
+	}
+}
+
+func HandleDeleteIncome(st *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			http.Error(w, "invalid id", http.StatusBadRequest)
+			return
+		}
+		if err := st.DeleteIncome(id); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+
+
+
+
+
+
 func HandleReorderExpenses(st *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req model.ReorderExpensesRequest

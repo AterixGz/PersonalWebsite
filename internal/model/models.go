@@ -42,6 +42,21 @@ type ExpenseRequest struct {
 	DueDay   int     `json:"due_day"`
 }
 
+type Income struct {
+	ID        int     `json:"id"`
+	Name      string  `json:"name"`
+	Amount    float64 `json:"amount"`
+	Category  string  `json:"category"` // "active" | "passive"
+	CreatedAt string  `json:"created_at"`
+	SortOrder int     `json:"sort_order"`
+}
+
+type IncomeRequest struct {
+	Name     string  `json:"name"`
+	Amount   float64 `json:"amount"`
+	Category string  `json:"category"`
+}
+
 type ToggleRequest struct {
 	Month string `json:"month"`
 }

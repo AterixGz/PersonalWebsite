@@ -50,6 +50,14 @@ func runMigrations(db *sql.DB) error {
 			created_at TEXT,
 			sort_order INTEGER DEFAULT 0
 		)`,
+		`CREATE TABLE IF NOT EXISTS incomes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT,
+			amount REAL,
+			category TEXT,
+			created_at TEXT,
+			sort_order INTEGER DEFAULT 0
+		)`,
 		`CREATE TABLE IF NOT EXISTS chat_messages (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			role TEXT,
@@ -217,6 +225,54 @@ func (s *Store) UpdateExpense(id int, req model.ExpenseRequest) error {
 
 func (s *Store) DeleteExpense(id int) error {
 	_, err := s.db.Exec("DELETE FROM expenses WHERE id=?", id)
+	return err
+}
+
+func (s *Store) ListIncomes() ([]model.Income, error) {
+	rows, err := s.db.Query("SELECT id, name, amount, category, created_at, sort_order FROM incomes ORDER BY sort_order ASC, id ASC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var incomes []model.Income
+	for rows.Next() {
+		var inc model.Income
+		if err := rows.Scan(&inc.ID, &inc.Name, &inc.Amount, &inc.Category, &inc.CreatedAt, &inc.SortOrder); err != nil {
+			return nil, err
+		}
+		incomes = append(incomes, inc)
+	}
+	return incomes, nil
+}
+
+func (s *Store) CreateIncome(req model.IncomeRequest) (model.Income, error) {
+	now := time.Now().Format(time.RFC3339)
+	var maxOrder int
+	_ = s.db.QueryRow("SELECT COALESCE(MAX(sort_order), 0) FROM incomes").Scan(&maxOrder)
+	newOrder := maxOrder + 1
+
+	res, err := s.db.Exec("INSERT INTO incomes (name, amount, category, created_at, sort_order) VALUES (?, ?, ?, ?, ?)",
+		req.Name, req.Amount, req.Category, now, newOrder)
+	if err != nil {
+		return model.Income{}, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return model.Income{}, err
+	}
+	return model.Income{
+		ID:        int(id),
+		Name:      req.Name,
+		Amount:    req.Amount,
+		Category:  req.Category,
+		CreatedAt: now,
+		SortOrder: newOrder,
+	}, nil
+}
+
+func (s *Store) DeleteIncome(id int) error {
+	_, err := s.db.Exec("DELETE FROM incomes WHERE id=?", id)
 	return err
 }
 
