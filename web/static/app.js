@@ -722,6 +722,7 @@ document.addEventListener('alpine:init', () => {
     
     editConfig: { active_income: 0, passive_income: 0, passive_goal: 0 },
     newExpense: { name: '', amount: 0, category: 'housing', due_day: 1 },
+    editingExpenseId: null,
     draggedIndex: null,
     hoverIndex: null,
     
@@ -892,6 +893,37 @@ document.addEventListener('alpine:init', () => {
         this.expenses.push({...this.newExpense, id: Date.now(), is_paid: false});
       }
       this.newExpense = { name: '', amount: 0, category: 'housing', due_day: 1 };
+      this.editingExpenseId = null;
+      Alpine.store('ui').addExpenseModalOpen = false;
+    },
+
+    // Tap icon/name → open edit modal with existing values
+    openEditExpense(expense) {
+      this.editingExpenseId = expense.id;
+      this.newExpense = { name: expense.name, amount: expense.amount, category: expense.category, due_day: expense.due_day };
+      Alpine.store('ui').addExpenseModalOpen = true;
+    },
+
+    async updateExpense() {
+      const id = this.editingExpenseId;
+      if (id == null) return;
+      try {
+        const payload = { ...this.newExpense };
+        const response = await fetch(`/api/finance/expenses/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error('Failed');
+        const idx = this.expenses.findIndex(e => e.id === id);
+        if (idx !== -1) this.expenses[idx] = { ...this.expenses[idx], ...payload };
+      } catch (err) {
+        console.error('Failed to update expense', err);
+        const idx = this.expenses.findIndex(e => e.id === id);
+        if (idx !== -1) this.expenses[idx] = { ...this.expenses[idx], ...this.newExpense };
+      }
+      this.newExpense = { name: '', amount: 0, category: 'housing', due_day: 1 };
+      this.editingExpenseId = null;
       Alpine.store('ui').addExpenseModalOpen = false;
     },
     

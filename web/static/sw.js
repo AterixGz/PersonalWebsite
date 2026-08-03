@@ -1,5 +1,5 @@
-const CACHE_NAME = 'myfinance-v3';
-const VERSION = "oauth1";
+const CACHE_NAME = 'myfinance-v4';
+const VERSION = "oauth6";
 const ASSETS = [
   '/',
   '/static/app.css?v=' + VERSION,

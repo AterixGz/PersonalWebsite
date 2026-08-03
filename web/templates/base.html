@@ -44,10 +44,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth5">
+  <link rel="stylesheet" href="/static/app.css?v=oauth6">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth5"></script>
+  <script src="/static/app.js?v=oauth6"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -328,9 +328,9 @@
                   <i class="fa-solid fa-grip-vertical text-base pointer-events-none"></i>
                 </div>
 
-                <div class="w-11 h-11 rounded-full flex items-center justify-center text-xl shrink-0 pointer-events-none" :class="expense.is_paid ? 'bg-emerald-50' : 'bg-slate-50'" x-text="$store.finance.getEmoji(expense.category)"></div>
-                <div class="min-w-0 pointer-events-none">
-                  <h4 class="font-bold text-slate-900 text-sm truncate" x-text="expense.name"></h4>
+                <div class="w-11 h-11 rounded-full flex items-center justify-center text-xl shrink-0 cursor-pointer transition-transform active:scale-90" @click="$store.finance.openEditExpense(expense)" :class="expense.is_paid ? 'bg-emerald-50' : 'bg-slate-50'" x-text="$store.finance.getEmoji(expense.category)"></div>
+                <div class="min-w-0 cursor-pointer" @click="$store.finance.openEditExpense(expense)">
+                  <h4 class="font-bold text-slate-900 text-sm truncate hover:text-indigo-600 transition-colors" x-text="expense.name"></h4>
                   <p class="text-xs text-slate-500">วันที่ <span x-text="expense.due_day"></span> • <span class="font-semibold" x-text="$store.finance.formatMoney(expense.amount)"></span></p>
                 </div>
               </div>
@@ -775,9 +775,9 @@
     <div x-show="$store.ui.addExpenseModalOpen" x-transition:enter="ease-out duration-150" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0" x-transition:leave="ease-in duration-100" x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full" class="bg-white rounded-t-3xl w-full max-w-md shadow-2xl relative z-10 safe-bottom" style="will-change: transform;">
       <div class="p-6">
         <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
-        <h3 class="text-xl font-bold text-slate-900 mb-6">➕ เพิ่มรายการรายจ่าย</h3>
+        <h3 class="text-xl font-bold text-slate-900 mb-6" x-text="$store.finance.editingExpenseId ? '✏️ แก้ไขรายการรายจ่าย' : '➕ เพิ่มรายการรายจ่าย'"></h3>
         
-        <form @submit.prevent="$store.finance.addExpense()" class="space-y-4">
+        <form @submit.prevent="$store.finance.editingExpenseId ? $store.finance.updateExpense() : $store.finance.addExpense()" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">ชื่อรายการ</label>
             <input type="text" x-model="$store.finance.newExpense.name" placeholder="เช่น ค่าเช่าบ้าน" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors" required>
@@ -806,7 +806,7 @@
             </div>
           </div>
           
-          <button type="submit" class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold shadow-md shadow-indigo-200 active:scale-95 transition-transform mt-2">
+          <button type="submit" class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold shadow-md shadow-indigo-200 active:scale-95 transition-transform mt-2" x-text="$store.finance.editingExpenseId ? 'บันทึกการแก้ไข' : 'เพิ่มรายการ'">
             เพิ่มรายการ
           </button>
         </form>
@@ -1128,7 +1128,7 @@
        x-transition:leave-end="opacity-0 translate-y-full md:translate-y-0 md:scale-95">
     
     <!-- Top Bar (Mobile-First Header) -->
-    <div class="bg-white px-4 py-3.5 border-b border-slate-200/80 shadow-xs flex items-center justify-between shrink-0 sticky top-0 z-10 safe-top">
+    <div class="bg-white px-4 py-3.5 border-b border-slate-200/80 shadow-xs flex items-center justify-between shrink-0 sticky top-0 z-10 safe-top" style="padding-top: max(env(safe-area-inset-top, 0px), 12px);">
       <div class="flex items-center gap-3">
         <button @click="$store.notification.closeModal()" 
                 class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 active:scale-90 transition-transform">
@@ -1219,7 +1219,7 @@
        x-transition:leave-end="opacity-0 translate-x-full">
     
     <!-- Top Navigation Bar -->
-    <div class="bg-white px-4 py-3.5 border-b border-slate-200/80 shadow-xs flex items-center justify-between shrink-0 sticky top-0 z-10 safe-top">
+    <div class="bg-white px-4 py-3.5 border-b border-slate-200/80 shadow-xs flex items-center justify-between shrink-0 sticky top-0 z-10 safe-top" style="padding-top: max(env(safe-area-inset-top, 0px), 12px);">
       <div class="flex items-center gap-3">
         <button @click="$store.notification.closeDetail()" 
                 class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-90 transition-all">
