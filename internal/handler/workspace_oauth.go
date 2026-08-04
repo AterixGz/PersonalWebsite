@@ -225,25 +225,33 @@ func HandleTrelloData(st *store.Store, cfg config.Config) http.HandlerFunc {
 			http.Error(w, "not connected", http.StatusUnauthorized)
 			return
 		}
-		req, _ := http.NewRequest("GET", trelloAPI, nil)
-		q := req.URL.Query()
-		q.Set("key", cfg.TrelloAPIKey)
-		q.Set("token", tok.AccessToken)
-		q.Set("fields", "name,due,dueComplete,url,idBoard")
-		q.Set("filter", "all")
-		req.URL.RawQuery = q.Encode()
+		// List boards the user belongs to (skip closed ones), then fetch cards per board
+		breq, _ := http.NewRequest("GET", "https://api.trello.com/1/members/me/boards", nil)
+		bq := breq.URL.Query()
+		bq.Set("key", cfg.TrelloAPIKey)
+		bq.Set("token", tok.AccessToken)
+		bq.Set("fields", "id,name,closed")
+		breq.URL.RawQuery = bq.Encode()
 
-		resp, err := http.DefaultClient.Do(req)
+		bresp, err := http.DefaultClient.Do(breq)
 		if err != nil {
 			http.Error(w, "trello api error", http.StatusBadGateway)
 			return
 		}
-		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-		if resp.StatusCode != 200 {
-			http.Error(w, "trello api: "+string(body), resp.StatusCode)
+		bbody, _ := io.ReadAll(bresp.Body)
+		bresp.Body.Close()
+		if bresp.StatusCode != 200 {
+			http.Error(w, "trello api: "+string(bbody), bresp.StatusCode)
 			return
 		}
+		var boards []struct {
+			ID     string `json:"id"`
+			Name   string `json:"name"`
+			Closed bool   `json:"closed"`
+		}
+		json.Unmarshal(bbody, &boards)
+
+		boardNames := map[string]string{}
 		var cards []struct {
 			ID          string `json:"id"`
 			Name        string `json:"name"`
@@ -251,34 +259,37 @@ func HandleTrelloData(st *store.Store, cfg config.Config) http.HandlerFunc {
 			DueComplete bool   `json:"dueComplete"`
 			IDBoard     string `json:"idBoard"`
 		}
-		json.Unmarshal(body, &cards)
+		for _, b := range boards {
+			if b.Closed {
+				continue
+			}
+			boardNames[b.ID] = b.Name
+			creq, _ := http.NewRequest("GET", "https://api.trello.com/1/boards/"+b.ID+"/cards", nil)
+			cq := creq.URL.Query()
+			cq.Set("key", cfg.TrelloAPIKey)
+			cq.Set("token", tok.AccessToken)
+			cq.Set("fields", "name,due,dueComplete,url,idBoard")
+			cq.Set("filter", "all")
+			creq.URL.RawQuery = cq.Encode()
 
-		// fetch board names (unique ids)
-		boardNames := map[string]string{}
-		for _, c := range cards {
-			if c.IDBoard == "" {
-				continue
-			}
-			if _, ok := boardNames[c.IDBoard]; ok {
-				continue
-			}
-			breq, _ := http.NewRequest("GET", "https://api.trello.com/1/boards/"+c.IDBoard, nil)
-			bq := breq.URL.Query()
-			bq.Set("key", cfg.TrelloAPIKey)
-			bq.Set("token", tok.AccessToken)
-			bq.Set("fields", "name")
-			breq.URL.RawQuery = bq.Encode()
-			bresp, err := http.DefaultClient.Do(breq)
+			cresp, err := http.DefaultClient.Do(creq)
 			if err != nil {
 				continue
 			}
-			var b struct {
-				Name string `json:"name"`
+			cbody, _ := io.ReadAll(cresp.Body)
+			cresp.Body.Close()
+			if cresp.StatusCode != 200 {
+				continue
 			}
-			bjson, _ := io.ReadAll(bresp.Body)
-			bresp.Body.Close()
-			if json.Unmarshal(bjson, &b) == nil {
-				boardNames[c.IDBoard] = b.Name
+			var bcards []struct {
+				ID          string `json:"id"`
+				Name        string `json:"name"`
+				Due         string `json:"due"`
+				DueComplete bool   `json:"dueComplete"`
+				IDBoard     string `json:"idBoard"`
+			}
+			if json.Unmarshal(cbody, &bcards) == nil {
+				cards = append(cards, bcards...)
 			}
 		}
 
