@@ -841,6 +841,37 @@ document.addEventListener('alpine:init', () => {
       })).sort((a, b) => b.total - a.total);
     },
 
+    passiveColors: {
+      dividend: 'bg-emerald-500',
+      reit: 'bg-sky-500',
+      rent: 'bg-violet-500',
+      interest: 'bg-amber-500',
+      affiliate: 'bg-rose-500',
+      youtube: 'bg-teal-500',
+      online: 'bg-indigo-500',
+      crypto: 'bg-orange-500',
+      royalty: 'bg-fuchsia-500',
+      other: 'bg-slate-400'
+    },
+
+    passiveColor(value) {
+      return this.passiveColors[value] || 'bg-slate-400';
+    },
+
+    // Stacked bar segments — each passive type = its own color, width ∝ its share of total income
+    passiveBarSegments() {
+      const total = this.totalIncome();
+      if (total <= 0) return [];
+      return this.passiveBreakdown().map(item => ({
+        key: item.key,
+        label: item.label,
+        emoji: item.emoji,
+        total: item.total,
+        color: this.passiveColor(item.key),
+        pct: (item.total / total) * 100
+      }));
+    },
+
     incomeEmoji(income) {
       if (income.category === 'passive') return this.passiveSubEmoji(income.sub_category);
       return '💼';

@@ -46,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth10">
+  <link rel="stylesheet" href="/static/app.css?v=oauth11">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth10"></script>
+  <script src="/static/app.js?v=oauth11"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth10', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth11', { updateViaCache: 'none' });
       });
     }
 
@@ -281,8 +281,15 @@
               <span class="text-slate-600">รายได้อัตโนมัติ (Passive)</span>
               <span class="text-slate-900 font-bold" x-text="$store.finance.formatMoney($store.finance.passiveIncomeTotal())"></span>
             </div>
-            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-              <div class="bg-emerald-500 h-3 rounded-full transition-all duration-700 ease-out" :style="`width: ${$store.finance.passiveIncomePercent()}%`"></div>
+            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden flex">
+              <template x-if="$store.finance.passiveBarSegments().length > 0">
+                <template x-for="seg in $store.finance.passiveBarSegments()" :key="seg.key">
+                  <div class="h-3 transition-all duration-700 ease-out" :class="seg.color" :style="`width: ${seg.pct}%`"></div>
+                </template>
+              </template>
+              <template x-else>
+                <div class="bg-emerald-500 h-3 rounded-full transition-all duration-700 ease-out" :style="`width: ${$store.finance.passiveIncomePercent()}%`"></div>
+              </template>
             </div>
           </div>
           </div>
@@ -297,7 +304,10 @@
               <div class="space-y-1.5">
                 <template x-for="item in $store.finance.passiveBreakdown()" :key="item.key">
                   <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-600" x-text="item.emoji + ' ' + item.label"></span>
+                    <span class="text-slate-600 flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full inline-block shrink-0" :class="$store.finance.passiveColor(item.key)"></span>
+                      <span x-text="item.emoji + ' ' + item.label"></span>
+                    </span>
                     <span class="font-bold text-emerald-600" x-text="$store.finance.formatMoney(item.total)"></span>
                   </div>
                 </template>
