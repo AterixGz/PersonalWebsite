@@ -771,6 +771,8 @@ document.addEventListener('alpine:init', () => {
     editingExpenseId: null,
     draggedIndex: null,
     hoverIndex: null,
+    incomeDraggedIndex: null,
+    incomeHoverIndex: null,
     incomes: [],
     newIncome: { name: '', amount: 0, category: 'active', sub_category: '' },
     editingIncomeId: null,
@@ -1027,6 +1029,86 @@ document.addEventListener('alpine:init', () => {
         console.error('Failed to save expense order:', err);
       }
     },
+
+    // --- Income Drag & Drop Reorder ---
+    initIncomeDragHandles() {
+      const self = this;
+      document.querySelectorAll('.income-grip-handle').forEach(handle => {
+        if (handle._incomeDragBound) return;
+        handle._incomeDragBound = true;
+        handle.addEventListener('touchmove', function(e) {
+          e.preventDefault();
+          self.onIncomeTouchMove(e);
+        }, { passive: false });
+      });
+    },
+
+    onIncomeDragStart(index) {
+      this.incomeDraggedIndex = index;
+      this.incomeHoverIndex = index;
+    },
+
+    onIncomeDragOver(index) {
+      if (this.incomeDraggedIndex !== null && this.incomeHoverIndex !== index) {
+        this.incomeHoverIndex = index;
+      }
+    },
+
+    onIncomeDragEnd() {
+      this.finalizeIncomeReorder();
+    },
+
+    onIncomeTouchStart(e, index) {
+      this.incomeDraggedIndex = index;
+      this.incomeHoverIndex = index;
+      requestAnimationFrame(() => this.initIncomeDragHandles());
+    },
+
+    onIncomeTouchMove(e) {
+      if (this.incomeDraggedIndex === null) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (!elem) return;
+      const row = elem.closest('[data-income-index]');
+      if (row) {
+        const targetIndex = parseInt(row.getAttribute('data-income-index'), 10);
+        if (!isNaN(targetIndex) && targetIndex >= 0 && targetIndex < this.incomes.length && this.incomeHoverIndex !== targetIndex) {
+          this.incomeHoverIndex = targetIndex;
+        }
+      }
+    },
+
+    onIncomeTouchEnd() {
+      this.finalizeIncomeReorder();
+    },
+
+    async finalizeIncomeReorder() {
+      if (this.incomeDraggedIndex !== null && this.incomeHoverIndex !== null && this.incomeDraggedIndex !== this.incomeHoverIndex) {
+        const item = this.incomes.splice(this.incomeDraggedIndex, 1)[0];
+        this.incomes.splice(this.incomeHoverIndex, 0, item);
+        this.incomeDraggedIndex = null;
+        this.incomeHoverIndex = null;
+        await this.saveIncomeOrder();
+        requestAnimationFrame(() => this.initIncomeDragHandles());
+      } else {
+        this.incomeDraggedIndex = null;
+        this.incomeHoverIndex = null;
+      }
+    },
+
+    async saveIncomeOrder() {
+      const ids = this.incomes.map(i => i.id);
+      try {
+        await fetch('/api/finance/incomes/reorder', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ income_ids: ids })
+        });
+      } catch (err) {
+        console.error('Failed to save income order:', err);
+      }
+    },
     
     formatMoney(amount) {
       return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount || 0);
@@ -1087,10 +1169,9 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    // ตั้งเป้าหมายอิสรภาพทางการเงินตามรายจ่ายต่อเดือน (เปิด modal ให้ยืนยัน)
+    // ตั้งเป้าหมายอิสรภาพทางการเงินตามรายจ่ายต่อเดือน (เติมค่าใน modal ให้ยืนยัน)
     quickSetGoalFromExpenses() {
-      this.editConfig = { ...this.config, passive_goal: this.totalExpenses() };
-      Alpine.store('ui').configModalOpen = true;
+      this.editConfig = { ...this.editConfig, passive_goal: this.totalExpenses() };
     },
     
     async addExpense() {

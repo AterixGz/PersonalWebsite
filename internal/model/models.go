@@ -24,6 +24,10 @@ type ReorderExpensesRequest struct {
 	ExpenseIDs []int `json:"expense_ids"`
 }
 
+type ReorderIncomesRequest struct {
+	IncomeIDs []int `json:"income_ids"`
+}
+
 type ChatMessage struct {
 	ID        int    `json:"id"`
 	Role      string `json:"role"`

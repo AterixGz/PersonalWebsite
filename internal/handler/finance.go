@@ -198,6 +198,21 @@ func HandleUpdateIncome(st *store.Store) http.HandlerFunc {
 	}
 }
 
+func HandleReorderIncomes(st *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req model.ReorderIncomesRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := st.ReorderIncomes(req.IncomeIDs); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
 
 
 

@@ -285,6 +285,28 @@ func (s *Store) UpdateIncome(id int, req model.IncomeRequest) error {
 	return err
 }
 
+func (s *Store) ReorderIncomes(incomeIDs []int) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare("UPDATE incomes SET sort_order=? WHERE id=?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for order, id := range incomeIDs {
+		if _, err := stmt.Exec(order, id); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
 func (s *Store) ToggleExpensePaid(id int, month string) error {
 	var currentPaidMonth string
 	err := s.db.QueryRow("SELECT paid_month FROM expenses WHERE id=?", id).Scan(&currentPaidMonth)
