@@ -138,6 +138,7 @@ document.addEventListener('alpine:init', () => {
     selectedItem: null,
 
     init() {
+      this.loadReadMap();
       // Swipe right on notification modal → go back (close)
       requestAnimationFrame(() => {
         const modal = document.getElementById('notification-modal');
@@ -248,12 +249,14 @@ document.addEventListener('alpine:init', () => {
           this.permissionStatus = await Notification.requestPermission();
         } catch (e) { console.error(e); }
       }
+      const before = this.items.length;
       const ws = Alpine.store('workspace');
       if (ws) {
         await Promise.allSettled([ws.loadTrello(), ws.loadCalendar(), ws.loadGmail()]);
       }
       this.refreshFromWorkspace();
-      this.statusMessage = '✅ อัปเดตการแจ้งเตือนล่าสุดแล้ว';
+      const added = this.items.length - before;
+      this.showToast(added > 0 ? '🔔 มีแจ้งเตือนใหม่ ' + added + ' รายการ' : '✅ ข้อมูลล่าสุดแล้ว');
     },
 
     typeClass(type) {
@@ -294,6 +297,40 @@ document.addEventListener('alpine:init', () => {
 
     items: [],
     readIds: [],
+    readMap: {},        // id → readAt timestamp (persisted)
+    toast: '',
+    _toastTimer: null,
+
+    // --- Read-state persistence (บันทึกว่าอ่านอันไหนไปแล้ว) ---
+    loadReadMap() {
+      try {
+        const raw = localStorage.getItem('finflow_notif_read');
+        if (raw) {
+          this.readMap = JSON.parse(raw);
+          this.readIds = Object.keys(this.readMap);
+        }
+      } catch (e) { console.error('loadReadMap', e); }
+    },
+
+    persistReadMap() {
+      try {
+        localStorage.setItem('finflow_notif_read', JSON.stringify(this.readMap));
+      } catch (e) { console.error('persistReadMap', e); }
+    },
+
+    markRead(id) {
+      if (!this.readMap[id]) {
+        this.readMap[id] = Date.now();
+        this.readIds.push(id);
+        this.persistReadMap();
+      }
+    },
+
+    showToast(msg) {
+      this.toast = msg;
+      clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => { this.toast = ''; }, 2200);
+    },
 
     toggleModal() {
       this.modalOpen = !this.modalOpen;
@@ -306,7 +343,7 @@ document.addEventListener('alpine:init', () => {
     openDetail(item) {
       this.selectedItem = item;
       item.unread = false;
-      if (!this.readIds.includes(item.id)) this.readIds.push(item.id);
+      this.markRead(item.id);
       this.items = this.items.filter(i => i.id !== item.id);
       this.detailModalOpen = true;
     },
@@ -331,12 +368,13 @@ document.addEventListener('alpine:init', () => {
     markAllAsRead() {
       this.items.forEach(item => {
         item.unread = false;
-        if (!this.readIds.includes(item.id)) this.readIds.push(item.id);
+        this.markRead(item.id);
       });
       this.items = [];
     },
 
     clearAll() {
+      this.items.forEach(item => this.markRead(item.id));
       this.items = [];
     },
 
@@ -735,7 +773,7 @@ document.addEventListener('alpine:init', () => {
     hoverIndex: null,
     incomes: [],
     newIncome: { name: '', amount: 0, category: 'active', sub_category: '' },
-    incomeExpanded: true,
+    incomeExpanded: false,
     passiveSubCategories: [
       { value: 'dividend', label: 'หุ้นปันผล', emoji: '💰' },
       { value: 'reit', label: 'REIT/กองทุนอสังหา', emoji: '🏢' },

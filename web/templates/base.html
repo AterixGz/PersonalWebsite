@@ -46,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth9">
+  <link rel="stylesheet" href="/static/app.css?v=oauth10">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth9"></script>
+  <script src="/static/app.js?v=oauth10"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth9', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth10', { updateViaCache: 'none' });
       });
     }
 
@@ -255,14 +255,18 @@
 
         <!-- Income Section -->
         <div class="space-y-4 bg-white rounded-3xl p-5 border border-slate-100 shadow-sm relative">
-          <div class="flex justify-between items-center pb-1">
+          <button @click="$store.finance.toggleIncome()" class="w-full flex justify-between items-center pb-1">
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">💰 สรุปรายได้ประจำเดือน</h3>
-            <button @click="$store.finance.toggleIncome()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 active:scale-90 transition-transform">
-              <i class="fa-solid" :class="$store.finance.incomeExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-            </button>
-          </div>
+            <span class="flex items-center gap-2">
+              <span class="text-sm font-bold text-emerald-600" x-text="$store.finance.formatMoney($store.finance.totalIncome())"></span>
+              <span class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 active:scale-90 transition-transform">
+                <i class="fa-solid" :class="$store.finance.incomeExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+              </span>
+            </span>
+          </button>
 
-          <div x-show="$store.finance.incomeExpanded" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="space-y-4">
+          <!-- Active/Passive สรุป — แสดงไว้เสมอ ไม่ย่อตาม -->
+          <div class="space-y-3">
           <div>
             <div class="flex justify-between text-sm font-medium mb-2">
               <span class="text-slate-600">รายได้ประจำ (Active)</span>
@@ -281,6 +285,10 @@
               <div class="bg-emerald-500 h-3 rounded-full transition-all duration-700 ease-out" :style="`width: ${$store.finance.passiveIncomePercent()}%`"></div>
             </div>
           </div>
+          </div>
+
+          <!-- รายละเอียด — ย่อ/ขยาย (default ย่อไว้) -->
+          <div x-show="$store.finance.incomeExpanded" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="space-y-4">
 
           <!-- Passive Income Breakdown by Business Type -->
           <template x-if="$store.finance.passiveBreakdown().length > 0">
@@ -1283,6 +1291,17 @@
         </div>
       </template>
     </div>
+
+    <!-- Toast popup (ข้อมูลล่าสุดแล้ว) -->
+    <div x-show="$store.notification.toast" style="display: none;" x-cloak
+         class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-full bg-slate-900/90 text-white text-xs font-semibold shadow-xl whitespace-nowrap pointer-events-none"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 translate-y-2 scale-95"
+         x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+         x-transition:leave="transition ease-in duration-300"
+         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+         x-transition:leave-end="opacity-0 translate-y-2 scale-95"
+         x-text="$store.notification.toast"></div>
   </div>
 
 
