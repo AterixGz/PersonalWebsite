@@ -279,6 +279,12 @@ func (s *Store) DeleteIncome(id int) error {
 	return err
 }
 
+func (s *Store) UpdateIncome(id int, req model.IncomeRequest) error {
+	_, err := s.db.Exec("UPDATE incomes SET name=?, amount=?, category=?, sub_category=? WHERE id=?",
+		req.Name, req.Amount, req.Category, req.SubCategory, id)
+	return err
+}
+
 func (s *Store) ToggleExpensePaid(id int, month string) error {
 	var currentPaidMonth string
 	err := s.db.QueryRow("SELECT paid_month FROM expenses WHERE id=?", id).Scan(&currentPaidMonth)

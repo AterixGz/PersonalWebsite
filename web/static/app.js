@@ -773,6 +773,7 @@ document.addEventListener('alpine:init', () => {
     hoverIndex: null,
     incomes: [],
     newIncome: { name: '', amount: 0, category: 'active', sub_category: '' },
+    editingIncomeId: null,
     incomeExpanded: false,
     passiveSubCategories: [
       { value: 'dividend', label: 'หุ้นปันผล', emoji: '💰' },
@@ -889,23 +890,49 @@ document.addEventListener('alpine:init', () => {
     async addIncome() {
       try {
         const payload = { ...this.newIncome };
-        const res = await fetch('/api/finance/incomes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          const added = await res.json();
-          this.incomes.push({ ...payload, id: added.id || Date.now() });
+        if (this.editingIncomeId) {
+          const res = await fetch(`/api/finance/incomes/${this.editingIncomeId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) {
+            this.incomes = this.incomes.map(i => i.id === this.editingIncomeId ? { ...i, ...payload } : i);
+          } else {
+            throw new Error('Failed');
+          }
         } else {
-          throw new Error('Failed');
+          const res = await fetch('/api/finance/incomes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) {
+            const added = await res.json();
+            this.incomes.push({ ...payload, id: added.id || Date.now() });
+          } else {
+            throw new Error('Failed');
+          }
         }
       } catch (err) {
-        console.error('Failed to add income', err);
-        this.incomes.push({ ...this.newIncome, id: Date.now() });
+        console.error('Failed to save income', err);
+        if (!this.editingIncomeId) this.incomes.push({ ...this.newIncome, id: Date.now() });
       }
       this.newIncome = { name: '', amount: 0, category: 'active', sub_category: '' };
+      this.editingIncomeId = null;
       Alpine.store('ui').addIncomeModalOpen = false;
+    },
+
+    openAddIncome() {
+      this.editingIncomeId = null;
+      this.newIncome = { name: '', amount: 0, category: 'active', sub_category: '' };
+      Alpine.store('ui').addIncomeModalOpen = true;
+    },
+
+    openEditIncome(income) {
+      this.editingIncomeId = income.id;
+      this.newIncome = { name: income.name, amount: income.amount, category: income.category, sub_category: income.sub_category || '' };
+      Alpine.store('ui').addIncomeModalOpen = true;
     },
 
     async deleteIncome(id) {
@@ -1058,6 +1085,12 @@ document.addEventListener('alpine:init', () => {
         this.config = { ...this.editConfig };
         Alpine.store('ui').configModalOpen = false;
       }
+    },
+
+    // ตั้งเป้าหมายอิสรภาพทางการเงินตามรายจ่ายต่อเดือน (เปิด modal ให้ยืนยัน)
+    quickSetGoalFromExpenses() {
+      this.editConfig = { ...this.config, passive_goal: this.totalExpenses() };
+      Alpine.store('ui').configModalOpen = true;
     },
     
     async addExpense() {
@@ -1257,6 +1290,73 @@ document.addEventListener('alpine:init', () => {
       if (i < 0 || i >= this.order.length - 1) return;
       [this.order[i + 1], this.order[i]] = [this.order[i], this.order[i + 1]];
       localStorage.setItem('ws_order', JSON.stringify(this.order));
+    },
+
+    // --- Drag & Drop reorder with grip handle ---
+    wsDraggedIndex: null,
+    wsHoverIndex: null,
+
+    initWsDragHandles() {
+      const self = this;
+      document.querySelectorAll('.ws-grip-handle').forEach(handle => {
+        if (handle._wsDragBound) return;
+        handle._wsDragBound = true;
+        handle.addEventListener('touchmove', function(e) {
+          e.preventDefault();
+          self.onWsTouchMove(e);
+        }, { passive: false });
+      });
+    },
+
+    onWsDragStart(index) {
+      this.wsDraggedIndex = index;
+      this.wsHoverIndex = index;
+    },
+
+    onWsDragOver(index) {
+      if (this.wsDraggedIndex !== null && this.wsHoverIndex !== index) {
+        this.wsHoverIndex = index;
+      }
+    },
+
+    onWsDragEnd() {
+      this.finalizeWsReorder();
+    },
+
+    onWsTouchStart(e, index) {
+      this.wsDraggedIndex = index;
+      this.wsHoverIndex = index;
+      requestAnimationFrame(() => this.initWsDragHandles());
+    },
+
+    onWsTouchMove(e) {
+      if (this.wsDraggedIndex === null) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (!elem) return;
+      const row = elem.closest('[data-ws-index]');
+      if (row) {
+        const targetIndex = parseInt(row.getAttribute('data-ws-index'), 10);
+        if (!isNaN(targetIndex) && targetIndex >= 0 && targetIndex < this.order.length && this.wsHoverIndex !== targetIndex) {
+          this.wsHoverIndex = targetIndex;
+        }
+      }
+    },
+
+    onWsTouchEnd() {
+      this.finalizeWsReorder();
+    },
+
+    finalizeWsReorder() {
+      if (this.wsDraggedIndex !== null && this.wsHoverIndex !== null && this.wsDraggedIndex !== this.wsHoverIndex) {
+        const item = this.order.splice(this.wsDraggedIndex, 1)[0];
+        this.order.splice(this.wsHoverIndex, 0, item);
+        localStorage.setItem('ws_order', JSON.stringify(this.order));
+      }
+      this.wsDraggedIndex = null;
+      this.wsHoverIndex = null;
+      requestAnimationFrame(() => this.initWsDragHandles());
     },
 
     openSettings() { this.settingsOpen = true; },
