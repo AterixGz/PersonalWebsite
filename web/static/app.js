@@ -1836,46 +1836,62 @@ document.addEventListener('alpine:init', () => {
   });
 
   // --- RunQuest MMO Store (Mockup Demo — ยังไม่เชื่อมต่อ Apple Health จริง) ---
+  // เลเวล = ระดับฝีเท้าจริง เทียบมาตรฐานนักวิ่งทั้งโลก (อ้างอิงสถิติโลกจริง)
   Alpine.store('game', {
-    character: {
-      name: 'AterixGz',
-      emoji: '🧝',
-      className: 'นักรบสายวิ่ง',
-      title: 'นักวิ่งแห่งฟินฟลาว',
-      level: 12,
-      xp: 3450,
-      xpToNext: 4000,
-    },
-    // สถิติรวม (mock — อนาคต: อ่านจาก Apple Health ผ่าน HealthKit)
+    // ฝีเท้าจริง: best pace (วินาที/กม.) — mock; อนาคต: คำนวณจาก Apple Health
+    bestPaceSec: 340, // = 5:40/กม. → สถิติ 5K ~28:20 (Lv.8)
     stats: {
       totalKm: 186.4,
       runs: 42,
-      avgPace: '6:12',
       calories: 12480,
     },
+    // มาตรฐาน 20 ระดับ อ้างอิงสถิติโลกจริง (fast = ขอบเร็ว, slow = ขอบช้า; วินาที/กม.)
+    levels: [
+      { lv: 1,  title: '🌱 มือใหม่หัดวิ่ง',        fast: 540, slow: 9999, ref: 'วิ่งต่อเนื่อง 2–3 km',            note: 'เพิ่งเข้าวงการ' },
+      { lv: 2,  title: '🐣 ผู้เริ่มต้น',            fast: 510, slow: 540,  ref: '5K ใน ~45 นาที',                 note: '' },
+      { lv: 3,  title: '🌿 นักวิ่งเพื่อสุขภาพ',     fast: 480, slow: 510,  ref: '5K ใน ~42 นาที',                 note: '' },
+      { lv: 4,  title: '🍃 นักวิ่งสายฟิต',          fast: 450, slow: 480,  ref: '5K ใน ~40 นาที',                 note: '' },
+      { lv: 5,  title: '⚡ ฟิตเนสรันเนอร์',         fast: 420, slow: 450,  ref: '5K ใน ~37 นาที / 10K เริ่มได้',  note: '' },
+      { lv: 6,  title: '💪 นักวิ่งกลาง',            fast: 390, slow: 420,  ref: '5K ใน ~35 นาที / 10K ได้',       note: '' },
+      { lv: 7,  title: '🏃 นักวิ่งมาตรฐาน',         fast: 360, slow: 390,  ref: '5K ใน ~32 นาที',                 note: '' },
+      { lv: 8,  title: '🏃‍♂️ ผ่านมาตรฐาน 5K 30 นาที', fast: 336, slow: 360, ref: '5K ≤ 30:00 (pace 6:00)',       note: 'ซ้อมจริงจัง 3–6 เดือน' },
+      { lv: 9,  title: '🔥 นักแข่งสมัครเล่น',       fast: 312, slow: 336,  ref: '5K ~28:00 / 10K ~58 นาที',       note: 'top ~15%' },
+      { lv: 10, title: '🎯 นักวิ่งแข่ง',            fast: 300, slow: 312,  ref: '5K ≤ 25:00 / 10K ~52 นาที',      note: 'top ~10%' },
+      { lv: 11, title: '🏅 แข่งระดับจังหวัด',       fast: 276, slow: 300,  ref: '5K ~23:00 / 10K ~48 นาที',      note: '' },
+      { lv: 12, title: '🇹🇭 แข่งระดับประเทศ',      fast: 252, slow: 276,  ref: '5K ~21:00 / 10K ~44 นาที / ฮาล์ฟ ~1:35', note: 'top ~2%' },
+      { lv: 13, title: '⚔️ ตัวแทนทีม',             fast: 240, slow: 252,  ref: '5K ≤ 20:00 / 10K ~41 นาที',     note: 'top 1%' },
+      { lv: 14, title: '🚀 นักวิ่งอาชีพสายใหม่',    fast: 222, slow: 240,  ref: '10K ~38 นาที / ฮาล์ฟ ~1:25',    note: '' },
+      { lv: 15, title: '🏆 นักกีฬาอาชีพ',          fast: 204, slow: 222,  ref: '10K ~35 นาที / ฮาล์ฟ ~1:18',    note: 'ระดับทีมชาติ' },
+      { lv: 16, title: '🎖️ ระดับทีมชาติ',          fast: 186, slow: 204,  ref: '5K ~16:00 / 10K ~33 นาที',     note: '' },
+      { lv: 17, title: '🌍 ระดับนานาชาติ',          fast: 174, slow: 186,  ref: '5K ~14:30 / 10K ~30 นาที',     note: 'ระดับ Asian Games' },
+      { lv: 18, title: '🌟 ระดับโลก',               fast: 162, slow: 174,  ref: '5K ~13:45 / 10K ~28 นาที',     note: 'ระดับ Olympic' },
+      { lv: 19, title: '👑 ตำนาน',                 fast: 154, slow: 162,  ref: '5K ~13:00',                     note: 'ใกล้สถิติโลก' },
+      { lv: 20, title: '💎 ผู้ทำลายสถิติโลก',       fast: 0,   slow: 154,  ref: '5K < 12:49',                    note: 'WR จริง: 12:49 (Aregawi)' },
+    ],
     quests: [
-      { icon: 'fa-route', name: 'วิ่งสะสม 5 km', pct: 64, xp: 200 },
-      { icon: 'fa-bolt', name: 'ทำ Pace เฉลี่ย < 6:00 นาที/กม. (3 ครั้ง)', pct: 67, xp: 150 },
-      { icon: 'fa-sun', name: 'วิ่งช่วงเช้า 06:00–09:00', pct: 0, xp: 100 },
-      { icon: 'fa-calendar-week', name: 'วิ่งครบ 3 ครั้ง/สัปดาห์', pct: 67, xp: 300 },
-      { icon: 'fa-flag-checkered', name: 'วิ่งสะสม 20 km/สัปดาห์', pct: 92, xp: 500 },
+      { icon: 'fa-route', name: 'วิ่งสะสม 5 km', pct: 64, coin: 50 },
+      { icon: 'fa-bolt', name: 'ทำ Pace เฉลี่ย < 6:00 นาที/กม. (3 ครั้ง)', pct: 67, coin: 100 },
+      { icon: 'fa-sun', name: 'วิ่งช่วงเช้า 06:00–09:00', pct: 0, coin: 80 },
+      { icon: 'fa-calendar-week', name: 'วิ่งครบ 3 ครั้ง/สัปดาห์', pct: 67, coin: 150 },
+      { icon: 'fa-flag-checkered', name: 'วิ่งสะสม 20 km/สัปดาห์', pct: 92, coin: 200 },
     ],
     zones: [
       { emoji: '🌲', name: 'ป่าต้นกล้า', minLevel: 1 },
       { emoji: '🏘️', name: 'หมู่บ้านฟินฟลาว', minLevel: 3 },
-      { emoji: '⛰️', name: 'เขามังกรลม', minLevel: 6 },
-      { emoji: '🏜️', name: 'ทะเลทรายทมิฬ', minLevel: 10 },
-      { emoji: '❄️', name: 'ยอดเขาน้ำแข็ง', minLevel: 15 },
-      { emoji: '🌋', name: 'หลุมอัคคี', minLevel: 20 },
-      { emoji: '🏰', name: 'ปราสาทราชา', minLevel: 25 },
-      { emoji: '🌌', name: 'ดินแดนเทพ', minLevel: 30 },
+      { emoji: '⛰️', name: 'เขามังกรลม', minLevel: 5 },
+      { emoji: '🏜️', name: 'ทะเลทรายทมิฬ', minLevel: 8 },
+      { emoji: '🌊', name: 'ชายฝั่งสายลม', minLevel: 10 },
+      { emoji: '❄️', name: 'ยอดเขาน้ำแข็ง', minLevel: 12 },
+      { emoji: '🌋', name: 'หลุมอัคคี', minLevel: 15 },
+      { emoji: '🏰', name: 'ปราสาทราชา', minLevel: 18 },
+      { emoji: '🌌', name: 'ดินแดนเทพ', minLevel: 20 },
     ],
     leaderboard: [
-      { rank: 1, name: 'RunnerNoi', km: 32.4, level: 18, medal: '🥇' },
-      { rank: 2, name: 'AterixGz (คุณ)', km: 24.6, level: 12, medal: '🥈', me: true },
-      { rank: 3, name: 'Benz_slow', km: 21.1, level: 11, medal: '🥉' },
-      { rank: 4, name: 'Ploy วิ่งเช้า', km: 19.8, level: 12, medal: '4' },
-      { rank: 5, name: 'DriftBike', km: 15.2, level: 9, medal: '5' },
+      { rank: 1, name: 'RunnerNoi', km: 32.4, level: 10, medal: '🥇' },
+      { rank: 2, name: 'AterixGz (คุณ)', km: 24.6, level: 8, medal: '🥈', me: true },
+      { rank: 3, name: 'Benz_slow', km: 21.1, level: 7, medal: '🥉' },
+      { rank: 4, name: 'Ploy วิ่งเช้า', km: 19.8, level: 8, medal: '4' },
+      { rank: 5, name: 'DriftBike', km: 15.2, level: 6, medal: '5' },
     ],
     recentRuns: [
       { date: 'วันนี้ 19:02 น.', km: 5.2, pace: '6:05', dur: '32 นาที' },
@@ -1885,37 +1901,51 @@ document.addEventListener('alpine:init', () => {
     ],
     syncing: false,
     lastSync: '—',
+    standardsOpen: false,
     toast: '',
     _toastTimer: null,
 
-    xpPct() {
-      return Math.min(100, Math.round((this.character.xp / this.character.xpToNext) * 100));
+    currentLevel() {
+      return this.levels.find(l => this.bestPaceSec <= l.slow && this.bestPaceSec > l.fast) || this.levels[this.levels.length - 1];
+    },
+    progressPct() {
+      const lv = this.currentLevel();
+      if (lv.lv >= 20) return 99;
+      const span = lv.slow - lv.fast; // จากขอบช้าของเลเวลนี้ ถึงขอบเร็ว (เกณฑ์เลเวลถัดไป)
+      return Math.min(99, Math.max(2, Math.round(((lv.slow - this.bestPaceSec) / span) * 100)));
+    },
+    fmtPace(sec) {
+      const m = Math.floor(sec / 60), s = sec % 60;
+      return m + ':' + String(s).padStart(2, '0');
+    },
+    paceLabel(l) {
+      if (l.lv === 1) return 'pace > 9:00';
+      if (l.lv === 20) return 'pace < 2:34';
+      return 'pace ' + this.fmtPace(l.fast) + '–' + this.fmtPace(l.slow);
+    },
+    best5kLabel() {
+      return this.fmtPace(this.bestPaceSec * 5);
     },
     zoneLocked(z) {
-      return this.character.level < z.minLevel;
+      return this.currentLevel().lv < z.minLevel;
     },
     syncNow() {
       if (this.syncing) return;
       this.syncing = true;
       setTimeout(() => {
+        const oldLevel = this.currentLevel().lv;
+        const oldPace = this.bestPaceSec;
         const km = Math.round((Math.random() * 3 + 1.5) * 10) / 10;
-        const xp = Math.round(km * 50);
+        const improve = Math.floor(Math.random() * 4) + 1; // ฝีเท้าดีขึ้น 1–4 วิ/กม. ต่อการวิ่ง
+        this.bestPaceSec = Math.max(300, this.bestPaceSec - improve);
         this.stats.totalKm = Math.round((this.stats.totalKm + km) * 10) / 10;
         this.stats.runs += 1;
-        this.recentRuns.unshift({
-          date: 'ตอนนี้ (ซิงก์สด)',
-          km: km,
-          pace: '—',
-          dur: 'รอ Apple Health',
-        });
-        this.character.xp += xp;
-        let msg = `✅ ซิงก์จาก Apple Health แล้ว +${km} km (+${xp} XP)`;
-        if (this.character.xp >= this.character.xpToNext) {
-          this.character.xp -= this.character.xpToNext;
-          this.character.level += 1;
-          this.character.xpToNext = Math.round(this.character.xpToNext * 1.15);
-          msg += ` 🎉 เลเวลอัป! Lv.${this.character.level}`;
-        }
+        this.recentRuns.unshift({ date: 'ตอนนี้ (ซิงก์สด)', km: km, pace: this.fmtPace(this.bestPaceSec), dur: 'รอ Apple Health' });
+        const newLevel = this.currentLevel().lv;
+        const delta = oldPace - this.bestPaceSec;
+        let msg = `✅ ซิงก์แล้ว +${km} km`;
+        if (delta > 0) msg += ` • ฝีเท้าดีขึ้น ${this.fmtPace(oldPace)} → ${this.fmtPace(this.bestPaceSec)}/กม.`;
+        if (newLevel > oldLevel) msg += ` 🎉 เลเวลอัป! Lv.${newLevel} ${this.levels[newLevel - 1].title}`;
         this.lastSync = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
         this.syncing = false;
         this.showToast(msg);
@@ -1924,7 +1954,7 @@ document.addEventListener('alpine:init', () => {
     showToast(msg) {
       this.toast = msg;
       clearTimeout(this._toastTimer);
-      this._toastTimer = setTimeout(() => { this.toast = ''; }, 3200);
+      this._toastTimer = setTimeout(() => { this.toast = ''; }, 3500);
     },
   });
 });
