@@ -1837,13 +1837,22 @@ document.addEventListener('alpine:init', () => {
 
   // --- RunQuest MMO Store (Mockup Demo — ยังไม่เชื่อมต่อ Apple Health จริง) ---
   // เลเวล = ระดับฝีเท้าจริง เทียบมาตรฐานนักวิ่งทั้งโลก (อ้างอิงสถิติโลกจริง)
+  // 4 คลาส: สปรินเตอร์ / นักวิ่งกลาง / นักวิ่งไกล / อัลตร้า + Overall
   Alpine.store('game', {
-    // ฝีเท้าจริง: best pace (วินาที/กม.) — mock; อนาคต: คำนวณจาก Apple Health
-    bestPaceSec: 340, // = 5:40/กม. → สถิติ 5K ~28:20 (Lv.8)
+    // ฝีเท้าจริงต่อคลาส (วินาที/กม., mock — อนาคต: คำนวณจาก Apple Health)
+    paces: { sprint: 235, mid: 340, long: 390 }, // 3:55 / 5:40 / 6:30
+    longestKm: 21.1, // ระยะไกลสุดที่เคยวิ่ง (ฮาล์ฟ)
     stats: {
       totalKm: 186.4,
       runs: 42,
       calories: 12480,
+    },
+    classOrder: ['sprint', 'mid', 'long', 'ultra'],
+    classMeta: {
+      sprint: { icon: 'fa-bolt', name: 'สปรินเตอร์', desc: 'ระยะสั้น 400m–1K' },
+      mid: { icon: 'fa-person-running', name: 'นักวิ่งกลาง', desc: 'มาตรฐาน 5K–10K' },
+      long: { icon: 'fa-water', name: 'นักวิ่งไกล', desc: 'ฮาล์ฟ–มาราธอน' },
+      ultra: { icon: 'fa-mountain', name: 'อัลตร้า', desc: 'ระยะไกลสุด + ปริมาณสะสม' },
     },
     // มาตรฐาน 20 ระดับ อ้างอิงสถิติโลกจริง (fast = ขอบเร็ว, slow = ขอบช้า; วินาที/กม.)
     levels: [
@@ -1868,6 +1877,8 @@ document.addEventListener('alpine:init', () => {
       { lv: 19, title: '👑 ตำนาน',                 fast: 154, slow: 162,  ref: '5K ~13:00',                     note: 'ใกล้สถิติโลก' },
       { lv: 20, title: '💎 ผู้ทำลายสถิติโลก',       fast: 0,   slow: 154,  ref: '5K < 12:49',                    note: 'WR จริง: 12:49 (Aregawi)' },
     ],
+    // อัลตร้า: เกณฑ์จากระยะไกลสุด (กม.) — 20 ระดับ
+    distThresholds: [2, 3, 4, 5, 6, 8, 10, 12, 15, 18, 21.1, 25, 30, 35, 42.2, 50, 60, 80, 100],
     quests: [
       { icon: 'fa-route', name: 'วิ่งสะสม 5 km', pct: 64, coin: 50 },
       { icon: 'fa-bolt', name: 'ทำ Pace เฉลี่ย < 6:00 นาที/กม. (3 ครั้ง)', pct: 67, coin: 100 },
@@ -1905,15 +1916,6 @@ document.addEventListener('alpine:init', () => {
     toast: '',
     _toastTimer: null,
 
-    currentLevel() {
-      return this.levels.find(l => this.bestPaceSec <= l.slow && this.bestPaceSec > l.fast) || this.levels[this.levels.length - 1];
-    },
-    progressPct() {
-      const lv = this.currentLevel();
-      if (lv.lv >= 20) return 99;
-      const span = lv.slow - lv.fast; // จากขอบช้าของเลเวลนี้ ถึงขอบเร็ว (เกณฑ์เลเวลถัดไป)
-      return Math.min(99, Math.max(2, Math.round(((lv.slow - this.bestPaceSec) / span) * 100)));
-    },
     fmtPace(sec) {
       const m = Math.floor(sec / 60), s = sec % 60;
       return m + ':' + String(s).padStart(2, '0');
@@ -1924,28 +1926,71 @@ document.addEventListener('alpine:init', () => {
       return 'pace ' + this.fmtPace(l.fast) + '–' + this.fmtPace(l.slow);
     },
     best5kLabel() {
-      return this.fmtPace(this.bestPaceSec * 5);
+      return this.fmtPace(this.paces.mid * 5);
+    },
+    levelFromPace(sec) {
+      return this.levels.find(l => sec <= l.slow && sec > l.fast) || this.levels[19];
+    },
+    // เลเวลรายคลาส: sprint/mid/long วัดจาก pace, ultra วัดจากระยะไกลสุด
+    classLevel(key) {
+      if (key === 'ultra') {
+        const th = this.distThresholds;
+        const below = th.filter(t => this.longestKm >= t);
+        const level = Math.min(20, below.length + 1);
+        const prevT = below.length ? below[below.length - 1] : 0;
+        const nextT = below.length < th.length ? th[below.length] : th[th.length - 1] + 20;
+        const pct = Math.min(99, Math.max(2, Math.round(((this.longestKm - prevT) / (nextT - prevT)) * 100)));
+        return { level: level, pct: pct, metric: this.longestKm + ' km (ไกลสุด)' };
+      }
+      const sec = this.paces[key];
+      const lvObj = this.levelFromPace(sec);
+      const span = lvObj.slow - lvObj.fast;
+      const pct = Math.min(99, Math.max(2, Math.round(((lvObj.slow - sec) / span) * 100)));
+      return { level: lvObj.lv, pct: pct, metric: this.fmtPace(sec) + '/กม.' };
+    },
+    // Overall = ค่าเฉลี่ยเลเวลทั้ง 4 คลาส
+    overall() {
+      const cs = this.classOrder.map(k => this.classLevel(k));
+      const level = Math.round(cs.reduce((s, c) => s + c.level, 0) / cs.length);
+      const pct = Math.round(cs.reduce((s, c) => s + c.pct, 0) / cs.length);
+      return { level: level, lvObj: this.levels[Math.min(level, 20) - 1], pct: Math.max(2, Math.min(99, pct)) };
     },
     zoneLocked(z) {
-      return this.currentLevel().lv < z.minLevel;
+      return this.overall().level < z.minLevel;
     },
     syncNow() {
       if (this.syncing) return;
       this.syncing = true;
       setTimeout(() => {
-        const oldLevel = this.currentLevel().lv;
-        const oldPace = this.bestPaceSec;
-        const km = Math.round((Math.random() * 3 + 1.5) * 10) / 10;
-        const improve = Math.floor(Math.random() * 4) + 1; // ฝีเท้าดีขึ้น 1–4 วิ/กม. ต่อการวิ่ง
-        this.bestPaceSec = Math.max(300, this.bestPaceSec - improve);
+        const types = ['sprint', 'mid', 'long', 'ultra'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        const km = Math.round(({ sprint: 0.3 + Math.random() * 0.3, mid: 3 + Math.random() * 4, long: 10 + Math.random() * 11, ultra: 25 + Math.random() * 17 }[type]) * 10) / 10;
+        const before = {
+          sprint: this.classLevel('sprint').level,
+          mid: this.classLevel('mid').level,
+          long: this.classLevel('long').level,
+          ultra: this.classLevel('ultra').level,
+          overall: this.overall().level,
+        };
+        if (type === 'ultra') {
+          this.longestKm = Math.round(Math.max(this.longestKm, km) * 10) / 10;
+        } else {
+          const floor = { sprint: 170, mid: 300, long: 330 }[type];
+          this.paces[type] = Math.max(floor, this.paces[type] - (Math.floor(Math.random() * 3) + 1));
+        }
         this.stats.totalKm = Math.round((this.stats.totalKm + km) * 10) / 10;
         this.stats.runs += 1;
-        this.recentRuns.unshift({ date: 'ตอนนี้ (ซิงก์สด)', km: km, pace: this.fmtPace(this.bestPaceSec), dur: 'รอ Apple Health' });
-        const newLevel = this.currentLevel().lv;
-        const delta = oldPace - this.bestPaceSec;
-        let msg = `✅ ซิงก์แล้ว +${km} km`;
-        if (delta > 0) msg += ` • ฝีเท้าดีขึ้น ${this.fmtPace(oldPace)} → ${this.fmtPace(this.bestPaceSec)}/กม.`;
-        if (newLevel > oldLevel) msg += ` 🎉 เลเวลอัป! Lv.${newLevel} ${this.levels[newLevel - 1].title}`;
+        this.recentRuns.unshift({
+          date: 'ตอนนี้ (ซิงก์สด)',
+          km: km,
+          pace: type === 'ultra' ? 'เทรนยาว' : this.fmtPace(this.paces[type]),
+          dur: 'รอ Apple Health',
+        });
+        const ups = this.classOrder.filter(k => this.classLevel(k).level > before[k]);
+        let msg = `✅ ซิงก์ +${km} km (${this.classMeta[type].name})`;
+        if (type !== 'ultra') msg += ` • ${this.fmtPace(this.paces[type])}/กม.`;
+        if (ups.length) msg += ` 🎉 ${ups.map(k => this.classMeta[k].icon + ' ' + this.classMeta[k].name + ' Lv.' + this.classLevel(k).level).join(' · ')}`;
+        if (this.overall().level > before.overall) msg += ` 🏆 Overall Lv.${this.overall().level}`;
         this.lastSync = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
         this.syncing = false;
         this.showToast(msg);
