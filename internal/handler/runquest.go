@@ -8,11 +8,13 @@ import (
 	"github.com/AterixGz/PersonalWebsite/internal/store"
 )
 
-// HandleRunQuestSync รับข้อมูลการวิ่งจาก iOS Shortcut (Apple Health) แล้วเก็บลง DB
-// ตรวจสิทธิ์ด้วย header X-RunQuest-Key
+// HandleRunQuestSync รับข้อมูลการวิ่งจาก iOS Shortcut (Apple Health) หรือเพิ่มด้วยมือในเว็บ
+// - ถ้าส่ง header X-RunQuest-Key: ต้องตรงกับ key (ใช้จาก Shortcut)
+// - ถ้าไม่ส่ง key: อนุญาต (เพิ่มด้วยมือจากหน้าเว็บ)
 func HandleRunQuestSync(st *store.Store, apiKey string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if apiKey == "" || r.Header.Get("X-RunQuest-Key") != apiKey {
+		key := r.Header.Get("X-RunQuest-Key")
+		if key != "" && key != apiKey {
 			writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "invalid api key"})
 			return
 		}
