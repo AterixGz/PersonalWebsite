@@ -1898,8 +1898,8 @@ document.addEventListener('alpine:init', () => {
     overallTitles: ['🌱 มือใหม่', '🐣 ผู้เริ่มต้น', '🌿 นักวิ่งเพื่อสุขภาพ', '🍃 นักวิ่งสายฟิต', '⚡ ฟิตเนสรันเนอร์', '🏃 นักวิ่งมาตรฐาน', '💪 นักวิ่งกลาง', '🔥 นักแข่งสมัครเล่น', '🎯 นักวิ่งแข่ง', '🏅 แข่งระดับจังหวัด', '🥈 แข่งระดับประเทศ', '🇹🇭 ตัวแทนทีม', '⚔️ นักกีฬาอาชีพ', '🚀 อาชีพขั้นสูง', '🏆 ระดับนานาชาติ', '🌟 ระดับโลก', '👑 ตำนาน', '💎 ระดับตำนาน', '🏆 ผู้ท้าชิงสถิติโลก', '💎 ผู้ทำลายสถิติโลก'],
     standards: rqBuildStandards(),
     // โปรไฟล์: สายที่แสดงอยู่ + สีตามสาย
-    selectedClass: 'overall',
-    profileOpen: false,
+    selectedClass: localStorage.getItem('runquest_selected_class') || 'overall',
+    profileOpen: localStorage.getItem('runquest_profile_open') === '1',
     gradients: {
       overall: 'from-indigo-600 via-indigo-500 to-violet-600',
       sprint: 'from-amber-500 via-orange-500 to-rose-500',
@@ -1915,6 +1915,66 @@ document.addEventListener('alpine:init', () => {
       ultra: 'border-violet-500 bg-violet-50 text-violet-600',
     },
     chipOff: 'border-slate-100 bg-white text-slate-400',
+    // รายการแข่งที่เปิดรับสมัคร (mock อิงเลเวลปัจจุบัน) + fact จำเพาะสาย
+    classFactIdx: {},
+    races: {
+      sprint: [
+        { name: 'Bangkok Sprint Series #3', date: '27 ก.ย. 2026', dists: [{ d: '100m', req: 4 }, { d: '200m', req: 5 }, { d: '400m', req: 6 }], deadline: 'ปิด 20 ก.ย.', fee: '500 บาท', why: '400m Lv.6 ขึ้นไปลงสบาย' },
+        { name: 'Thailand Athletics Open', date: '18 ต.ค. 2026', dists: [{ d: '400m', req: 10 }], deadline: 'ปิด 5 ต.ค.', fee: '300 บาท', why: 'ระดับ Lv.10 ขึ้นไป — สายนักแข่ง' },
+      ],
+      mid: [
+        { name: 'Bangkok 10K Run 2026', date: '13 ก.ย. 2026', dists: [{ d: '5K', req: 4 }, { d: '10K', req: 8 }], deadline: 'ปิด 7 ก.ย.', fee: '550 บาท', why: '5K Lv.4+ ลงสบาย, 10K แนะนำ Lv.8+' },
+        { name: 'The One 5K Charity', date: '4 ต.ค. 2026', dists: [{ d: '5K', req: 4 }], deadline: 'ปิด 27 ก.ย.', fee: '450 บาท', why: '5K ใครก็ลงได้' },
+        { name: 'Amazing Thailand Marathon (10K)', date: '15 พ.ย. 2026', dists: [{ d: '10K', req: 8 }], deadline: 'ปิด 1 พ.ย.', fee: '700 บาท', why: '10K แนะนำ 5K Lv.8 ขึ้นไป' },
+      ],
+      long: [
+        { name: 'Bangkok Marathon 2026', date: '6 ธ.ค. 2026', dists: [{ d: 'ฮาล์ฟ', req: 7 }, { d: 'ฟูล', req: 10 }], deadline: 'ปิด 15 พ.ย.', fee: '900 บาท', why: 'ฮาล์ฟ Lv.7+, ฟูล แนะนำ Lv.10+' },
+        { name: 'Bangsaen21 Half Marathon', date: '22 พ.ย. 2026', dists: [{ d: '10.5K', req: 5 }, { d: '21.1K', req: 7 }], deadline: 'ปิด 10 พ.ย.', fee: '800 บาท', why: '21.1K Lv.7 ขึ้นไป' },
+      ],
+      ultra: [
+        { name: 'Phu Kradueng Trail 50K', date: '24 ม.ค. 2027', dists: [{ d: '50K', req: 15 }], deadline: 'ปิด 31 ธ.ค.', fee: '2,500 บาท', why: 'ต้องเคยวิ่งไกล 30K+ มาก่อน' },
+        { name: 'Chiang Mai Ultra 100K', date: '7 ก.พ. 2027', dists: [{ d: '100K', req: 18 }], deadline: 'ปิด 10 ม.ค.', fee: '3,500 บาท', why: 'ระดับอัลตร้า Lv.18 ขึ้นไป' },
+      ],
+    },
+    // Fun facts จำเพาะสาย (แสดงในตารางมาตรฐาน)
+    classFacts: {
+      sprint: [
+        'Lv.8 ของคุณ: 400m 1:20 — นักวิ่งเพื่อสุขภาพส่วนใหญ่ทำ 1:30–2:00',
+        'Usain Bolt ถ้าวิ่ง 400m ด้วย pace 100m (9.58s) = ~38 วิ — เหลือเชื่อ',
+        'สปรินต์ที่ดี = ก้าวถี่ (cadence) สูง + ออกแรงเต็มที่เฉพาะช่วงท้าย',
+        '400m คือระยะที่โหดที่สุดในกรีฑา (นักวิ่งบอกเอง)',
+        'ซ้อมสปรินต์ 2 ครั้ง/สัปดาห์ก็พอ — มากกว่านั้นเสี่ยงบาดเจ็บ',
+        'วอร์มอัพก่อนสปรินต์ต้อง 30 นาทีขึ้นไป ไม่งั้นเสี่ยงดึง',
+        'เทคนิค: วิ่งเขย่งปลายเท้าช่วง 50m แรก = ออกตัวดีขึ้น',
+      ],
+      mid: [
+        'Lv.8 ของคุณ: 5K 28:20 — ผ่านเกณฑ์ "5K 30 นาที" แล้ว',
+        '"5K 30 นาที" คือเป้าหมายยอดฮิตของมือใหม่ทั่วโลก',
+        'Kipchoge วิ่ง 5K ได้ ~13 นาที — เร็วกว่าคุณ 2 เท่า แต่เขาซ้อมวันละ 2 รอบ',
+        'pace 6:00/กม. = 10 กม./ชม. — เท่ากับจ็อกกิ้งเบาๆ',
+        'เป้าหมายแรกของทุกคน: วิ่ง 5K ให้จบโดยไม่เดิน',
+        'เจลพลังงานไม่จำเป็นสำหรับ 5K (ใช้กับ 10K+ ขึ้นไป)',
+        'หายใจแบบ 2-2 (หายใจเข้า 2 ก้าว / ออก 2 ก้าว) ช่วยจังหวะคงที่',
+      ],
+      long: [
+        'Lv.7 ของคุณ: ฮาล์ฟ 2:10 — จบใน 2 ชม. คือเป้าของ Lv.8',
+        'ฮาล์ฟ = 21.0975 km — เศษ 97.5m นี่แหละที่ฆ่านักวิ่ง 555',
+        'มาราธอน 42.195 km ตามตำนานมาจากระยะทางกรีก-มาราธอน',
+        'pace 6:00 วิ่งฮาล์ฟ = จบ 2:06 — ใกล้เป้าคุณแล้ว',
+        'ฮาล์ฟ 2 ชม. = คนทั่วไปซ้อมจริงจัง 3–4 เดือน',
+        'คาร์โบโหลด 3 วันก่อนฮาล์ฟ = วิ่งง่ายขึ้นจริง (มีงานวิจัยรองรับ)',
+        'ฮาล์ฟครั้งแรก อย่าออกตัวเร็วกว่าเป้า — 90% พังเพราะข้อนี้',
+      ],
+      ultra: [
+        'Lv.11 ของคุณ: ไกลสุด 21.1 km — เป้าต่อไป 30K (Lv.12)',
+        'อัลตร้า 50K เผา ~4,000 kcal — กินระหว่างวิ่งสำคัญกว่าความเร็ว',
+        'กฎเหล็กอัลตร้า: เดิน uphill, วิ่ง flat, ระวัง downhill',
+        '100K นักวิ่งส่วนใหญ่ใช้ 12–16 ชม. — เตรียมใจไว้นานๆ',
+        'Back-to-back long = วิ่งยาว 2 วันติด ไม่งั้นร่างกายไม่ชิน',
+        'รองเท้าอัลตร้าควรเผื่อ +1 ไซส์ (เท้าบวมตอนวิ่งไกล)',
+        'เกลือ + น้ำ = กันตะคริว ระยะ 50K+ ขาดไม่ได้',
+      ],
+    },
     // อุปกรณ์ (mock)
     gear: [
       { icon: 'fa-clock', type: 'นาฬิกา', name: 'Amazfit GTR 4', note: 'ซิงก์ Zepp → Apple Health', status: 'เชื่อมต่อ', color: 'bg-indigo-50 border-indigo-100 text-indigo-600' },
@@ -1940,7 +2000,29 @@ document.addEventListener('alpine:init', () => {
       { icon: 'fa-bolt', text: 'สถิติโลก 5K 12:49 (Aregawi) — คุณช้ากว่า 2.2 เท่า แต่ยังเร็วกว่าคนไทย 95% ที่ไม่วิ่ง 😂' },
       { icon: 'fa-bicycle', text: 'ปั่นจักรยานชิลๆ 15 กม./ชม. — คุณวิ่ง 10.6 กม./ชม. ตามทันครึ่งทาง ก่อนโดนทิ้ง 🚲' },
       { icon: 'fa-stopwatch', text: '400m 1:20 vs WR 43.03 วิ — ต่างกันแค่ 37 วิ... ยังไงก็แพ้ แต่สู้ๆ 💪' },
-      { icon: 'fa-mountain', text: 'อัลตร้า Lv.12 — เป้า 100 km ตอนนี้ทำได้ 21.1 ต้องวิ่งเพิ่มอีกเกือบ 4 เท่า 🏔️' },
+      { icon: 'fa-mountain', text: 'อัลตร้า Lv.11 — เป้า 100 km ตอนนี้ทำได้ 21.1 ต้องวิ่งเพิ่มอีกเกือบ 4 เท่า 🏔️' },
+      { icon: 'fa-trophy', text: 'Overall Lv.9 — ถ้าเป็นมวยก็ไฟต์กลางๆ แล้ว แต่ยังไม่ใช่แชมป์โลก 555' },
+      { icon: 'fa-chart-line', text: 'ซิงก์ทุกวัน ~4 km/วัน = ปีนึงได้ 1,460 km = กรุงเทพฯ-เชียงใหม่ไปกลับ! 📈' },
+      { icon: 'fa-music', text: '5K 28:20 = ฟังเพลง 6 เพลงจบพอดี (เพลงละ ~4:40) 🎵' },
+      { icon: 'fa-bowl-rice', text: 'วิ่ง 5K เผา ~300 kcal = กล้วย 2 ลูก หรือชานมไข่มุก 1/4 แก้ว 🍌' },
+      { icon: 'fa-bed', text: 'นักวิ่งนอนหลับลึกกว่าคนนั่งทั้งวัน ~30% — วิ่ง = ยานอนหลับธรรมชาติ 🛏️' },
+      { icon: 'fa-droplet', text: 'ควรดื่มน้ำ 500ml–1L ต่อการวิ่ง 1 ชม. — วันนี้ดื่มครบยัง? 💧' },
+      { icon: 'fa-shoe-prints', text: 'รองเท้าควรเปลี่ยนทุก 600–800 km — Pegasus 41 ของคุณเหลืออีก ~380 km 👟' },
+      { icon: 'fa-socks', text: 'ถุงเท้า 2 คู่สลับกันใช้ ยืดอายุได้ 2 เท่า — เรื่องจริงจากช่างกีฬา 🧦' },
+      { icon: 'fa-temperature-half', text: 'อุณหภูมิ 20–24°C = ช่วงวิ่งเร็วที่สุด — หน้าร้อนไทยลดเป้าไป 5% 🌡️' },
+      { icon: 'fa-heart', text: 'วิ่ง 6 เดือน หัวใจแข็งแรงขึ้น = ชีพจรพักลดลง ~10 ครั้ง/นาที 🫀' },
+      { icon: 'fa-brain', text: 'วิ่ง 30 นาที = ความจำดีขึ้นชั่วคราว 2 ชม. — วิ่งก่อนอ่านหนังสือเวิร์กจริง 🧠' },
+      { icon: 'fa-bone', text: 'วิ่งเพิ่มความหนาแน่นกระดูก แต่พักไม่พอ = เสี่ยง stress fracture 🦴' },
+      { icon: 'fa-khanda', text: 'ปวดเข่าทุกครั้งที่วิ่ง = เช็คฟอร์ม (ก้าวสั้น ลงเท้ากลาง) ก่อนโทษรองเท้า 🚫' },
+      { icon: 'fa-headphones', text: 'เพลง BPM 160–180 ช่วยจังหวะก้าว (cadence) ให้คงที่ 🎧' },
+      { icon: 'fa-moon', text: 'นอนไม่พอ 1 คืน = ประสิทธิภาพวิ่งลด ~10% — นอนสำคัญกว่าซ้อมเพิ่ม 🌙' },
+      { icon: 'fa-stopwatch', text: 'คนไทย 10K เร็วสุด ~30 นาที — ยังห่าง แต่สู้ๆ ไปทีละเลเวล 🥇' },
+      { icon: 'fa-save', text: 'การ์ดโปรไฟล์จำสายที่คุณเลือกไว้ได้ (localStorage) — ปิดแอปมาก็ยังอยู่ 💾' },
+      { icon: 'fa-bag-shopping', text: 'อุปกรณ์ = แต้มต่อทางจิตใจ 90% (วิทยาศาสตร์ยังไม่ยืนยัน) 🎒' },
+      { icon: 'fa-utensils', text: 'อัลตร้า 100K เผา ~8,000 kcal = ข้าว 20 จาน — กินระหว่างวิ่งเป็นสกิล 🍚' },
+      { icon: 'fa-flag-checkered', text: 'ลงแข่งจริงครั้งแรก จำไว้ว่าทุกคนที่จบคือผู้ชนะ (สถิติส่วนตัวก็สำคัญ 555) 🏁' },
+      { icon: 'fa-paw', text: 'หมาบางตัววิ่ง 5K ได้เร็วกว่าคุณ — แต่มันไม่ได้ซ้อมแบบมีวินัย 🐕' },
+      { icon: 'fa-cloud-sun', text: 'ฝนตกหนัก = โอกาส PR ลดลง 20% — แต่ก็ยังดีกว่าวิ่งตอนเที่ยงไทย 🌧️' },
     ],
     factIndex: 0,
     // แนวทางฝึกซ้อม + scale up + เตรียมตัวก่อนแข่ง ต่อคลาส
@@ -2076,7 +2158,33 @@ document.addEventListener('alpine:init', () => {
       return { level: level, title: this.overallTitles[level - 1], pct: Math.max(2, Math.min(99, Math.round(cs.reduce((s, c) => s + c.pct, 0) / cs.length))) };
     },
     // โปรไฟล์: สายที่เลือกแสดง
-    setClass(k) { this.selectedClass = k; },
+    setClass(k) { this.selectedClass = k; localStorage.setItem('runquest_selected_class', k); },
+    toggleProfile() { this.profileOpen = !this.profileOpen; localStorage.setItem('runquest_profile_open', this.profileOpen ? '1' : '0'); },
+    classFact(cls) { const facts = this.classFacts[cls]; return facts[(this.classFactIdx[cls] || 0) % facts.length]; },
+    nextClassFact(cls) { this.classFactIdx[cls] = ((this.classFactIdx[cls] || 0) + 1 + Math.floor(Math.random() * (this.classFacts[cls].length - 1))) % this.classFacts[cls].length; },
+    // สถานะการลงแข่งของแต่ละรายการ (อิงเลเวลปัจจุบัน)
+    distStatus(cls, d) {
+      const lv = this.classLevel(cls).level;
+      if (lv >= d.req) return '✅';
+      if (lv >= d.req - 2) return '⚠️';
+      return '❌';
+    },
+    raceStatus(cls, race) {
+      const req = Math.min(...race.dists.map(x => x.req));
+      const lv = this.classLevel(cls).level;
+      if (lv >= req) return { badge: '✅ ลงได้เลย', cls: 'bg-emerald-50 text-emerald-600 border-emerald-100' };
+      if (lv >= req - 2) return { badge: '⚠️ ท้าทาย', cls: 'bg-amber-50 text-amber-600 border-amber-100' };
+      return { badge: '❌ ยังไม่พร้อม', cls: 'bg-rose-50 text-rose-500 border-rose-100' };
+    },
+    classReadyRaces(cls) {
+      const ready = [];
+      for (const r of this.races[cls]) {
+        for (const d of r.dists) {
+          if (this.classLevel(cls).level >= d.req) ready.push(d.d);
+        }
+      }
+      return ready.length ? [...new Set(ready)].join(' • ') : 'ยังไม่มี — ดูรายการแข่งด้านล่าง';
+    },
     selectedName() { return this.selectedClass === 'overall' ? 'Overall (รวมทุกสาย)' : this.classMeta[this.selectedClass].name; },
     selectedTitle() { return this.selectedClass === 'overall' ? this.overall().title : this.classLevel(this.selectedClass).lvObj.title; },
     selectedLevel() { return this.selectedClass === 'overall' ? this.overall().level : this.classLevel(this.selectedClass).level; },
@@ -2154,6 +2262,7 @@ document.addEventListener('alpine:init', () => {
         if (ups.length) msg += ` 🎉 ${ups.map(k => this.classMeta[k].icon + ' ' + this.classMeta[k].name + ' Lv.' + this.classLevel(k).level).join(' · ')}`;
         if (this.overall().level > before.overall) msg += ` 🏆 Overall Lv.${this.overall().level}`;
         this.selectedClass = type; // สลับโปรไฟล์ไปสายที่เพิ่งเทรน (สีเปลี่ยนตาม)
+        localStorage.setItem('runquest_selected_class', type);
         this.lastSync = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
         this.syncing = false;
         this.showToast(msg);

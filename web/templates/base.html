@@ -46,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth18">
+  <link rel="stylesheet" href="/static/app.css?v=oauth20">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth18"></script>
+  <script src="/static/app.js?v=oauth20"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth18', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth20', { updateViaCache: 'none' });
       });
     }
 
@@ -825,7 +825,7 @@
 
         <!-- Profile (กดเพื่อขยาย) -->
         <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-          <button @click="$store.game.profileOpen = !$store.game.profileOpen" class="w-full p-4 flex items-center gap-3 active:scale-[0.99] transition-transform">
+          <button @click="$store.game.toggleProfile()" class="w-full p-4 flex items-center gap-3 active:scale-[0.99] transition-transform">
             <div class="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-xl shrink-0">🏃</div>
             <div class="flex-1 min-w-0 text-left">
               <p class="text-sm font-bold text-slate-900">โปรไฟล์นักวิ่ง</p>
@@ -886,6 +886,7 @@
                     <div class="flex-1 min-w-0 text-left">
                       <p class="text-xs font-bold text-slate-900" x-text="$store.game.classMeta[c].name"></p>
                       <p class="text-[9px] text-slate-400 truncate" x-text="$store.game.classLevel(c).metric"></p>
+                      <p class="text-[8px] font-bold text-emerald-500 truncate" x-text="'🏅 พร้อมลง: ' + $store.game.classReadyRaces(c)"></p>
                     </div>
                     <div class="w-14 shrink-0">
                       <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
@@ -896,6 +897,11 @@
                     <i class="fa-solid fa-chevron-down text-slate-400 text-[10px] transition-transform shrink-0" :class="$store.game.classOpen[c] ? 'rotate-180' : ''"></i>
                   </button>
                   <div x-show="$store.game.classOpen[c]" x-cloak class="px-2.5 pb-2.5 space-y-0.5">
+                    <div class="flex items-start gap-1.5 bg-amber-50/70 border border-amber-100 rounded-lg px-2 py-1.5 mb-1">
+                      <span class="text-[10px] shrink-0">💡</span>
+                      <p class="text-[9px] text-amber-700 leading-relaxed flex-1" x-text="$store.game.classFact(c)"></p>
+                      <button @click="$store.game.nextClassFact(c)" class="text-[9px] text-amber-600 shrink-0 active:scale-90 transition-transform" title="fact อื่น">🎲</button>
+                    </div>
                     <template x-for="(lv, li) in $store.game.standards[c].levels" :key="li">
                       <div class="flex items-center gap-2 px-2 py-1 rounded-lg"
                            :class="lv.lv === $store.game.classLevel(c).level ? 'bg-indigo-50' : 'bg-slate-50/60'">
@@ -1072,6 +1078,49 @@
           </div>
         </div>
 
+        <!-- Races -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-sm font-bold text-slate-900">🏁 รายการแข่งที่เปิดรับสมัคร</h2>
+            <span class="text-[10px] font-bold text-slate-400">อิงเลเวลปัจจุบันของคุณ</span>
+          </div>
+          <div class="space-y-2">
+            <template x-for="(c, ri) in $store.game.classOrder" :key="ri">
+              <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+                <button @click="$store.game.toggleGuide('race_' + c)" class="w-full p-3.5 flex items-center justify-between gap-2 active:scale-[0.99] transition-transform">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                      <i class="fa-solid text-sm" :class="$store.game.classMeta[c].icon"></i>
+                    </div>
+                    <div class="text-left min-w-0">
+                      <p class="text-xs font-bold text-slate-900" x-text="$store.game.classMeta[c].name"></p>
+                      <p class="text-[10px] text-slate-400 truncate" x-text="'เปิดรับสมัคร ' + $store.game.races[c].length + ' รายการ' + ' • ' + $store.game.classReadyRaces(c)"></p>
+                    </div>
+                  </div>
+                  <i class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform shrink-0" :class="$store.game.guideOpen['race_' + c] ? 'rotate-180' : ''"></i>
+                </button>
+                <div x-show="$store.game.guideOpen['race_' + c]" x-cloak class="px-3.5 pb-3.5 space-y-2">
+                  <template x-for="(r, rj) in $store.game.races[c]" :key="rj">
+                    <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                      <div class="flex items-center justify-between gap-2">
+                        <p class="text-xs font-bold text-slate-900" x-text="r.name"></p>
+                        <span class="text-[9px] font-black px-2 py-1 rounded-lg border shrink-0" :class="$store.game.raceStatus(c, r).cls" x-text="$store.game.raceStatus(c, r).badge"></span>
+                      </div>
+                      <div class="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 text-[9px] text-slate-500">
+                        <span>🗓 <span x-text="r.date"></span></span>
+                        <span>📍 <span x-text="r.dists.map(d => $store.game.distStatus(c, d) + ' ' + d.d).join(' / ')"></span></span>
+                        <span>⏰ <span x-text="r.deadline"></span></span>
+                        <span>💰 <span x-text="r.fee"></span></span>
+                      </div>
+                      <p class="text-[9px] text-slate-400 mt-1.5" x-text="'💡 ' + r.why"></p>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
         <!-- Recent runs -->
         <div class="bg-white rounded-2xl border border-slate-100 p-4">
           <div class="flex items-center justify-between mb-3">
@@ -1111,45 +1160,6 @@
           </div>
         </div>
 
-        <!-- Gear edit modal -->
-        <div x-show="$store.game.gearEditOpen" x-cloak class="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">
-          <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" @click="$store.game.gearEditOpen = false"></div>
-          <div class="bg-white rounded-t-3xl w-full max-w-md p-6 relative z-10 safe-bottom">
-            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
-            <h3 class="text-xl font-bold text-slate-900 mb-4">✏️ แก้ไขอุปกรณ์</h3>
-            <div class="space-y-3">
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">ชื่อ</label>
-                <input x-model="$store.game.gearEdit.name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">ประเภท</label>
-                <input x-model="$store.game.gearEdit.type" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">รายละเอียด</label>
-                <input x-model="$store.game.gearEdit.note" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
-              </div>
-            </div>
-            <button @click="$store.game.saveGear()" class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold shadow-md shadow-indigo-200 active:scale-95 transition-transform mt-4">
-              บันทึก
-            </button>
-          </div>
-        </div>
-
-        <!-- Gear delete confirm -->
-        <div x-show="$store.game.gearConfirmIndex !== null" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-6" role="dialog" aria-modal="true">
-          <div class="fixed inset-0 bg-slate-900/40" @click="$store.game.gearConfirmIndex = null"></div>
-          <div class="bg-white rounded-2xl p-5 w-full max-w-xs relative z-10 text-center">
-            <p class="text-sm font-bold text-slate-900">🗑️ ลบอุปกรณ์นี้?</p>
-            <p class="text-[11px] text-slate-400 mt-1">ลบแล้วกู้คืนไม่ได้ (demo)</p>
-            <div class="flex gap-2 mt-4">
-              <button @click="$store.game.gearConfirmIndex = null" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-sm font-bold active:scale-95 transition-transform">ยกเลิก</button>
-              <button @click="$store.game.confirmRemoveGear()" class="flex-1 py-2.5 rounded-xl bg-rose-500 text-white text-sm font-bold active:scale-95 transition-transform">ลบ</button>
-            </div>
-          </div>
-        </div>
-
       </div>
 
     </div>
@@ -1175,11 +1185,6 @@
           <span class="text-[11px] font-bold transition-colors" :class="$store.ui.activeTab === 'workspace' ? 'text-indigo-600' : 'text-slate-400'">งาน</span>
         </button>
 
-        <button @click="$store.ui.setTab('chat')" class="flex flex-col items-center justify-center w-full gap-1 active:scale-90 transition-transform">
-          <i class="fa-solid fa-microchip text-xl transition-colors" :class="$store.ui.activeTab === 'chat' ? 'text-indigo-600' : 'text-slate-400'"></i>
-          <span class="text-[11px] font-bold transition-colors" :class="$store.ui.activeTab === 'chat' ? 'text-indigo-600' : 'text-slate-400'">AI Token</span>
-        </button>
-
         <button @click="$store.ui.setTab('game')" class="flex flex-col items-center justify-center w-full gap-1 active:scale-90 transition-transform">
           <i class="fa-solid fa-gamepad text-xl transition-colors" :class="$store.ui.activeTab === 'game' ? 'text-indigo-600' : 'text-slate-400'"></i>
           <span class="text-[11px] font-bold transition-colors" :class="$store.ui.activeTab === 'game' ? 'text-indigo-600' : 'text-slate-400'">เกม</span>
@@ -1189,6 +1194,44 @@
     </nav>
 
   </main>
+
+  <!-- Gear modals (อยู่นอก scroll container — กัน backdrop ไม่เต็มจอ) -->
+  <div x-show="$store.game.gearEditOpen" x-cloak class="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" @click="$store.game.gearEditOpen = false"></div>
+    <div class="bg-white rounded-t-3xl w-full max-w-md p-6 relative z-10 safe-bottom">
+      <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
+      <h3 class="text-xl font-bold text-slate-900 mb-4">✏️ แก้ไขอุปกรณ์</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">ชื่อ</label>
+          <input x-model="$store.game.gearEdit.name" placeholder="เช่น Nike Pegasus 41" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">ประเภท</label>
+          <input x-model="$store.game.gearEdit.type" placeholder="เช่น รองเท้าวิ่ง" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">รายละเอียด</label>
+          <input x-model="$store.game.gearEdit.note" placeholder="เช่น ใช้งาน 420 / 800 km" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
+        </div>
+      </div>
+      <button @click="$store.game.saveGear()" class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold shadow-md shadow-indigo-200 active:scale-95 transition-transform mt-4">
+        บันทึก
+      </button>
+    </div>
+  </div>
+
+  <div x-show="$store.game.gearConfirmIndex !== null" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-6" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/40" @click="$store.game.gearConfirmIndex = null"></div>
+    <div class="bg-white rounded-2xl p-5 w-full max-w-xs relative z-10 text-center">
+      <p class="text-sm font-bold text-slate-900">🗑️ ลบอุปกรณ์นี้?</p>
+      <p class="text-[11px] text-slate-400 mt-1">ลบแล้วกู้คืนไม่ได้ (demo)</p>
+      <div class="flex gap-2 mt-4">
+        <button @click="$store.game.gearConfirmIndex = null" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-sm font-bold active:scale-95 transition-transform">ยกเลิก</button>
+        <button @click="$store.game.confirmRemoveGear()" class="flex-1 py-2.5 rounded-xl bg-rose-500 text-white text-sm font-bold active:scale-95 transition-transform">ลบ</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Modals -->
 
