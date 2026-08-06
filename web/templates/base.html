@@ -46,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth16">
+  <link rel="stylesheet" href="/static/app.css?v=oauth17">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth16"></script>
+  <script src="/static/app.js?v=oauth17"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth16', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth17', { updateViaCache: 'none' });
       });
     }
 
@@ -817,7 +817,7 @@
         <!-- Demo notice -->
         <div class="rounded-xl bg-amber-50 border border-amber-200/70 px-3.5 py-2.5 text-[11px] font-semibold text-amber-700 flex items-center gap-2">
           <i class="fa-solid fa-flask text-xs"></i>
-          <span>Mockup demo — ข้อมูลจำลอง ยังไม่เชื่อมต่อ Apple Health จริง • ลองกด "ซิงก์ตอนนี้" ฝีเท้าจะดีขึ้นจนเลเวลอัป 🎉</span>
+          <span>Mockup demo — ข้อมูลจำลอง ยังไม่เชื่อมต่อ Apple Health จริง • ลองกด "ซิงก์ตอนนี้" แล้วคลาสจะเก่งขึ้นจนเลเวลอัป 🎉</span>
         </div>
 
         <!-- Character card (Overall) -->
@@ -827,9 +827,9 @@
           <div class="flex items-center gap-3.5 relative">
             <div class="w-14 h-14 rounded-2xl bg-white/20 border border-white/25 flex items-center justify-center text-3xl shrink-0">🏃</div>
             <div class="flex-1 min-w-0">
-              <p class="text-[10px] font-bold text-indigo-100 truncate" x-text="$store.game.overall().lvObj.title"></p>
+              <p class="text-[10px] font-bold text-indigo-100 truncate" x-text="$store.game.overall().title"></p>
               <h2 class="text-lg font-extrabold leading-tight truncate">AterixGz</h2>
-              <p class="text-[10px] font-bold text-indigo-100 mt-0.5">🏆 Overall Lv.<span x-text="$store.game.overall().level"></span> • 5K <span x-text="$store.game.best5kLabel()"></span> • ไกลสุด <span x-text="$store.game.longestKm + ' km'"></span></p>
+              <p class="text-[10px] font-bold text-indigo-100 mt-0.5">🏆 Overall <span x-text="'Lv.' + $store.game.overall().level + '/10'"></span> • 5K <span x-text="$store.game.best5kLabel()"></span> • ไกลสุด <span x-text="$store.game.longestKm + ' km'"></span></p>
             </div>
             <div class="text-center shrink-0">
               <span class="inline-block px-2.5 py-1 rounded-xl bg-white/20 border border-white/25 text-xs font-black">Lv.<span x-text="$store.game.overall().level"></span></span>
@@ -837,7 +837,7 @@
           </div>
           <div class="mt-3 relative">
             <div class="flex justify-between text-[10px] font-bold text-indigo-100 mb-1">
-              <span x-text="$store.game.overall().level >= 20 ? 'ระดับสูงสุด — สถิติโลก!' : 'คืบหน้าไป Lv.' + ($store.game.overall().level + 1)"></span>
+              <span x-text="$store.game.overall().level >= 10 ? 'ระดับสูงสุด!' : 'คืบหน้าไป Lv.' + ($store.game.overall().level + 1)"></span>
               <span x-text="$store.game.overall().pct + '%'"></span>
             </div>
             <div class="h-2.5 bg-white/20 rounded-full overflow-hidden">
@@ -850,41 +850,6 @@
               <div class="rounded-lg bg-white/15 border border-white/20 py-1.5 text-center">
                 <i class="fa-solid text-[10px] text-white/90" :class="$store.game.classMeta[c].icon"></i>
                 <p class="text-[9px] font-black text-white mt-0.5" x-text="'Lv.' + $store.game.classLevel(c).level"></p>
-              </div>
-            </template>
-          </div>
-        </div>
-
-        <!-- Classes (สายนักวิ่ง) -->
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <h2 class="text-sm font-bold text-slate-900">⚔️ คลาสนักวิ่ง</h2>
-            <span class="text-[10px] font-bold text-slate-400">แต่ละสายวัดเกณฑ์ต่างกัน</span>
-          </div>
-          <div class="space-y-2">
-            <template x-for="(c, i) in $store.game.classOrder" :key="i">
-              <div class="bg-white rounded-2xl border border-slate-100 p-3.5">
-                <div class="flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-                      <i class="fa-solid text-sm" :class="$store.game.classMeta[c].icon"></i>
-                    </div>
-                    <div class="min-w-0">
-                      <p class="text-xs font-bold text-slate-900" x-text="$store.game.classMeta[c].name"></p>
-                      <p class="text-[10px] text-slate-400 truncate" x-text="$store.game.classMeta[c].desc"></p>
-                    </div>
-                  </div>
-                  <span class="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[11px] font-black shrink-0" x-text="'Lv.' + $store.game.classLevel(c).level"></span>
-                </div>
-                <div class="mt-2.5">
-                  <div class="flex justify-between text-[9px] font-bold text-slate-400 mb-1">
-                    <span x-text="$store.game.classLevel(c).metric"></span>
-                    <span x-text="$store.game.classLevel(c).level >= 20 ? 'ระดับสูงสุด' : 'เกณฑ์ Lv.' + ($store.game.classLevel(c).level + 1)"></span>
-                  </div>
-                  <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full" :style="'width:' + $store.game.classLevel(c).pct + '%'"></div>
-                  </div>
-                </div>
               </div>
             </template>
           </div>
@@ -920,7 +885,7 @@
           </div>
           <div class="bg-white p-3 rounded-xl border border-slate-100">
             <span class="text-[10px] text-slate-400 font-semibold uppercase block">Best pace (5K)</span>
-            <span class="text-lg font-bold text-slate-900" x-text="$store.game.fmtPace($store.game.paces.mid) + ' /กม.'"></span>
+            <span class="text-lg font-bold text-slate-900" x-text="$store.game.bestPaceLabel()"></span>
           </div>
           <div class="bg-white p-3 rounded-xl border border-slate-100">
             <span class="text-[10px] text-slate-400 font-semibold uppercase block">ระยะไกลสุด</span>
@@ -928,95 +893,132 @@
           </div>
         </div>
 
-        <!-- World standards (เกณฑ์อ้างอิงโลกจริง) -->
-        <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-          <button @click="$store.game.standardsOpen = !$store.game.standardsOpen" class="w-full p-4 flex items-center justify-between gap-2 active:scale-[0.99] transition-transform">
-            <div class="flex items-center gap-2.5 min-w-0">
-              <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-                <i class="fa-solid fa-book-open text-sm"></i>
-              </div>
-              <div class="text-left min-w-0">
-                <h2 class="text-sm font-bold text-slate-900">📖 มาตรฐานระดับโลก</h2>
-                <p class="text-[10px] text-slate-400 truncate">มาตรฐาน Overall 20 ระดับ (อิง 5K) — คลาสย่อยใช้เกณฑ์เฉพาะของแต่ละสาย</p>
-              </div>
-            </div>
-            <i class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform shrink-0" :class="$store.game.standardsOpen ? 'rotate-180' : ''"></i>
-          </button>
-          <div x-show="$store.game.standardsOpen" x-cloak class="px-4 pb-4">
-            <div class="space-y-1.5">
-              <template x-for="(lv, i) in $store.game.levels" :key="i">
-                <div class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl border"
-                     :class="lv.lv === $store.game.currentLevel().lv ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50/60 border-transparent'">
-                  <span class="w-7 text-center text-[10px] font-black shrink-0" :class="lv.lv === $store.game.currentLevel().lv ? 'text-indigo-600' : 'text-slate-400'">Lv.<span x-text="lv.lv"></span></span>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-[11px] font-bold truncate" :class="lv.lv === $store.game.currentLevel().lv ? 'text-indigo-700' : 'text-slate-800'" x-text="lv.title"></p>
-                    <p class="text-[9px] text-slate-400 truncate" x-text="lv.ref + (lv.note ? ' • ' + lv.note : '')"></p>
-                  </div>
-                  <span class="text-[9px] font-black shrink-0" :class="lv.lv === $store.game.currentLevel().lv ? 'text-indigo-600' : 'text-slate-500'" x-text="$store.game.paceLabel(lv)"></span>
-                </div>
-              </template>
-            </div>
-            <p class="mt-3 text-[9px] text-slate-400 leading-relaxed">เกณฑ์: ฝีเท้า (pace) ที่คุณรักษาได้จริงในวิ่ง 5K+ ที่เร็วที่สุด • อ้างอิงสถิติโลกจริง 5K 12:49 (Berihu Aregawi) / มาราธอน 2:00:35 (Kiptum) • อนาคตคำนวณอัตโนมัติจาก Apple Health</p>
-          </div>
-        </div>
-
-        <!-- Quests -->
-        <div class="bg-white rounded-2xl border border-slate-100 p-4 space-y-3.5">
-          <div class="flex items-center justify-between">
-            <h2 class="text-sm font-bold text-slate-900">📜 เควสประจำวัน</h2>
-            <span class="text-[10px] font-bold text-indigo-600">รางวัลเป็นเหรียญ 💰</span>
-          </div>
-          <template x-for="(q, i) in $store.game.quests" :key="i">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-                <i class="fa-solid text-sm" :class="q.icon"></i>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center justify-between gap-2">
-                  <p class="text-xs font-bold text-slate-800 truncate" x-text="q.name"></p>
-                  <span class="text-[10px] font-black text-indigo-600 shrink-0" x-text="'+' + q.coin + ' 💰'"></span>
-                </div>
-                <div class="mt-1.5 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div class="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full" :style="'width:' + q.pct + '%'"></div>
-                </div>
-              </div>
-            </div>
-          </template>
-        </div>
-
-        <!-- World map -->
+        <!-- Classes (สายนักวิ่ง) -->
         <div>
           <div class="flex items-center justify-between mb-2">
-            <h2 class="text-sm font-bold text-slate-900">🗺️ แผนที่โลก</h2>
-            <span class="text-[10px] font-bold text-slate-400">ปลดล็อกตามเลเวล</span>
+            <h2 class="text-sm font-bold text-slate-900">⚔️ คลาสนักวิ่ง</h2>
+            <span class="text-[10px] font-bold text-slate-400">เลเวลตามมาตรฐานเฉพาะสาย</span>
           </div>
-          <div class="grid grid-cols-3 gap-2">
-            <template x-for="(z, i) in $store.game.zones" :key="i">
-              <div class="rounded-xl border p-2.5 flex flex-col items-center gap-1 text-center min-h-[76px] justify-center transition-all"
-                   :class="$store.game.zoneLocked(z) ? 'bg-slate-50 border-slate-100' : 'bg-indigo-50 border-indigo-100'">
-                <span class="text-2xl leading-none" :style="$store.game.zoneLocked(z) ? 'filter:grayscale(1);opacity:.5' : ''" x-text="z.emoji"></span>
-                <span class="text-[9px] font-bold leading-tight" :class="$store.game.zoneLocked(z) ? 'text-slate-400' : 'text-slate-700'" x-text="z.name"></span>
-                <span class="text-[8px] font-black" :class="$store.game.zoneLocked(z) ? 'text-slate-300' : 'text-indigo-500'" x-text="$store.game.zoneLocked(z) ? '🔒 Lv.' + z.minLevel : 'เปิดแล้ว'"></span>
+          <div class="space-y-2">
+            <template x-for="(c, i) in $store.game.classOrder" :key="i">
+              <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+                <div class="p-3.5">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                        <i class="fa-solid text-sm" :class="$store.game.classMeta[c].icon"></i>
+                      </div>
+                      <div class="min-w-0">
+                        <p class="text-xs font-bold text-slate-900" x-text="$store.game.classMeta[c].name"></p>
+                        <p class="text-[10px] text-slate-400 truncate" x-text="$store.game.classMeta[c].desc"></p>
+                      </div>
+                    </div>
+                    <span class="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[11px] font-black shrink-0" x-text="'Lv.' + $store.game.classLevel(c).level"></span>
+                  </div>
+                  <div class="mt-2.5">
+                    <div class="flex justify-between text-[9px] font-bold text-slate-400 mb-1">
+                      <span x-text="$store.game.classLevel(c).metric"></span>
+                      <span x-text="$store.game.classLevel(c).level >= 10 ? 'ระดับสูงสุด' : 'เกณฑ์ Lv.' + ($store.game.classLevel(c).level + 1)"></span>
+                    </div>
+                    <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div class="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full" :style="'width:' + $store.game.classLevel(c).pct + '%'"></div>
+                    </div>
+                  </div>
+                </div>
+                <button @click="$store.game.toggleClass(c)" class="w-full flex items-center justify-center gap-1.5 py-2.5 border-t border-slate-50 text-[10px] font-bold text-indigo-600 active:bg-indigo-50/50 transition-colors">
+                  <i class="fa-solid fa-book-open text-[10px]"></i> มาตรฐานเฉพาะสาย Lv.1–10
+                  <i class="fa-solid fa-chevron-down text-[9px] transition-transform" :class="$store.game.classOpen[c] ? 'rotate-180' : ''"></i>
+                </button>
+                <div x-show="$store.game.classOpen[c]" x-cloak class="px-3.5 pb-3.5 pt-1 space-y-1">
+                  <template x-for="(lv, li) in $store.game.standards[c].levels" :key="li">
+                    <div class="flex items-center gap-2 px-2 py-1.5 rounded-lg border"
+                         :class="lv.lv === $store.game.classLevel(c).level ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50/60 border-transparent'">
+                      <span class="w-6 text-[10px] font-black shrink-0" :class="lv.lv === $store.game.classLevel(c).level ? 'text-indigo-600' : 'text-slate-400'">Lv.<span x-text="lv.lv"></span></span>
+                      <div class="flex-1 min-w-0">
+                        <p class="text-[10px] font-bold truncate" :class="lv.lv === $store.game.classLevel(c).level ? 'text-indigo-700' : 'text-slate-800'" x-text="lv.title"></p>
+                        <p class="text-[9px] text-slate-400" x-text="lv.ref"></p>
+                      </div>
+                      <span class="text-[9px] font-black shrink-0" :class="lv.lv === $store.game.classLevel(c).level ? 'text-indigo-600' : 'text-slate-300'" x-text="lv.lv === $store.game.classLevel(c).level ? '▶ คุณ' : ''"></span>
+                    </div>
+                  </template>
+                </div>
               </div>
             </template>
           </div>
         </div>
 
-        <!-- Leaderboard -->
+        <!-- Gear -->
         <div class="bg-white rounded-2xl border border-slate-100 p-4">
           <div class="flex items-center justify-between mb-3">
-            <h2 class="text-sm font-bold text-slate-900">🏆 อันดับวิ่งสัปดาห์นี้</h2>
-            <span class="text-[10px] font-bold text-slate-400">อัปเดตทุกวันจันทร์</span>
+            <h2 class="text-sm font-bold text-slate-900">🎒 อุปกรณ์ปัจจุบัน</h2>
+            <button @click="$store.game.addGear()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white text-[10px] font-bold active:scale-95 transition-transform">
+              <i class="fa-solid fa-plus text-[9px]"></i> เพิ่มอุปกรณ์
+            </button>
           </div>
-          <div class="space-y-1.5">
-            <template x-for="(l, i) in $store.game.leaderboard" :key="i">
-              <div class="flex items-center gap-3 px-2.5 py-2 rounded-xl" :class="l.me ? 'bg-indigo-50 border border-indigo-100' : 'bg-slate-50/60'">
-                <span class="w-6 text-center text-sm shrink-0" x-text="l.medal"></span>
-                <div class="flex-1 min-w-0">
-                  <p class="text-xs font-bold truncate" :class="l.me ? 'text-indigo-700' : 'text-slate-800'" x-text="l.name"></p>
-                  <p class="text-[10px] text-slate-400" x-text="'เลเวล ' + l.level"></p>
+          <div class="space-y-2">
+            <template x-for="(g, gi) in $store.game.gear" :key="gi">
+              <div class="flex items-center gap-3 px-2.5 py-2.5 rounded-xl bg-slate-50/60">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 border" :class="g.color">
+                  <i class="fa-solid" :class="g.icon"></i>
                 </div>
-                <span class="text-xs font-black shrink-0" :class="l.me ? 'text-indigo-600' : 'text-slate-700'" x-text="l.km + ' km'"></span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-bold text-slate-800" x-text="g.name"></p>
+                  <p class="text-[10px] text-slate-400" x-text="g.type + ' • ' + g.note"></p>
+                </div>
+                <span class="text-[10px] font-black shrink-0 px-2 py-1 rounded-lg"
+                      :class="g.status === 'เชื่อมต่อ' ? 'bg-emerald-50 text-emerald-600' : 'bg-indigo-50 text-indigo-600'"
+                      x-text="g.status"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Training guides -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-sm font-bold text-slate-900">📖 แนวทางฝึกซ้อม & Scale Up</h2>
+            <span class="text-[10px] font-bold text-slate-400">ตามสายของคุณ</span>
+          </div>
+          <div class="space-y-2">
+            <template x-for="(c, ci) in $store.game.classOrder" :key="ci">
+              <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+                <button @click="$store.game.toggleGuide(c)" class="w-full p-3.5 flex items-center justify-between gap-2 active:scale-[0.99] transition-transform">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
+                      <i class="fa-solid text-sm" :class="$store.game.classMeta[c].icon"></i>
+                    </div>
+                    <div class="text-left min-w-0">
+                      <p class="text-xs font-bold text-slate-900" x-text="$store.game.classMeta[c].name"></p>
+                      <p class="text-[10px] text-slate-400 truncate">ตารางรายสัปดาห์ + วิธีเพิ่มอย่างถูกวิธี</p>
+                    </div>
+                  </div>
+                  <i class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform shrink-0" :class="$store.game.guideOpen[c] ? 'rotate-180' : ''"></i>
+                </button>
+                <div x-show="$store.game.guideOpen[c]" x-cloak class="px-3.5 pb-4 space-y-3">
+                  <div>
+                    <p class="text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wide">🗓️ ตารางประจำสัปดาห์ (ตัวอย่าง)</p>
+                    <div class="space-y-1">
+                      <template x-for="(w, wi) in $store.game.guides[c].weekly" :key="wi">
+                        <div class="flex items-center gap-2.5 bg-slate-50/60 rounded-lg px-2.5 py-2">
+                          <span class="w-12 text-[10px] font-black text-slate-500 shrink-0" x-text="w.day"></span>
+                          <span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600 text-[9px] font-black shrink-0" x-text="w.type"></span>
+                          <p class="text-[10px] text-slate-600 flex-1 min-w-0" x-text="w.detail"></p>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                  <div>
+                    <p class="text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wide">📈 Scale Up อย่างถูกวิธี</p>
+                    <div class="space-y-1">
+                      <template x-for="(s, si) in $store.game.guides[c].scale" :key="si">
+                        <div class="flex items-start gap-2">
+                          <span class="text-emerald-500 text-[9px] mt-0.5 shrink-0"><i class="fa-solid fa-check"></i></span>
+                          <p class="text-[10px] text-slate-600 leading-relaxed" x-text="s"></p>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
               </div>
             </template>
           </div>

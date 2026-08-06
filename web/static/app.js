@@ -1836,74 +1836,161 @@ document.addEventListener('alpine:init', () => {
   });
 
   // --- RunQuest MMO Store (Mockup Demo — ยังไม่เชื่อมต่อ Apple Health จริง) ---
-  // เลเวล = ระดับฝีเท้าจริง เทียบมาตรฐานนักวิ่งทั้งโลก (อ้างอิงสถิติโลกจริง)
-  // 4 คลาส: สปรินเตอร์ / นักวิ่งกลาง / นักวิ่งไกล / อัลตร้า + Overall
+  // 4 คลาส แต่ละคลาสมีมาตรฐานเฉพาะสาย (อ้างอิงสถิติจริง) + Overall = ค่าเฉลี่ย
   Alpine.store('game', {
-    // ฝีเท้าจริงต่อคลาส (วินาที/กม., mock — อนาคต: คำนวณจาก Apple Health)
-    paces: { sprint: 235, mid: 340, long: 390 }, // 3:55 / 5:40 / 6:30
-    longestKm: 21.1, // ระยะไกลสุดที่เคยวิ่ง (ฮาล์ฟ)
-    stats: {
-      totalKm: 186.4,
-      runs: 42,
-      calories: 12480,
-    },
+    // สถิติจริงต่อคลาส (mock — อนาคต: คำนวณจาก Apple Health)
+    sprint400: 80,   // 400m เร็วสุด (วินาที)
+    best5k: 1700,    // 5K เร็วสุด (วินาที) = 28:20
+    bestHalf: 7800,  // ฮาล์ฟเร็วสุด (วินาที) = 2:10:00
+    longestKm: 21.1, // ระยะไกลสุด (กม.)
+    stats: { totalKm: 186.4, runs: 42, calories: 12480 },
     classOrder: ['sprint', 'mid', 'long', 'ultra'],
     classMeta: {
-      sprint: { icon: 'fa-bolt', name: 'สปรินเตอร์', desc: 'ระยะสั้น 400m–1K' },
-      mid: { icon: 'fa-person-running', name: 'นักวิ่งกลาง', desc: 'มาตรฐาน 5K–10K' },
+      sprint: { icon: 'fa-bolt', name: 'สปรินเตอร์', desc: 'ระยะสั้น 400m' },
+      mid: { icon: 'fa-person-running', name: 'นักวิ่งกลาง', desc: '5K–10K' },
       long: { icon: 'fa-water', name: 'นักวิ่งไกล', desc: 'ฮาล์ฟ–มาราธอน' },
-      ultra: { icon: 'fa-mountain', name: 'อัลตร้า', desc: 'ระยะไกลสุด + ปริมาณสะสม' },
+      ultra: { icon: 'fa-mountain', name: 'อัลตร้า', desc: 'ระยะไกลสุด' },
     },
-    // มาตรฐาน 20 ระดับ อ้างอิงสถิติโลกจริง (fast = ขอบเร็ว, slow = ขอบช้า; วินาที/กม.)
-    levels: [
-      { lv: 1,  title: '🌱 มือใหม่หัดวิ่ง',        fast: 540, slow: 9999, ref: 'วิ่งต่อเนื่อง 2–3 km',            note: 'เพิ่งเข้าวงการ' },
-      { lv: 2,  title: '🐣 ผู้เริ่มต้น',            fast: 510, slow: 540,  ref: '5K ใน ~45 นาที',                 note: '' },
-      { lv: 3,  title: '🌿 นักวิ่งเพื่อสุขภาพ',     fast: 480, slow: 510,  ref: '5K ใน ~42 นาที',                 note: '' },
-      { lv: 4,  title: '🍃 นักวิ่งสายฟิต',          fast: 450, slow: 480,  ref: '5K ใน ~40 นาที',                 note: '' },
-      { lv: 5,  title: '⚡ ฟิตเนสรันเนอร์',         fast: 420, slow: 450,  ref: '5K ใน ~37 นาที / 10K เริ่มได้',  note: '' },
-      { lv: 6,  title: '💪 นักวิ่งกลาง',            fast: 390, slow: 420,  ref: '5K ใน ~35 นาที / 10K ได้',       note: '' },
-      { lv: 7,  title: '🏃 นักวิ่งมาตรฐาน',         fast: 360, slow: 390,  ref: '5K ใน ~32 นาที',                 note: '' },
-      { lv: 8,  title: '🏃‍♂️ ผ่านมาตรฐาน 5K 30 นาที', fast: 336, slow: 360, ref: '5K ≤ 30:00 (pace 6:00)',       note: 'ซ้อมจริงจัง 3–6 เดือน' },
-      { lv: 9,  title: '🔥 นักแข่งสมัครเล่น',       fast: 312, slow: 336,  ref: '5K ~28:00 / 10K ~58 นาที',       note: 'top ~15%' },
-      { lv: 10, title: '🎯 นักวิ่งแข่ง',            fast: 300, slow: 312,  ref: '5K ≤ 25:00 / 10K ~52 นาที',      note: 'top ~10%' },
-      { lv: 11, title: '🏅 แข่งระดับจังหวัด',       fast: 276, slow: 300,  ref: '5K ~23:00 / 10K ~48 นาที',      note: '' },
-      { lv: 12, title: '🇹🇭 แข่งระดับประเทศ',      fast: 252, slow: 276,  ref: '5K ~21:00 / 10K ~44 นาที / ฮาล์ฟ ~1:35', note: 'top ~2%' },
-      { lv: 13, title: '⚔️ ตัวแทนทีม',             fast: 240, slow: 252,  ref: '5K ≤ 20:00 / 10K ~41 นาที',     note: 'top 1%' },
-      { lv: 14, title: '🚀 นักวิ่งอาชีพสายใหม่',    fast: 222, slow: 240,  ref: '10K ~38 นาที / ฮาล์ฟ ~1:25',    note: '' },
-      { lv: 15, title: '🏆 นักกีฬาอาชีพ',          fast: 204, slow: 222,  ref: '10K ~35 นาที / ฮาล์ฟ ~1:18',    note: 'ระดับทีมชาติ' },
-      { lv: 16, title: '🎖️ ระดับทีมชาติ',          fast: 186, slow: 204,  ref: '5K ~16:00 / 10K ~33 นาที',     note: '' },
-      { lv: 17, title: '🌍 ระดับนานาชาติ',          fast: 174, slow: 186,  ref: '5K ~14:30 / 10K ~30 นาที',     note: 'ระดับ Asian Games' },
-      { lv: 18, title: '🌟 ระดับโลก',               fast: 162, slow: 174,  ref: '5K ~13:45 / 10K ~28 นาที',     note: 'ระดับ Olympic' },
-      { lv: 19, title: '👑 ตำนาน',                 fast: 154, slow: 162,  ref: '5K ~13:00',                     note: 'ใกล้สถิติโลก' },
-      { lv: 20, title: '💎 ผู้ทำลายสถิติโลก',       fast: 0,   slow: 154,  ref: '5K < 12:49',                    note: 'WR จริง: 12:49 (Aregawi)' },
+    overallTitles: ['🌱 มือใหม่', '🐣 ผู้เริ่มต้น', '🌿 นักวิ่งเพื่อสุขภาพ', '🍃 นักวิ่งสายฟิต', '🏃 นักวิ่งมาตรฐาน', '💪 นักวิ่งแข่ง', '🔥 นักแข่งระดับจังหวัด', '🎯 นักแข่งระดับประเทศ', '🏅 นักกีฬาอาชีพ', '💎 ระดับโลก'],
+    // มาตรฐานเฉพาะแต่ละคลาส 10 ระดับ (slow = ขอบช้า, fast = ขอบเร็ว; dir: down = ยิ่งน้อยยิ่งเก่ง, up = ยิ่งมากยิ่งเก่ง)
+    standards: {
+      sprint: {
+        unit: '400m เร็วสุด', target: 'sprint400', dir: 'down', hours: false,
+        levels: [
+          { lv: 1, slow: 999, fast: 105, title: '🌱 มือใหม่สปรินท์', ref: '400m > 1:45' },
+          { lv: 2, slow: 105, fast: 95,  title: '🐣 ผู้เริ่มต้น', ref: '1:35–1:45' },
+          { lv: 3, slow: 95,  fast: 85,  title: '🌿 สายฟิต', ref: '1:25–1:35' },
+          { lv: 4, slow: 85,  fast: 75,  title: '🍃 นักสปรินท์สมัครเล่น', ref: '1:15–1:25' },
+          { lv: 5, slow: 75,  fast: 65,  title: '⚡ นักวิ่งเพื่อสุขภาพ', ref: '1:05–1:15' },
+          { lv: 6, slow: 65,  fast: 60,  title: '💪 นักแข่งสมัครเล่น', ref: '1:00–1:05' },
+          { lv: 7, slow: 60,  fast: 55,  title: '🔥 แข่งระดับจังหวัด', ref: '0:55–1:00' },
+          { lv: 8, slow: 55,  fast: 50,  title: '🎖️ ตัวแทนมหาวิทยาลัย', ref: '0:50–0:55' },
+          { lv: 9, slow: 50,  fast: 45,  title: '🇹🇭 ทีมชาติ', ref: '0:45–0:50' },
+          { lv: 10, slow: 45, fast: 0,   title: '💎 ระดับโลก', ref: '< 0:45 (WR 43.03s)' },
+        ],
+      },
+      mid: {
+        unit: 'เวลา 5K เร็วสุด', target: 'best5k', dir: 'down', hours: false,
+        levels: [
+          { lv: 1, slow: 999, fast: 2400, title: '🌱 มือใหม่หัดวิ่ง', ref: '5K > 40:00' },
+          { lv: 2, slow: 2400, fast: 2100, title: '🐣 ผู้เริ่มต้น', ref: '35:00–40:00' },
+          { lv: 3, slow: 2100, fast: 1950, title: '🌿 นักวิ่งเพื่อสุขภาพ', ref: '32:30–35:00' },
+          { lv: 4, slow: 1950, fast: 1800, title: '🍃 นักวิ่งสายฟิต', ref: '30:00–32:30' },
+          { lv: 5, slow: 1800, fast: 1650, title: '🏃 ผ่านมาตรฐาน 5K 30 นาที', ref: '27:30–30:00' },
+          { lv: 6, slow: 1650, fast: 1500, title: '💪 นักวิ่งกลาง', ref: '25:00–27:30' },
+          { lv: 7, slow: 1500, fast: 1350, title: '🔥 นักแข่งสมัครเล่น', ref: '22:30–25:00' },
+          { lv: 8, slow: 1350, fast: 1200, title: '🎯 นักวิ่งแข่ง', ref: '20:00–22:30' },
+          { lv: 9, slow: 1200, fast: 1020, title: '🏅 ตัวแทนทีม', ref: '17:00–20:00' },
+          { lv: 10, slow: 1020, fast: 0, title: '💎 ระดับโลก', ref: '< 17:00 (WR 5K 12:49)' },
+        ],
+      },
+      long: {
+        unit: 'เวลาฮาล์ฟมาราธอน', target: 'bestHalf', dir: 'down', hours: true,
+        levels: [
+          { lv: 1, slow: 999, fast: 10800, title: '🌱 มือใหม่ไกล', ref: 'ฮาล์ฟ > 3:00:00' },
+          { lv: 2, slow: 10800, fast: 9600, title: '🐣 ผู้เริ่มต้น', ref: '2:40–3:00' },
+          { lv: 3, slow: 9600, fast: 8400, title: '🌿 นักวิ่งเพื่อสุขภาพ', ref: '2:20–2:40' },
+          { lv: 4, slow: 8400, fast: 7500, title: '🍃 นักวิ่งสายฟิต', ref: '2:05–2:20' },
+          { lv: 5, slow: 7500, fast: 6900, title: '🏃 นักวิ่งมาตรฐาน', ref: '1:55–2:05' },
+          { lv: 6, slow: 6900, fast: 6300, title: '💪 นักวิ่งกลาง', ref: '1:45–1:55' },
+          { lv: 7, slow: 6300, fast: 5700, title: '🔥 นักแข่งสมัครเล่น', ref: '1:35–1:45' },
+          { lv: 8, slow: 5700, fast: 5100, title: '🎯 นักวิ่งแข่ง', ref: '1:25–1:35' },
+          { lv: 9, slow: 5100, fast: 4500, title: '🏅 ตัวแทนทีม', ref: '1:15–1:25' },
+          { lv: 10, slow: 4500, fast: 0, title: '💎 ระดับโลก', ref: '< 1:15 (WR 57:31)' },
+        ],
+      },
+      ultra: {
+        unit: 'ระยะไกลสุด', target: 'longestKm', dir: 'up', hours: false,
+        levels: [
+          { lv: 1, slow: 5,    fast: 0,    title: '🌱 มือใหม่', ref: '< 5 km' },
+          { lv: 2, slow: 8,    fast: 5,    title: '🐣 ผู้เริ่มต้น', ref: '5 km' },
+          { lv: 3, slow: 10,   fast: 8,    title: '🌿 สายฟิต', ref: '8 km' },
+          { lv: 4, slow: 15,   fast: 10,   title: '🍃 นักวิ่งระยะไกล', ref: '10 km' },
+          { lv: 5, slow: 21.1, fast: 15,   title: '🏃 นักวิ่งไกล', ref: '15 km' },
+          { lv: 6, slow: 30,   fast: 21.1, title: '💪 ฮาล์ฟมาราธอน', ref: '21.1 km (ฮาล์ฟ)' },
+          { lv: 7, slow: 42.2, fast: 30,   title: '🔥 ระยะ 30K', ref: '30 km' },
+          { lv: 8, slow: 60,   fast: 42.2, title: '🎯 มาราธอน', ref: '42.2 km (มาราธอน)' },
+          { lv: 9, slow: 100,  fast: 60,   title: '🏅 อัลตร้า', ref: '60 km' },
+          { lv: 10, slow: 999, fast: 100,  title: '💎 อัลตร้ามาราธอน', ref: '100 km+' },
+        ],
+      },
+    },
+    // อุปกรณ์ปัจจุบัน (mock)
+    gear: [
+      { icon: 'fa-clock', type: 'นาฬิกา', name: 'Amazfit GTR 4', note: 'ซิงก์ Zepp → Apple Health', status: 'เชื่อมต่อ', color: 'bg-indigo-50 border-indigo-100 text-indigo-600' },
+      { icon: 'fa-shoe-prints', type: 'รองเท้าวิ่ง', name: 'Nike Pegasus 41', note: 'ใช้งาน 420 / 800 km', status: '70%', color: 'bg-sky-50 border-sky-100 text-sky-600' },
+      { icon: 'fa-mountain', type: 'รองเท้าเทรล', name: 'Hoka Speedgoat 6', note: 'ใช้งาน 180 / 600 km', status: '30%', color: 'bg-violet-50 border-violet-100 text-violet-600' },
     ],
-    // อัลตร้า: เกณฑ์จากระยะไกลสุด (กม.) — 20 ระดับ
-    distThresholds: [2, 3, 4, 5, 6, 8, 10, 12, 15, 18, 21.1, 25, 30, 35, 42.2, 50, 60, 80, 100],
-    quests: [
-      { icon: 'fa-route', name: 'วิ่งสะสม 5 km', pct: 64, coin: 50 },
-      { icon: 'fa-bolt', name: 'ทำ Pace เฉลี่ย < 6:00 นาที/กม. (3 ครั้ง)', pct: 67, coin: 100 },
-      { icon: 'fa-sun', name: 'วิ่งช่วงเช้า 06:00–09:00', pct: 0, coin: 80 },
-      { icon: 'fa-calendar-week', name: 'วิ่งครบ 3 ครั้ง/สัปดาห์', pct: 67, coin: 150 },
-      { icon: 'fa-flag-checkered', name: 'วิ่งสะสม 20 km/สัปดาห์', pct: 92, coin: 200 },
+    gearPool: [
+      { icon: 'fa-shoe-prints', type: 'รองเท้าวิ่ง', name: 'Asics Magic Speed 4', note: '0 / 600 km', status: 'ใหม่', color: 'bg-emerald-50 border-emerald-100 text-emerald-600' },
+      { icon: 'fa-shoe-prints', type: 'รองเท้าสปรินท์', name: 'Adidas Adios 8', note: '0 / 400 km', status: 'ใหม่', color: 'bg-amber-50 border-amber-100 text-amber-600' },
+      { icon: 'fa-stopwatch', type: 'สายคาด HR', name: 'Polar H10', note: 'ซิงก์ผ่าน Bluetooth', status: 'พร้อมใช้', color: 'bg-rose-50 border-rose-100 text-rose-600' },
+      { icon: 'fa-shoe-prints', type: 'รองเท้าอัลตร้า', name: 'Hoka Mafate Speed 4', note: '0 / 700 km', status: 'ใหม่', color: 'bg-teal-50 border-teal-100 text-teal-600' },
     ],
-    zones: [
-      { emoji: '🌲', name: 'ป่าต้นกล้า', minLevel: 1 },
-      { emoji: '🏘️', name: 'หมู่บ้านฟินฟลาว', minLevel: 3 },
-      { emoji: '⛰️', name: 'เขามังกรลม', minLevel: 5 },
-      { emoji: '🏜️', name: 'ทะเลทรายทมิฬ', minLevel: 8 },
-      { emoji: '🌊', name: 'ชายฝั่งสายลม', minLevel: 10 },
-      { emoji: '❄️', name: 'ยอดเขาน้ำแข็ง', minLevel: 12 },
-      { emoji: '🌋', name: 'หลุมอัคคี', minLevel: 15 },
-      { emoji: '🏰', name: 'ปราสาทราชา', minLevel: 18 },
-      { emoji: '🌌', name: 'ดินแดนเทพ', minLevel: 20 },
-    ],
-    leaderboard: [
-      { rank: 1, name: 'RunnerNoi', km: 32.4, level: 10, medal: '🥇' },
-      { rank: 2, name: 'AterixGz (คุณ)', km: 24.6, level: 8, medal: '🥈', me: true },
-      { rank: 3, name: 'Benz_slow', km: 21.1, level: 7, medal: '🥉' },
-      { rank: 4, name: 'Ploy วิ่งเช้า', km: 19.8, level: 8, medal: '4' },
-      { rank: 5, name: 'DriftBike', km: 15.2, level: 6, medal: '5' },
-    ],
+    // แนวทางฝึกซ้อม + scale up ต่อคลาส
+    guides: {
+      sprint: {
+        weekly: [
+          { day: 'จันทร์', type: 'Speed', detail: '8 × 200m @ 85–90% พัก 2:00' },
+          { day: 'พุธ', type: 'พลัง + เทคนิค', detail: 'Hill sprint 6 × 80m + plyo' },
+          { day: 'ศุกร์', type: 'Speed', detail: '5 × 400m @ 90% พัก 3:00' },
+          { day: 'เสาร์', type: 'พักฟื้น', detail: 'เดิน / โยคะเบาๆ 30 นาที' },
+        ],
+        scale: [
+          'เพิ่มปริมาณไม่เกิน 10% ต่อสัปดาห์ (กฎ 10%)',
+          'เพิ่มความเร็วทีละ ≤5% — อย่าเพิ่มพร้อมกันทั้งปริมาณและความเร็ว',
+          'พักระหว่างเซต 2–3 เท่าของเวลาวิ่ง (400m 90 วิ → พัก ~3 นาที)',
+          'ทุก 3–4 สัปดาห์ ลดปริมาณ 30% (deload) ให้ร่างกายฟื้น',
+          'ปวดข้อ/เอ็น = หยุด 2–3 วัน อย่าฝืน (ไม่ใช่ปวดกล้ามเนื้อ)',
+        ],
+      },
+      mid: {
+        weekly: [
+          { day: 'จันทร์', type: 'Easy', detail: 'วิ่งเบา 30–40 นาที (pace ช้า +60s)' },
+          { day: 'อังคาร', type: 'Tempo', detail: 'วอร์ม 10 นาที + 20 นาที @ 5K+20s' },
+          { day: 'พฤหัส', type: 'Interval', detail: '6 × 800m @ 5K pace พัก 2:00' },
+          { day: 'เสาร์', type: 'Long run', detail: '60–90 นาที วิ่งช้าๆ' },
+        ],
+        scale: [
+          'กฎ 80/20: 80% ของสัปดาห์วิ่งง่าย 20% วิ่งหนัก',
+          'เพิ่มระยะทางรวมไม่เกิน 10% ต่อสัปดาห์',
+          'Long run เพิ่มครั้งละ 2–3 กม. เท่านั้น',
+          'หนัก 3 สัปดาห์ → สัปดาห์ที่ 4 เบาลง (deload)',
+          'จับเวลา 5K ใหม่ทุก 4–6 สัปดาห์เพื่อวัดผล',
+        ],
+      },
+      long: {
+        weekly: [
+          { day: 'จันทร์', type: 'Easy', detail: '45–60 นาที วิ่งช้า' },
+          { day: 'อังคาร', type: 'Tempo/MP', detail: '25–35 นาที @ ฮาล์ฟ pace' },
+          { day: 'พฤหัส', type: 'Interval', detail: '5 × 1K @ 10K pace พัก 2:30' },
+          { day: 'เสาร์', type: 'Long run', detail: '90–150 นาที ค่อยๆ เพิ่ม' },
+        ],
+        scale: [
+          'Long run เพิ่ม 10% ต่อสัปดาห์ หรือ +2–3 กม. ครั้งละ',
+          'ทุก 3 สัปดาห์ ลด long run 30% (สัปดาห์ฟื้นฟู)',
+          'วิ่งไกลเกิน 75 นาที ต้องกิน/ดื่มระหว่างทาง (เจล/เกลือ)',
+          'ซ้อมช้าไว้ก่อน — ความอดทนมาก่อนความเร็ว',
+          'เพิ่มระยะแล้วคงไว้ 2 สัปดาห์ ก่อนเพิ่มรอบถัดไป',
+        ],
+      },
+      ultra: {
+        weekly: [
+          { day: 'จันทร์', type: 'Easy', detail: '60 นาที วิ่งช้า' },
+          { day: 'อังคาร', type: 'Back-to-back A', detail: 'Long 2 ชม. เส้นเนิน' },
+          { day: 'พุธ', type: 'Easy + Strength', detail: '45 นาที + เวท/แกนกลาง' },
+          { day: 'พฤหัส', type: 'Back-to-back B', detail: 'Long 90 นาที (ขาเมื่อย = จำลอง race)' },
+          { day: 'เสาร์', type: 'Long', detail: '3–4 ชม. เดินช่วง uphill' },
+        ],
+        scale: [
+          'เพิ่ม volume รายสัปดาห์ไม่เกิน 10%',
+          'Back-to-back long คือหัวใจของอัลตร้า — ซ้อมต่อเนื่อง 2 วัน',
+          'เพิ่ม elevation gain ค่อยๆ — อย่าเพิ่มพร้อมระยะทาง',
+          'ซ้อมเดิน+กินในจังหวะ race — nutrition เป็นสกิล',
+          'ทุก 3–4 สัปดาห์ deload 30–40%',
+        ],
+      },
+    },
     recentRuns: [
       { date: 'วันนี้ 19:02 น.', km: 5.2, pace: '6:05', dur: '32 นาที' },
       { date: 'เมื่อวาน', km: 8.4, pace: '5:48', dur: '49 นาที' },
@@ -1912,51 +1999,52 @@ document.addEventListener('alpine:init', () => {
     ],
     syncing: false,
     lastSync: '—',
-    standardsOpen: false,
+    classOpen: {},
+    guideOpen: {},
     toast: '',
     _toastTimer: null,
 
-    fmtPace(sec) {
+    fmtTime(sec, hours) {
+      if (hours) {
+        const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+        return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+      }
       const m = Math.floor(sec / 60), s = sec % 60;
       return m + ':' + String(s).padStart(2, '0');
     },
-    paceLabel(l) {
-      if (l.lv === 1) return 'pace > 9:00';
-      if (l.lv === 20) return 'pace < 2:34';
-      return 'pace ' + this.fmtPace(l.fast) + '–' + this.fmtPace(l.slow);
-    },
-    best5kLabel() {
-      return this.fmtPace(this.paces.mid * 5);
-    },
-    levelFromPace(sec) {
-      return this.levels.find(l => sec <= l.slow && sec > l.fast) || this.levels[19];
-    },
-    // เลเวลรายคลาส: sprint/mid/long วัดจาก pace, ultra วัดจากระยะไกลสุด
+    best5kLabel() { return this.fmtTime(this.best5k, false); },
+    bestPaceLabel() { return this.fmtTime(Math.round(this.best5k / 5), false) + '/กม.'; },
+    // เลเวลรายคลาสตามมาตรฐานของสายนั้นๆ
     classLevel(key) {
-      if (key === 'ultra') {
-        const th = this.distThresholds;
-        const below = th.filter(t => this.longestKm >= t);
-        const level = Math.min(20, below.length + 1);
-        const prevT = below.length ? below[below.length - 1] : 0;
-        const nextT = below.length < th.length ? th[below.length] : th[th.length - 1] + 20;
-        const pct = Math.min(99, Math.max(2, Math.round(((this.longestKm - prevT) / (nextT - prevT)) * 100)));
-        return { level: level, pct: pct, metric: this.longestKm + ' km (ไกลสุด)' };
+      const st = this.standards[key];
+      const val = this[st.target];
+      let lvObj, pct;
+      if (st.dir === 'up') {
+        // ยิ่งระยะไกลยิ่งเก่ง: อยู่ในเลเวลที่ fast <= val < slow
+        lvObj = st.levels.find(l => val >= l.fast && val < l.slow) || st.levels[st.levels.length - 1];
+        pct = Math.min(99, Math.max(2, Math.round(((val - lvObj.fast) / (lvObj.slow - lvObj.fast)) * 100)));
+      } else {
+        // ยิ่งเวลาเร็วยิ่งเก่ง: อยู่ในเลเวลที่ fast < val <= slow
+        lvObj = st.levels.find(l => val <= l.slow && val > l.fast) || st.levels[st.levels.length - 1];
+        pct = Math.min(99, Math.max(2, Math.round(((lvObj.slow - val) / (lvObj.slow - lvObj.fast)) * 100)));
       }
-      const sec = this.paces[key];
-      const lvObj = this.levelFromPace(sec);
-      const span = lvObj.slow - lvObj.fast;
-      const pct = Math.min(99, Math.max(2, Math.round(((lvObj.slow - sec) / span) * 100)));
-      return { level: lvObj.lv, pct: pct, metric: this.fmtPace(sec) + '/กม.' };
+      const metric = st.unit + ': ' + (key === 'ultra' ? val + ' km' : this.fmtTime(val, st.hours));
+      return { level: lvObj.lv, lvObj: lvObj, pct: pct, metric: metric };
     },
-    // Overall = ค่าเฉลี่ยเลเวลทั้ง 4 คลาส
+    // Overall = ค่าเฉลี่ยเลเวล 4 คลาส (สเกล 10)
     overall() {
       const cs = this.classOrder.map(k => this.classLevel(k));
-      const level = Math.round(cs.reduce((s, c) => s + c.level, 0) / cs.length);
-      const pct = Math.round(cs.reduce((s, c) => s + c.pct, 0) / cs.length);
-      return { level: level, lvObj: this.levels[Math.min(level, 20) - 1], pct: Math.max(2, Math.min(99, pct)) };
+      const level = Math.max(1, Math.min(10, Math.round(cs.reduce((s, c) => s + c.level, 0) / cs.length)));
+      return { level: level, title: this.overallTitles[level - 1], pct: Math.max(2, Math.min(99, Math.round(cs.reduce((s, c) => s + c.pct, 0) / cs.length))) };
     },
-    zoneLocked(z) {
-      return this.overall().level < z.minLevel;
+    toggleClass(key) { this.classOpen[key] = !this.classOpen[key]; },
+    toggleGuide(key) { this.guideOpen[key] = !this.guideOpen[key]; },
+    addGear() {
+      const pool = this.gearPool.filter(p => !this.gear.some(g => g.name === p.name));
+      if (!pool.length) { this.showToast('🎒 มีอุปกรณ์ครบแล้ว!'); return; }
+      const g = pool[Math.floor(Math.random() * pool.length)];
+      this.gear.unshift(g);
+      this.showToast('🎒 เพิ่มอุปกรณ์: ' + g.name);
     },
     syncNow() {
       if (this.syncing) return;
@@ -1964,7 +2052,6 @@ document.addEventListener('alpine:init', () => {
       setTimeout(() => {
         const types = ['sprint', 'mid', 'long', 'ultra'];
         const type = types[Math.floor(Math.random() * types.length)];
-        const km = Math.round(({ sprint: 0.3 + Math.random() * 0.3, mid: 3 + Math.random() * 4, long: 10 + Math.random() * 11, ultra: 25 + Math.random() * 17 }[type]) * 10) / 10;
         const before = {
           sprint: this.classLevel('sprint').level,
           mid: this.classLevel('mid').level,
@@ -1972,23 +2059,29 @@ document.addEventListener('alpine:init', () => {
           ultra: this.classLevel('ultra').level,
           overall: this.overall().level,
         };
-        if (type === 'ultra') {
-          this.longestKm = Math.round(Math.max(this.longestKm, km) * 10) / 10;
+        let km, detail;
+        if (type === 'sprint') {
+          km = 0.4;
+          this.sprint400 = Math.max(50, this.sprint400 - (Math.floor(Math.random() * 3) + 1));
+          detail = 'เทรน 400m';
+        } else if (type === 'mid') {
+          km = Math.round((3 + Math.random() * 4) * 10) / 10;
+          this.best5k = Math.max(1020, this.best5k - (Math.floor(Math.random() * 11) + 5));
+          detail = 'เทรน 5K';
+        } else if (type === 'long') {
+          km = Math.round((10 + Math.random() * 11) * 10) / 10;
+          this.bestHalf = Math.max(4500, this.bestHalf - (Math.floor(Math.random() * 61) + 15));
+          detail = 'เทรนฮาล์ฟ';
         } else {
-          const floor = { sprint: 170, mid: 300, long: 330 }[type];
-          this.paces[type] = Math.max(floor, this.paces[type] - (Math.floor(Math.random() * 3) + 1));
+          km = Math.round((25 + Math.random() * 17) * 10) / 10;
+          this.longestKm = Math.round(Math.max(this.longestKm, km) * 10) / 10;
+          detail = 'เทรนยาว';
         }
         this.stats.totalKm = Math.round((this.stats.totalKm + km) * 10) / 10;
         this.stats.runs += 1;
-        this.recentRuns.unshift({
-          date: 'ตอนนี้ (ซิงก์สด)',
-          km: km,
-          pace: type === 'ultra' ? 'เทรนยาว' : this.fmtPace(this.paces[type]),
-          dur: 'รอ Apple Health',
-        });
+        this.recentRuns.unshift({ date: 'ตอนนี้ (ซิงก์สด)', km: km, pace: detail, dur: 'รอ Apple Health' });
         const ups = this.classOrder.filter(k => this.classLevel(k).level > before[k]);
         let msg = `✅ ซิงก์ +${km} km (${this.classMeta[type].name})`;
-        if (type !== 'ultra') msg += ` • ${this.fmtPace(this.paces[type])}/กม.`;
         if (ups.length) msg += ` 🎉 ${ups.map(k => this.classMeta[k].icon + ' ' + this.classMeta[k].name + ' Lv.' + this.classLevel(k).level).join(' · ')}`;
         if (this.overall().level > before.overall) msg += ` 🏆 Overall Lv.${this.overall().level}`;
         this.lastSync = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
