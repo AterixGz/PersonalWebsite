@@ -1835,8 +1835,51 @@ document.addEventListener('alpine:init', () => {
     }
   });
 
+  // ===== RunQuest builders (สร้างมาตรฐาน 20 เลเวล/คลาส จาก thresholds จริง) =====
+  function rqFmt(sec) { const m = Math.floor(sec / 60), s = sec % 60; return m + ':' + String(s).padStart(2, '0'); }
+  function rqFmtH(sec) { const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'); }
+  function rqBuildStandards() {
+    const cfg = {
+      sprint: { dir: 'down', fmt: 'time', prefix: '400m', wr: 'WR 43.03s', pace: false, unit: '400m เร็วสุด', target: 'sprint400',
+        slowEdges: [999, 110, 105, 100, 95, 90, 86, 82, 78, 74, 70, 67, 64, 61, 58, 55, 52, 49, 47, 45], fastLast: 43,
+        bands: [[1, 4, '🌱 มือใหม่สปรินท์'], [5, 8, '🌿 สายฟิต'], [9, 12, '⚡ นักแข่งสมัครเล่น'], [13, 16, '🏅 ตัวแทนทีม'], [17, 20, '💎 ระดับโลก']] },
+      mid: { dir: 'down', fmt: 'time', prefix: '5K', wr: 'WR 12:49', pace: true, unit: 'เวลา 5K เร็วสุด', target: 'best5k',
+        slowEdges: [999, 2400, 2280, 2160, 2040, 1920, 1800, 1710, 1620, 1530, 1440, 1350, 1275, 1200, 1125, 1050, 990, 930, 870, 820], fastLast: 770,
+        bands: [[1, 4, '🌱 มือใหม่หัดวิ่ง'], [5, 8, '🌿 นักวิ่งเพื่อสุขภาพ'], [9, 12, '⚡ นักแข่งสมัครเล่น'], [13, 16, '🏅 ตัวแทนทีม'], [17, 20, '💎 ระดับโลก']] },
+      long: { dir: 'down', fmt: 'half', prefix: 'ฮาล์ฟ', wr: 'WR 57:31', pace: true, unit: 'เวลาฮาล์ฟมาราธอน', target: 'bestHalf',
+        slowEdges: [999, 10800, 10200, 9600, 9000, 8400, 7950, 7500, 7050, 6600, 6150, 5700, 5400, 5100, 4800, 4500, 4200, 3900, 3600, 3450], fastLast: 0,
+        bands: [[1, 4, '🌱 มือใหม่ไกล'], [5, 8, '🌿 นักวิ่งเพื่อสุขภาพ'], [9, 12, '⚡ นักแข่งสมัครเล่น'], [13, 16, '🏅 ตัวแทนทีม'], [17, 20, '💎 ระดับโลก']] },
+      ultra: { dir: 'up', fmt: 'km', unit: 'ระยะไกลสุด', target: 'longestKm',
+        slowEdges: [5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 21.1, 25, 30, 35, 42.2, 50, 60, 75, 90, 100],
+        bands: [[1, 4, '🌱 มือใหม่'], [5, 8, '🌿 นักวิ่งไกล'], [9, 12, '⚡ นักวิ่งระยะไกล'], [13, 16, '🏅 นักอัลตร้า'], [17, 20, '💎 ระดับอัลตร้า']] },
+    };
+    const out = {};
+    for (const [key, c] of Object.entries(cfg)) {
+      const levels = c.slowEdges.map((edge, i) => {
+        const lv = i + 1;
+        const nextEdge = i + 1 < c.slowEdges.length ? c.slowEdges[i + 1] : (c.dir === 'up' ? 999 : c.fastLast);
+        const slow = c.dir === 'up' ? nextEdge : edge;
+        const fast = c.dir === 'up' ? edge : nextEdge;
+        const band = c.bands.find(b => lv >= b[0] && lv <= b[1]);
+        let ref;
+        if (c.fmt === 'time') {
+          ref = lv === 1 ? `${c.prefix} > ${rqFmt(slow)}` : lv === 20 ? `${c.prefix} < ${rqFmt(slow)} (${c.wr})` : `${c.prefix} ${rqFmt(fast)}–${rqFmt(slow)}`;
+          if (c.pace && lv > 1 && lv < 20) ref += ` • pace ${rqFmt(Math.round(fast / 5))}–${rqFmt(Math.round(slow / 5))}/กม.`;
+        } else if (c.fmt === 'half') {
+          ref = lv === 1 ? 'ฮาล์ฟ > 3:00:00' : lv === 20 ? `< 57:31 (${c.wr})` : `ฮาล์ฟ ${rqFmtH(fast)}–${rqFmtH(slow)}`;
+          if (lv > 1 && lv < 20) ref += ` • pace ${rqFmt(Math.round(fast / 21.1))}–${rqFmt(Math.round(slow / 21.1))}/กม.`;
+        } else {
+          ref = lv === 1 ? '< 5 km' : lv === 20 ? '100 km+' : `${fast}–${slow} km`;
+        }
+        return { lv: lv, slow: slow, fast: fast, title: band[2], ref: ref };
+      });
+      out[key] = { unit: c.unit, target: c.target, dir: c.dir, levels: levels };
+    }
+    return out;
+  }
+
   // --- RunQuest MMO Store (Mockup Demo — ยังไม่เชื่อมต่อ Apple Health จริง) ---
-  // 4 คลาส แต่ละคลาสมีมาตรฐานเฉพาะสาย (อ้างอิงสถิติจริง) + Overall = ค่าเฉลี่ย
+  // 4 คลาส แต่ละคลาสมีมาตรฐานเฉพาะสาย 20 เลเวล (อ้างอิงสถิติจริง) + Overall = ค่าเฉลี่ย
   Alpine.store('game', {
     // สถิติจริงต่อคลาส (mock — อนาคต: คำนวณจาก Apple Health)
     sprint400: 80,   // 400m เร็วสุด (วินาที)
@@ -1846,76 +1889,33 @@ document.addEventListener('alpine:init', () => {
     stats: { totalKm: 186.4, runs: 42, calories: 12480 },
     classOrder: ['sprint', 'mid', 'long', 'ultra'],
     classMeta: {
+      overall: { icon: 'fa-trophy', name: 'Overall' },
       sprint: { icon: 'fa-bolt', name: 'สปรินเตอร์', desc: 'ระยะสั้น 400m' },
       mid: { icon: 'fa-person-running', name: 'นักวิ่งกลาง', desc: '5K–10K' },
       long: { icon: 'fa-water', name: 'นักวิ่งไกล', desc: 'ฮาล์ฟ–มาราธอน' },
       ultra: { icon: 'fa-mountain', name: 'อัลตร้า', desc: 'ระยะไกลสุด' },
     },
-    overallTitles: ['🌱 มือใหม่', '🐣 ผู้เริ่มต้น', '🌿 นักวิ่งเพื่อสุขภาพ', '🍃 นักวิ่งสายฟิต', '🏃 นักวิ่งมาตรฐาน', '💪 นักวิ่งแข่ง', '🔥 นักแข่งระดับจังหวัด', '🎯 นักแข่งระดับประเทศ', '🏅 นักกีฬาอาชีพ', '💎 ระดับโลก'],
-    // มาตรฐานเฉพาะแต่ละคลาส 10 ระดับ (slow = ขอบช้า, fast = ขอบเร็ว; dir: down = ยิ่งน้อยยิ่งเก่ง, up = ยิ่งมากยิ่งเก่ง)
-    standards: {
-      sprint: {
-        unit: '400m เร็วสุด', target: 'sprint400', dir: 'down', hours: false,
-        levels: [
-          { lv: 1, slow: 999, fast: 105, title: '🌱 มือใหม่สปรินท์', ref: '400m > 1:45' },
-          { lv: 2, slow: 105, fast: 95,  title: '🐣 ผู้เริ่มต้น', ref: '1:35–1:45' },
-          { lv: 3, slow: 95,  fast: 85,  title: '🌿 สายฟิต', ref: '1:25–1:35' },
-          { lv: 4, slow: 85,  fast: 75,  title: '🍃 นักสปรินท์สมัครเล่น', ref: '1:15–1:25' },
-          { lv: 5, slow: 75,  fast: 65,  title: '⚡ นักวิ่งเพื่อสุขภาพ', ref: '1:05–1:15' },
-          { lv: 6, slow: 65,  fast: 60,  title: '💪 นักแข่งสมัครเล่น', ref: '1:00–1:05' },
-          { lv: 7, slow: 60,  fast: 55,  title: '🔥 แข่งระดับจังหวัด', ref: '0:55–1:00' },
-          { lv: 8, slow: 55,  fast: 50,  title: '🎖️ ตัวแทนมหาวิทยาลัย', ref: '0:50–0:55' },
-          { lv: 9, slow: 50,  fast: 45,  title: '🇹🇭 ทีมชาติ', ref: '0:45–0:50' },
-          { lv: 10, slow: 45, fast: 0,   title: '💎 ระดับโลก', ref: '< 0:45 (WR 43.03s)' },
-        ],
-      },
-      mid: {
-        unit: 'เวลา 5K เร็วสุด', target: 'best5k', dir: 'down', hours: false,
-        levels: [
-          { lv: 1, slow: 999, fast: 2400, title: '🌱 มือใหม่หัดวิ่ง', ref: '5K > 40:00' },
-          { lv: 2, slow: 2400, fast: 2100, title: '🐣 ผู้เริ่มต้น', ref: '35:00–40:00' },
-          { lv: 3, slow: 2100, fast: 1950, title: '🌿 นักวิ่งเพื่อสุขภาพ', ref: '32:30–35:00' },
-          { lv: 4, slow: 1950, fast: 1800, title: '🍃 นักวิ่งสายฟิต', ref: '30:00–32:30' },
-          { lv: 5, slow: 1800, fast: 1650, title: '🏃 ผ่านมาตรฐาน 5K 30 นาที', ref: '27:30–30:00' },
-          { lv: 6, slow: 1650, fast: 1500, title: '💪 นักวิ่งกลาง', ref: '25:00–27:30' },
-          { lv: 7, slow: 1500, fast: 1350, title: '🔥 นักแข่งสมัครเล่น', ref: '22:30–25:00' },
-          { lv: 8, slow: 1350, fast: 1200, title: '🎯 นักวิ่งแข่ง', ref: '20:00–22:30' },
-          { lv: 9, slow: 1200, fast: 1020, title: '🏅 ตัวแทนทีม', ref: '17:00–20:00' },
-          { lv: 10, slow: 1020, fast: 0, title: '💎 ระดับโลก', ref: '< 17:00 (WR 5K 12:49)' },
-        ],
-      },
-      long: {
-        unit: 'เวลาฮาล์ฟมาราธอน', target: 'bestHalf', dir: 'down', hours: true,
-        levels: [
-          { lv: 1, slow: 999, fast: 10800, title: '🌱 มือใหม่ไกล', ref: 'ฮาล์ฟ > 3:00:00' },
-          { lv: 2, slow: 10800, fast: 9600, title: '🐣 ผู้เริ่มต้น', ref: '2:40–3:00' },
-          { lv: 3, slow: 9600, fast: 8400, title: '🌿 นักวิ่งเพื่อสุขภาพ', ref: '2:20–2:40' },
-          { lv: 4, slow: 8400, fast: 7500, title: '🍃 นักวิ่งสายฟิต', ref: '2:05–2:20' },
-          { lv: 5, slow: 7500, fast: 6900, title: '🏃 นักวิ่งมาตรฐาน', ref: '1:55–2:05' },
-          { lv: 6, slow: 6900, fast: 6300, title: '💪 นักวิ่งกลาง', ref: '1:45–1:55' },
-          { lv: 7, slow: 6300, fast: 5700, title: '🔥 นักแข่งสมัครเล่น', ref: '1:35–1:45' },
-          { lv: 8, slow: 5700, fast: 5100, title: '🎯 นักวิ่งแข่ง', ref: '1:25–1:35' },
-          { lv: 9, slow: 5100, fast: 4500, title: '🏅 ตัวแทนทีม', ref: '1:15–1:25' },
-          { lv: 10, slow: 4500, fast: 0, title: '💎 ระดับโลก', ref: '< 1:15 (WR 57:31)' },
-        ],
-      },
-      ultra: {
-        unit: 'ระยะไกลสุด', target: 'longestKm', dir: 'up', hours: false,
-        levels: [
-          { lv: 1, slow: 5,    fast: 0,    title: '🌱 มือใหม่', ref: '< 5 km' },
-          { lv: 2, slow: 8,    fast: 5,    title: '🐣 ผู้เริ่มต้น', ref: '5 km' },
-          { lv: 3, slow: 10,   fast: 8,    title: '🌿 สายฟิต', ref: '8 km' },
-          { lv: 4, slow: 15,   fast: 10,   title: '🍃 นักวิ่งระยะไกล', ref: '10 km' },
-          { lv: 5, slow: 21.1, fast: 15,   title: '🏃 นักวิ่งไกล', ref: '15 km' },
-          { lv: 6, slow: 30,   fast: 21.1, title: '💪 ฮาล์ฟมาราธอน', ref: '21.1 km (ฮาล์ฟ)' },
-          { lv: 7, slow: 42.2, fast: 30,   title: '🔥 ระยะ 30K', ref: '30 km' },
-          { lv: 8, slow: 60,   fast: 42.2, title: '🎯 มาราธอน', ref: '42.2 km (มาราธอน)' },
-          { lv: 9, slow: 100,  fast: 60,   title: '🏅 อัลตร้า', ref: '60 km' },
-          { lv: 10, slow: 999, fast: 100,  title: '💎 อัลตร้ามาราธอน', ref: '100 km+' },
-        ],
-      },
+    overallTitles: ['🌱 มือใหม่', '🐣 ผู้เริ่มต้น', '🌿 นักวิ่งเพื่อสุขภาพ', '🍃 นักวิ่งสายฟิต', '⚡ ฟิตเนสรันเนอร์', '🏃 นักวิ่งมาตรฐาน', '💪 นักวิ่งกลาง', '🔥 นักแข่งสมัครเล่น', '🎯 นักวิ่งแข่ง', '🏅 แข่งระดับจังหวัด', '🥈 แข่งระดับประเทศ', '🇹🇭 ตัวแทนทีม', '⚔️ นักกีฬาอาชีพ', '🚀 อาชีพขั้นสูง', '🏆 ระดับนานาชาติ', '🌟 ระดับโลก', '👑 ตำนาน', '💎 ระดับตำนาน', '🏆 ผู้ท้าชิงสถิติโลก', '💎 ผู้ทำลายสถิติโลก'],
+    standards: rqBuildStandards(),
+    // โปรไฟล์: สายที่แสดงอยู่ + สีตามสาย
+    selectedClass: 'overall',
+    profileOpen: false,
+    gradients: {
+      overall: 'from-indigo-600 via-indigo-500 to-violet-600',
+      sprint: 'from-amber-500 via-orange-500 to-rose-500',
+      mid: 'from-sky-500 via-blue-500 to-indigo-500',
+      long: 'from-emerald-500 via-teal-500 to-cyan-500',
+      ultra: 'from-violet-500 via-purple-500 to-fuchsia-500',
     },
-    // อุปกรณ์ปัจจุบัน (mock)
+    chipStyle: {
+      overall: 'border-indigo-600 bg-indigo-50 text-indigo-600',
+      sprint: 'border-amber-500 bg-amber-50 text-amber-600',
+      mid: 'border-sky-500 bg-sky-50 text-sky-600',
+      long: 'border-emerald-500 bg-emerald-50 text-emerald-600',
+      ultra: 'border-violet-500 bg-violet-50 text-violet-600',
+    },
+    chipOff: 'border-slate-100 bg-white text-slate-400',
+    // อุปกรณ์ (mock)
     gear: [
       { icon: 'fa-clock', type: 'นาฬิกา', name: 'Amazfit GTR 4', note: 'ซิงก์ Zepp → Apple Health', status: 'เชื่อมต่อ', color: 'bg-indigo-50 border-indigo-100 text-indigo-600' },
       { icon: 'fa-shoe-prints', type: 'รองเท้าวิ่ง', name: 'Nike Pegasus 41', note: 'ใช้งาน 420 / 800 km', status: '70%', color: 'bg-sky-50 border-sky-100 text-sky-600' },
@@ -1927,7 +1927,23 @@ document.addEventListener('alpine:init', () => {
       { icon: 'fa-stopwatch', type: 'สายคาด HR', name: 'Polar H10', note: 'ซิงก์ผ่าน Bluetooth', status: 'พร้อมใช้', color: 'bg-rose-50 border-rose-100 text-rose-600' },
       { icon: 'fa-shoe-prints', type: 'รองเท้าอัลตร้า', name: 'Hoka Mafate Speed 4', note: '0 / 700 km', status: 'ใหม่', color: 'bg-teal-50 border-teal-100 text-teal-600' },
     ],
-    // แนวทางฝึกซ้อม + scale up ต่อคลาส
+    gearEditOpen: false,
+    gearEditingIndex: null,
+    gearEdit: { name: '', type: '', note: '' },
+    gearConfirmIndex: null,
+    // Fun facts (ขำๆ จากสถิติปัจจุบัน)
+    funFacts: [
+      { icon: 'fa-person-walking', text: 'ระยะไกลสุด 21.1 km — ชนะคนเดิน 10,000 ก้าว (≈7 km) ถึง 3 เท่า แบบไม่เหนื่อย 🚶' },
+      { icon: 'fa-dog', text: 'สปรินต์ 400m 1:20 — ชนะหมาปั๊กในระยะ 400m ได้ (หมาวิ่งเร็วแต่ต้องพักทุก 100m 555) 🐶' },
+      { icon: 'fa-robot', text: 'ฮาล์ฟ 2:10:00 = ครึ่งทางของมาราธอน Elon Musk (4:20) — เสมอ Elon แบบครึ่งๆ กลางๆ 🚀' },
+      { icon: 'fa-car', text: '5K 28:20 = ชนะรถติดบนถนนพระราม 9 ในชั่วโมงเร่งด่วน แบบขาดลอย 🚗' },
+      { icon: 'fa-bolt', text: 'สถิติโลก 5K 12:49 (Aregawi) — คุณช้ากว่า 2.2 เท่า แต่ยังเร็วกว่าคนไทย 95% ที่ไม่วิ่ง 😂' },
+      { icon: 'fa-bicycle', text: 'ปั่นจักรยานชิลๆ 15 กม./ชม. — คุณวิ่ง 10.6 กม./ชม. ตามทันครึ่งทาง ก่อนโดนทิ้ง 🚲' },
+      { icon: 'fa-stopwatch', text: '400m 1:20 vs WR 43.03 วิ — ต่างกันแค่ 37 วิ... ยังไงก็แพ้ แต่สู้ๆ 💪' },
+      { icon: 'fa-mountain', text: 'อัลตร้า Lv.12 — เป้า 100 km ตอนนี้ทำได้ 21.1 ต้องวิ่งเพิ่มอีกเกือบ 4 เท่า 🏔️' },
+    ],
+    factIndex: 0,
+    // แนวทางฝึกซ้อม + scale up + เตรียมตัวก่อนแข่ง ต่อคลาส
     guides: {
       sprint: {
         weekly: [
@@ -1942,6 +1958,12 @@ document.addEventListener('alpine:init', () => {
           'พักระหว่างเซต 2–3 เท่าของเวลาวิ่ง (400m 90 วิ → พัก ~3 นาที)',
           'ทุก 3–4 สัปดาห์ ลดปริมาณ 30% (deload) ให้ร่างกายฟื้น',
           'ปวดข้อ/เอ็น = หยุด 2–3 วัน อย่าฝืน (ไม่ใช่ปวดกล้ามเนื้อ)',
+        ],
+        race: [
+          '7 วันก่อน: ลด volume 50% เหลือแค่ speed สั้นๆ 2 เซต',
+          '3 วันก่อน: วิ่ง 3 × 100m strides เบาๆ เท่านั้น',
+          'คืนก่อน: นอน 8 ชม. + มื้อเย็นคาร์โบฯ (ข้าว/พาสต้า)',
+          'วันแข่ง: วอร์ม 30 นาที + strides ก่อนเรียกตัว 10 นาที',
         ],
       },
       mid: {
@@ -1958,6 +1980,12 @@ document.addEventListener('alpine:init', () => {
           'หนัก 3 สัปดาห์ → สัปดาห์ที่ 4 เบาลง (deload)',
           'จับเวลา 5K ใหม่ทุก 4–6 สัปดาห์เพื่อวัดผล',
         ],
+        race: [
+          '1 สัปดาห์ก่อน: Taper — ลดปริมาณ 40–50% แต่คงความเร็วไว้',
+          '3 วันก่อน: วิ่งเบา 20 นาที + strides 4 × 100m',
+          'คืนก่อน: นอน 8 ชม., กินอาหารปกติ ไม่ลองอะไรใหม่',
+          'เช้าวันแข่ง: ข้าว/กล้วย 2–3 ชม. ก่อน, วอร์ม 20 นาที + 2 strides',
+        ],
       },
       long: {
         weekly: [
@@ -1972,6 +2000,12 @@ document.addEventListener('alpine:init', () => {
           'วิ่งไกลเกิน 75 นาที ต้องกิน/ดื่มระหว่างทาง (เจล/เกลือ)',
           'ซ้อมช้าไว้ก่อน — ความอดทนมาก่อนความเร็ว',
           'เพิ่มระยะแล้วคงไว้ 2 สัปดาห์ ก่อนเพิ่มรอบถัดไป',
+        ],
+        race: [
+          '3 สัปดาห์ก่อน: Long run ครั้งสุดท้าย (เป้าระยะ)',
+          '2 สัปดาห์ก่อน: Taper ลดปริมาณ 30%',
+          '1 สัปดาห์ก่อน: ลด 50% + คาร์โบโหลด 3 วันก่อนแข่ง',
+          'วันแข่ง: แผน pace ไว้ก่อน อย่าออกเร็วเกิน + gel ทุก 45 นาที',
         ],
       },
       ultra: {
@@ -1988,6 +2022,12 @@ document.addEventListener('alpine:init', () => {
           'เพิ่ม elevation gain ค่อยๆ — อย่าเพิ่มพร้อมระยะทาง',
           'ซ้อมเดิน+กินในจังหวะ race — nutrition เป็นสกิล',
           'ทุก 3–4 สัปดาห์ deload 30–40%',
+        ],
+        race: [
+          '3–4 สัปดาห์ก่อน: Long run ใหญ่สุด แล้วเริ่ม taper',
+          '2 สัปดาห์ก่อน: ลด volume 40%, ซ้อมกิน/ดื่มตามแผน race',
+          '1 สัปดาห์ก่อน: ลด 60%, นอนสะสม (นอนให้ได้ 8 ชม./คืน)',
+          'วันแข่ง: แผนเดิน-วิ่ง, เกลือ + gel ทุกชม., ทากันน้ำพองเท้า',
         ],
       },
     },
@@ -2020,31 +2060,60 @@ document.addEventListener('alpine:init', () => {
       const val = this[st.target];
       let lvObj, pct;
       if (st.dir === 'up') {
-        // ยิ่งระยะไกลยิ่งเก่ง: อยู่ในเลเวลที่ fast <= val < slow
         lvObj = st.levels.find(l => val >= l.fast && val < l.slow) || st.levels[st.levels.length - 1];
         pct = Math.min(99, Math.max(2, Math.round(((val - lvObj.fast) / (lvObj.slow - lvObj.fast)) * 100)));
       } else {
-        // ยิ่งเวลาเร็วยิ่งเก่ง: อยู่ในเลเวลที่ fast < val <= slow
         lvObj = st.levels.find(l => val <= l.slow && val > l.fast) || st.levels[st.levels.length - 1];
         pct = Math.min(99, Math.max(2, Math.round(((lvObj.slow - val) / (lvObj.slow - lvObj.fast)) * 100)));
       }
-      const metric = st.unit + ': ' + (key === 'ultra' ? val + ' km' : this.fmtTime(val, st.hours));
+      const metric = st.unit + ': ' + (key === 'ultra' ? val + ' km' : this.fmtTime(val, key === 'long'));
       return { level: lvObj.lv, lvObj: lvObj, pct: pct, metric: metric };
     },
-    // Overall = ค่าเฉลี่ยเลเวล 4 คลาส (สเกล 10)
+    // Overall = ค่าเฉลี่ยเลเวล 4 คลาส (สเกล 20)
     overall() {
       const cs = this.classOrder.map(k => this.classLevel(k));
-      const level = Math.max(1, Math.min(10, Math.round(cs.reduce((s, c) => s + c.level, 0) / cs.length)));
+      const level = Math.max(1, Math.min(20, Math.round(cs.reduce((s, c) => s + c.level, 0) / cs.length)));
       return { level: level, title: this.overallTitles[level - 1], pct: Math.max(2, Math.min(99, Math.round(cs.reduce((s, c) => s + c.pct, 0) / cs.length))) };
     },
+    // โปรไฟล์: สายที่เลือกแสดง
+    setClass(k) { this.selectedClass = k; },
+    selectedName() { return this.selectedClass === 'overall' ? 'Overall (รวมทุกสาย)' : this.classMeta[this.selectedClass].name; },
+    selectedTitle() { return this.selectedClass === 'overall' ? this.overall().title : this.classLevel(this.selectedClass).lvObj.title; },
+    selectedLevel() { return this.selectedClass === 'overall' ? this.overall().level : this.classLevel(this.selectedClass).level; },
+    selectedPct() { return this.selectedClass === 'overall' ? this.overall().pct : this.classLevel(this.selectedClass).pct; },
+    selectedMetric() { return this.selectedClass === 'overall' ? 'ค่าเฉลี่ยเลเวล 4 คลาส' : this.classLevel(this.selectedClass).metric; },
     toggleClass(key) { this.classOpen[key] = !this.classOpen[key]; },
     toggleGuide(key) { this.guideOpen[key] = !this.guideOpen[key]; },
+    // Fun facts
+    currentFact() { return this.funFacts[this.factIndex]; },
+    nextFact() { this.factIndex = (this.factIndex + 1 + Math.floor(Math.random() * (this.funFacts.length - 1))) % this.funFacts.length; },
+    // Gear CRUD
     addGear() {
       const pool = this.gearPool.filter(p => !this.gear.some(g => g.name === p.name));
       if (!pool.length) { this.showToast('🎒 มีอุปกรณ์ครบแล้ว!'); return; }
       const g = pool[Math.floor(Math.random() * pool.length)];
       this.gear.unshift(g);
       this.showToast('🎒 เพิ่มอุปกรณ์: ' + g.name);
+    },
+    openGearEdit(i) {
+      this.gearEditingIndex = i;
+      const g = this.gear[i];
+      this.gearEdit = { name: g.name, type: g.type, note: g.note };
+      this.gearEditOpen = true;
+    },
+    saveGear() {
+      if (this.gearEditingIndex !== null) {
+        Object.assign(this.gear[this.gearEditingIndex], { name: this.gearEdit.name || this.gear[this.gearEditingIndex].name, type: this.gearEdit.type || this.gear[this.gearEditingIndex].type, note: this.gearEdit.note || this.gear[this.gearEditingIndex].note });
+      }
+      this.gearEditOpen = false;
+      this.gearEditingIndex = null;
+      this.showToast('✅ อัปเดตอุปกรณ์แล้ว');
+    },
+    removeGear(i) { this.gearConfirmIndex = i; },
+    confirmRemoveGear() {
+      if (this.gearConfirmIndex !== null) this.gear.splice(this.gearConfirmIndex, 1);
+      this.gearConfirmIndex = null;
+      this.showToast('🗑️ ลบอุปกรณ์แล้ว');
     },
     syncNow() {
       if (this.syncing) return;
@@ -2062,15 +2131,15 @@ document.addEventListener('alpine:init', () => {
         let km, detail;
         if (type === 'sprint') {
           km = 0.4;
-          this.sprint400 = Math.max(50, this.sprint400 - (Math.floor(Math.random() * 3) + 1));
+          this.sprint400 = Math.max(45, this.sprint400 - (Math.floor(Math.random() * 3) + 1));
           detail = 'เทรน 400m';
         } else if (type === 'mid') {
           km = Math.round((3 + Math.random() * 4) * 10) / 10;
-          this.best5k = Math.max(1020, this.best5k - (Math.floor(Math.random() * 11) + 5));
+          this.best5k = Math.max(770, this.best5k - (Math.floor(Math.random() * 11) + 5));
           detail = 'เทรน 5K';
         } else if (type === 'long') {
           km = Math.round((10 + Math.random() * 11) * 10) / 10;
-          this.bestHalf = Math.max(4500, this.bestHalf - (Math.floor(Math.random() * 61) + 15));
+          this.bestHalf = Math.max(3450, this.bestHalf - (Math.floor(Math.random() * 61) + 15));
           detail = 'เทรนฮาล์ฟ';
         } else {
           km = Math.round((25 + Math.random() * 17) * 10) / 10;
@@ -2084,6 +2153,7 @@ document.addEventListener('alpine:init', () => {
         let msg = `✅ ซิงก์ +${km} km (${this.classMeta[type].name})`;
         if (ups.length) msg += ` 🎉 ${ups.map(k => this.classMeta[k].icon + ' ' + this.classMeta[k].name + ' Lv.' + this.classLevel(k).level).join(' · ')}`;
         if (this.overall().level > before.overall) msg += ` 🏆 Overall Lv.${this.overall().level}`;
+        this.selectedClass = type; // สลับโปรไฟล์ไปสายที่เพิ่งเทรน (สีเปลี่ยนตาม)
         this.lastSync = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
         this.syncing = false;
         this.showToast(msg);
@@ -2096,4 +2166,3 @@ document.addEventListener('alpine:init', () => {
     },
   });
 });
-
