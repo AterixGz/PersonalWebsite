@@ -540,7 +540,7 @@ document.addEventListener('alpine:init', () => {
     keypassSettingsOpen: false,
 
     // Swipe gesture state
-    tabOrder: ['finance', 'workspace', 'chat'],
+    tabOrder: ['finance', 'workspace', 'chat', 'game'],
     _touchStartX: 0,
     _touchStartY: 0,
     _touchEndX: 0,
@@ -1833,6 +1833,99 @@ document.addEventListener('alpine:init', () => {
       if (diffDays === 1) return 'พรุ่งนี้ครบกำหนด';
       return `อีก ${diffDays} วัน (วันที่ ${billingDay})`;
     }
+  });
+
+  // --- RunQuest MMO Store (Mockup Demo — ยังไม่เชื่อมต่อ Apple Health จริง) ---
+  Alpine.store('game', {
+    character: {
+      name: 'AterixGz',
+      emoji: '🧝',
+      className: 'นักรบสายวิ่ง',
+      title: 'นักวิ่งแห่งฟินฟลาว',
+      level: 12,
+      xp: 3450,
+      xpToNext: 4000,
+    },
+    // สถิติรวม (mock — อนาคต: อ่านจาก Apple Health ผ่าน HealthKit)
+    stats: {
+      totalKm: 186.4,
+      runs: 42,
+      avgPace: '6:12',
+      calories: 12480,
+    },
+    quests: [
+      { icon: 'fa-route', name: 'วิ่งสะสม 5 km', pct: 64, xp: 200 },
+      { icon: 'fa-bolt', name: 'ทำ Pace เฉลี่ย < 6:00 นาที/กม. (3 ครั้ง)', pct: 67, xp: 150 },
+      { icon: 'fa-sun', name: 'วิ่งช่วงเช้า 06:00–09:00', pct: 0, xp: 100 },
+      { icon: 'fa-calendar-week', name: 'วิ่งครบ 3 ครั้ง/สัปดาห์', pct: 67, xp: 300 },
+      { icon: 'fa-flag-checkered', name: 'วิ่งสะสม 20 km/สัปดาห์', pct: 92, xp: 500 },
+    ],
+    zones: [
+      { emoji: '🌲', name: 'ป่าต้นกล้า', minLevel: 1 },
+      { emoji: '🏘️', name: 'หมู่บ้านฟินฟลาว', minLevel: 3 },
+      { emoji: '⛰️', name: 'เขามังกรลม', minLevel: 6 },
+      { emoji: '🏜️', name: 'ทะเลทรายทมิฬ', minLevel: 10 },
+      { emoji: '❄️', name: 'ยอดเขาน้ำแข็ง', minLevel: 15 },
+      { emoji: '🌋', name: 'หลุมอัคคี', minLevel: 20 },
+      { emoji: '🏰', name: 'ปราสาทราชา', minLevel: 25 },
+      { emoji: '🌌', name: 'ดินแดนเทพ', minLevel: 30 },
+    ],
+    leaderboard: [
+      { rank: 1, name: 'RunnerNoi', km: 32.4, level: 18, medal: '🥇' },
+      { rank: 2, name: 'AterixGz (คุณ)', km: 24.6, level: 12, medal: '🥈', me: true },
+      { rank: 3, name: 'Benz_slow', km: 21.1, level: 11, medal: '🥉' },
+      { rank: 4, name: 'Ploy วิ่งเช้า', km: 19.8, level: 12, medal: '4' },
+      { rank: 5, name: 'DriftBike', km: 15.2, level: 9, medal: '5' },
+    ],
+    recentRuns: [
+      { date: 'วันนี้ 19:02 น.', km: 5.2, pace: '6:05', dur: '32 นาที' },
+      { date: 'เมื่อวาน', km: 8.4, pace: '5:48', dur: '49 นาที' },
+      { date: '3 วันที่แล้ว', km: 3.1, pace: '6:40', dur: '21 นาที' },
+      { date: '5 วันที่แล้ว', km: 10.0, pace: '5:52', dur: '59 นาที' },
+    ],
+    syncing: false,
+    lastSync: '—',
+    toast: '',
+    _toastTimer: null,
+
+    xpPct() {
+      return Math.min(100, Math.round((this.character.xp / this.character.xpToNext) * 100));
+    },
+    zoneLocked(z) {
+      return this.character.level < z.minLevel;
+    },
+    syncNow() {
+      if (this.syncing) return;
+      this.syncing = true;
+      setTimeout(() => {
+        const km = Math.round((Math.random() * 3 + 1.5) * 10) / 10;
+        const xp = Math.round(km * 50);
+        this.stats.totalKm = Math.round((this.stats.totalKm + km) * 10) / 10;
+        this.stats.runs += 1;
+        this.recentRuns.unshift({
+          date: 'ตอนนี้ (ซิงก์สด)',
+          km: km,
+          pace: '—',
+          dur: 'รอ Apple Health',
+        });
+        this.character.xp += xp;
+        let msg = `✅ ซิงก์จาก Apple Health แล้ว +${km} km (+${xp} XP)`;
+        if (this.character.xp >= this.character.xpToNext) {
+          this.character.xp -= this.character.xpToNext;
+          this.character.level += 1;
+          this.character.xpToNext = Math.round(this.character.xpToNext * 1.15);
+          msg += ` 🎉 เลเวลอัป! Lv.${this.character.level}`;
+        }
+        this.lastSync = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        this.syncing = false;
+        this.showToast(msg);
+      }, 1600);
+    },
+    showToast(msg) {
+      this.toast = msg;
+      clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => { this.toast = ''; }, 3200);
+    },
   });
 });
 
