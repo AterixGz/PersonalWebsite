@@ -86,6 +86,13 @@ func runMigrations(db *sql.DB) error {
 			updated_at TEXT,
 			PRIMARY KEY (provider, user_email)
 		)`,
+		`CREATE TABLE IF NOT EXISTS runquest_runs (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			start_date TEXT,
+			distance_km REAL,
+			duration_sec REAL,
+			created_at TEXT
+		)`,
 	}
 
 	for _, q := range queries {
@@ -416,6 +423,86 @@ func (s *Store) GetOAuthToken(provider, userEmail string) (*model.OAuthToken, er
 func (s *Store) DeleteOAuthToken(provider, userEmail string) error {
 	_, err := s.db.Exec("DELETE FROM oauth_tokens WHERE provider=? AND user_email=?", provider, userEmail)
 	return err
+}
+
+// --- RunQuest: ข้อมูลการวิ่งจริงจาก Apple Health (ผ่าน iOS Shortcut) ---
+func (s *Store) AddRunQuestRuns(runs []model.RunQuestRun) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	now := time.Now().Format(time.RFC3339)
+	for _, r := range runs {
+		if r.DistanceKm <= 0 || r.DurationSec <= 0 {
+			continue
+		}
+		start := r.StartDate
+		if start == "" {
+			start = now
+		}
+		if _, err := tx.Exec("INSERT INTO runquest_runs (start_date, distance_km, duration_sec, created_at) VALUES (?, ?, ?, ?)",
+			start, r.DistanceKm, r.DurationSec, now); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (s *Store) GetRunQuestStats() (model.RunQuestStats, error) {
+	var st model.RunQuestStats
+	rows, err := s.db.Query("SELECT start_date, distance_km, duration_sec FROM runquest_runs ORDER BY start_date DESC LIMIT 500")
+	if err != nil {
+		return st, err
+	}
+	defer rows.Close()
+
+	var bestPace5k, bestPaceHalf, bestPaceSprint float64
+	has5k, hasHalf, hasSprint := false, false, false
+
+	for rows.Next() {
+		var start string
+		var km, dur float64
+		if err := rows.Scan(&start, &km, &dur); err != nil {
+			return st, err
+		}
+		if km <= 0 || dur <= 0 {
+			continue
+		}
+		st.TotalKm += km
+		st.RunCount++
+		if km > st.LongestKm {
+			st.LongestKm = km
+		}
+		pace := dur / km
+		switch {
+		case km >= 4.5 && km <= 6.5:
+			if !has5k || pace < bestPace5k {
+				bestPace5k, has5k = pace, true
+			}
+		case km >= 19 && km <= 23:
+			if !hasHalf || pace < bestPaceHalf {
+				bestPaceHalf, hasHalf = pace, true
+			}
+		case km <= 1.2:
+			if !hasSprint || pace < bestPaceSprint {
+				bestPaceSprint, hasSprint = pace, true
+			}
+		}
+		if len(st.Recent) < 6 {
+			st.Recent = append(st.Recent, model.RunQuestRun{StartDate: start, DistanceKm: km, DurationSec: dur})
+		}
+	}
+	if has5k {
+		st.Best5KSec = bestPace5k * 5
+	}
+	if hasHalf {
+		st.BestHalfSec = bestPaceHalf * 21.0975
+	}
+	if hasSprint {
+		st.Sprint400Sec = bestPaceSprint * 0.4
+	}
+	return st, nil
 }
 
 func (s *Store) Close() error {

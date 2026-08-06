@@ -39,6 +39,29 @@ type ChatRequest struct {
 	Message string `json:"message"`
 }
 
+// --- RunQuest (ข้อมูลการวิ่งจริงจาก Apple Health ผ่าน iOS Shortcut) ---
+type RunQuestRun struct {
+	ID          int64   `json:"id"`
+	StartDate   string  `json:"start_date"`
+	DistanceKm  float64 `json:"distance_km"`
+	DurationSec float64 `json:"duration_sec"`
+	CreatedAt   string  `json:"created_at"`
+}
+
+type RunQuestSyncRequest struct {
+	Runs []RunQuestRun `json:"runs"`
+}
+
+type RunQuestStats struct {
+	TotalKm     float64       `json:"total_km"`
+	RunCount    int           `json:"run_count"`
+	Best5KSec   float64       `json:"best_5k_sec"`
+	BestHalfSec float64       `json:"best_half_sec"`
+	Sprint400Sec float64      `json:"sprint_400_sec"`
+	LongestKm   float64       `json:"longest_km"`
+	Recent      []RunQuestRun `json:"recent"`
+}
+
 type ExpenseRequest struct {
 	Name     string  `json:"name"`
 	Amount   float64 `json:"amount"`

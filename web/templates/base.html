@@ -46,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth20">
+  <link rel="stylesheet" href="/static/app.css?v=oauth21">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth20"></script>
+  <script src="/static/app.js?v=oauth21"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth20', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth21', { updateViaCache: 'none' });
       });
     }
 
@@ -823,19 +823,18 @@
           <span>Mockup demo — ข้อมูลจำลอง ยังไม่เชื่อมต่อ Apple Health จริง • กดซิงก์เพื่อจำลองวิ่ง 🎉</span>
         </div>
 
-        <!-- Profile (กดเพื่อขยาย) -->
+        <!-- Profile (แสดงตลอด ไม่ยุบ) -->
         <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-          <button @click="$store.game.toggleProfile()" class="w-full p-4 flex items-center gap-3 active:scale-[0.99] transition-transform">
+          <div class="p-4 pb-0 flex items-center gap-3">
             <div class="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-xl shrink-0">🏃</div>
             <div class="flex-1 min-w-0 text-left">
               <p class="text-sm font-bold text-slate-900">โปรไฟล์นักวิ่ง</p>
               <p class="text-[10px] text-slate-400 truncate" x-text="'🏆 Overall Lv.' + $store.game.overall().level + '/20 • ' + $store.game.overall().title"></p>
             </div>
             <span class="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[11px] font-black shrink-0" x-text="'Lv.' + $store.game.overall().level"></span>
-            <i class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform shrink-0" :class="$store.game.profileOpen ? 'rotate-180' : ''"></i>
-          </button>
+          </div>
 
-          <div x-show="$store.game.profileOpen" x-cloak class="px-4 pb-4">
+          <div class="px-4 pb-4">
             <!-- การ์ดสายที่เลือกแสดง (สีตามสาย) -->
             <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br p-4 text-white transition-all duration-300"
                  :class="'bg-gradient-to-br ' + $store.game.gradients[$store.game.selectedClass]">
@@ -928,16 +927,27 @@
             <div class="flex items-center gap-2">
               <i class="fa-solid fa-heart-pulse text-rose-500"></i>
               <span class="text-sm font-bold text-slate-900">Apple Health</span>
-              <span class="px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100 text-[9px] font-black">AUTO</span>
+              <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black"
+                    :class="$store.game.realData ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'"
+                    x-text="$store.game.realData ? 'เชื่อมต่อจริง' : 'สาธิต'"></span>
             </div>
-            <p class="text-[11px] text-slate-400 mt-0.5">ซิงก์การวิ่งอัตโนมัติ • ล่าสุด: <span class="font-bold text-slate-600" x-text="$store.game.lastSync"></span></p>
+            <p class="text-[11px] text-slate-400 mt-0.5" x-text="$store.game.realData ? 'ข้อมูลจริงจาก Zepp → Apple Health • อัปเดตล่าสุด: ' + $store.game.apiLastSync : 'โหมดสาธิต (ข้อมูลจำลอง) • ซิงก์ล่าสุด: ' + $store.game.lastSync"></p>
           </div>
           <button @click="$store.game.syncNow()" :disabled="$store.game.syncing"
                   class="shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
                   :class="$store.game.syncing ? 'bg-slate-100 text-slate-400' : 'bg-indigo-600 text-white shadow-md shadow-indigo-200'">
             <i class="fa-solid fa-rotate text-[11px]" :class="$store.game.syncing ? 'animate-spin' : ''"></i>
-            <span x-text="$store.game.syncing ? 'กำลังซิงก์…' : 'ซิงก์ตอนนี้'"></span>
+            <span x-text="$store.game.syncing ? 'กำลังซิงก์…' : ($store.game.realData ? 'รีเฟรช' : 'ซิงก์ตอนนี้')"></span>
           </button>
+        </div>
+
+        <!-- วิธีเชื่อมต่อข้อมูลจริง -->
+        <div x-show="!$store.game.realData" x-cloak class="rounded-xl bg-sky-50 border border-sky-100 px-3.5 py-2.5 text-[11px] font-semibold text-sky-700">
+          <p class="font-bold mb-1">🔗 วิธีเชื่อมต่อข้อมูลจริง (Apple Health)</p>
+          <p class="leading-relaxed">สร้าง iOS Shortcut อ่าน Workouts จาก Apple Health แล้ว POST ไปยัง <span class="font-black">https://thanpisit.online/api/runquest/sync</span> (header <span class="font-black">X-RunQuest-Key</span> + JSON runs) — ขั้นตอนเต็มอยู่ในแชท</p>
+        </div>
+        <div x-show="$store.game.realData" x-cloak class="rounded-xl bg-emerald-50 border border-emerald-100 px-3.5 py-2.5 text-[11px] font-semibold text-emerald-700">
+          ✅ ใช้ข้อมูลจริงแล้ว — สถิติ เลเวล และการแข่ง คำนวณจากการวิ่งจริงของคุณ
         </div>
 
         <!-- Stats row -->
@@ -1085,7 +1095,7 @@
             <span class="text-[10px] font-bold text-slate-400">อิงเลเวลปัจจุบันของคุณ</span>
           </div>
           <div class="space-y-2">
-            <template x-for="(c, ri) in $store.game.classOrder" :key="ri">
+            <template x-for="(c, ri) in $store.game.visibleRaceClasses()" :key="ri">
               <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden">
                 <button @click="$store.game.toggleGuide('race_' + c)" class="w-full p-3.5 flex items-center justify-between gap-2 active:scale-[0.99] transition-transform">
                   <div class="flex items-center gap-2.5 min-w-0">

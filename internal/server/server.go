@@ -71,6 +71,10 @@ func (s *Server) SetupRoutes() http.Handler {
 	mux.HandleFunc("GET /api/ai-usage", handler.HandleListAIUsage(s.store))
 	mux.HandleFunc("POST /api/ai-usage", handler.HandleSaveAIUsage(s.store))
 
+	// RunQuest (ข้อมูลการวิ่งจริงจาก Apple Health ผ่าน iOS Shortcut)
+	mux.HandleFunc("POST /api/runquest/sync", handler.HandleRunQuestSync(s.store, s.config.RunQuestAPIKey))
+	mux.HandleFunc("GET /api/runquest/stats", handler.HandleRunQuestStats(s.store))
+
 	// Workspace (real OAuth connections: Trello / Google Calendar / Gmail)
 	mux.HandleFunc("GET /api/workspace/status", handler.HandleWorkspaceStatus(s.store))
 	mux.HandleFunc("GET /api/workspace/connect/trello", handler.HandleWorkspaceConnectTrello(s.config))

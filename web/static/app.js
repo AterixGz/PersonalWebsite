@@ -752,6 +752,9 @@ document.addEventListener('alpine:init', () => {
       if (tab === 'chat') {
         Alpine.store('aiUsage').loadData();
       }
+      if (tab === 'game') {
+        Alpine.store('game').loadRealStats();
+      }
       
       // Scroll to top
       const scrollContainer = document.getElementById('scroll-container');
@@ -1899,7 +1902,8 @@ document.addEventListener('alpine:init', () => {
     standards: rqBuildStandards(),
     // โปรไฟล์: สายที่แสดงอยู่ + สีตามสาย
     selectedClass: localStorage.getItem('runquest_selected_class') || 'overall',
-    profileOpen: localStorage.getItem('runquest_profile_open') === '1',
+    realData: false,
+    apiLastSync: '',
     gradients: {
       overall: 'from-indigo-600 via-indigo-500 to-violet-600',
       sprint: 'from-amber-500 via-orange-500 to-rose-500',
@@ -1977,9 +1981,8 @@ document.addEventListener('alpine:init', () => {
     },
     // อุปกรณ์ (mock)
     gear: [
-      { icon: 'fa-clock', type: 'นาฬิกา', name: 'Amazfit GTR 4', note: 'ซิงก์ Zepp → Apple Health', status: 'เชื่อมต่อ', color: 'bg-indigo-50 border-indigo-100 text-indigo-600' },
-      { icon: 'fa-shoe-prints', type: 'รองเท้าวิ่ง', name: 'Nike Pegasus 41', note: 'ใช้งาน 420 / 800 km', status: '70%', color: 'bg-sky-50 border-sky-100 text-sky-600' },
-      { icon: 'fa-mountain', type: 'รองเท้าเทรล', name: 'Hoka Speedgoat 6', note: 'ใช้งาน 180 / 600 km', status: '30%', color: 'bg-violet-50 border-violet-100 text-violet-600' },
+      { icon: 'fa-clock', type: 'นาฬิกา', name: 'Amazfit GTR mini', note: 'ซิงก์ Zepp → Apple Health', status: 'เชื่อมต่อ', color: 'bg-indigo-50 border-indigo-100 text-indigo-600' },
+      { icon: 'fa-shoe-prints', type: 'รองเท้าวิ่ง', name: '2000KM 3.0 (สีขาว)', note: 'ใช้งาน 0 / 800 km', status: 'ใหม่', color: 'bg-sky-50 border-sky-100 text-sky-600' },
     ],
     gearPool: [
       { icon: 'fa-shoe-prints', type: 'รองเท้าวิ่ง', name: 'Asics Magic Speed 4', note: '0 / 600 km', status: 'ใหม่', color: 'bg-emerald-50 border-emerald-100 text-emerald-600' },
@@ -2159,7 +2162,7 @@ document.addEventListener('alpine:init', () => {
     },
     // โปรไฟล์: สายที่เลือกแสดง
     setClass(k) { this.selectedClass = k; localStorage.setItem('runquest_selected_class', k); },
-    toggleProfile() { this.profileOpen = !this.profileOpen; localStorage.setItem('runquest_profile_open', this.profileOpen ? '1' : '0'); },
+    visibleRaceClasses() { return this.selectedClass === 'overall' ? this.classOrder : [this.selectedClass]; },
     classFact(cls) { const facts = this.classFacts[cls]; return facts[(this.classFactIdx[cls] || 0) % facts.length]; },
     nextClassFact(cls) { this.classFactIdx[cls] = ((this.classFactIdx[cls] || 0) + 1 + Math.floor(Math.random() * (this.classFacts[cls].length - 1))) % this.classFacts[cls].length; },
     // สถานะการลงแข่งของแต่ละรายการ (อิงเลเวลปัจจุบัน)
@@ -2223,19 +2226,61 @@ document.addEventListener('alpine:init', () => {
       this.gearConfirmIndex = null;
       this.showToast('🗑️ ลบอุปกรณ์แล้ว');
     },
-    syncNow() {
+    async loadRealStats() {
+      try {
+        const res = await fetch('/api/runquest/stats', { cache: 'no-store' });
+        if (!res.ok) return false;
+        const d = await res.json();
+        if (!d.run_count || d.run_count <= 0) return false;
+        this.realData = true;
+        this.stats.totalKm = Math.round(d.total_km * 10) / 10;
+        this.stats.runs = d.run_count;
+        if (d.best_5k_sec > 0) this.best5k = Math.round(d.best_5k_sec);
+        if (d.best_half_sec > 0) this.bestHalf = Math.round(d.best_half_sec);
+        if (d.sprint_400_sec > 0) this.sprint400 = Math.round(d.sprint_400_sec);
+        if (d.longest_km > 0) this.longestKm = Math.round(d.longest_km * 10) / 10;
+        this.recentRuns = (d.recent || []).slice(0, 6).map(r => ({
+          date: this.fmtApiDate(r.start_date),
+          km: r.distance_km,
+          pace: r.distance_km > 0 ? this.fmtTime(Math.round(r.duration_sec / r.distance_km), false) : '—',
+          dur: Math.round(r.duration_sec / 60) + ' นาที',
+        }));
+        this.apiLastSync = this.fmtApiDate((d.recent && d.recent[0]) ? d.recent[0].start_date : null);
+        return true;
+      } catch (e) { return false; }
+    },
+    fmtApiDate(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+      return d.getDate() + ' ' + months[d.getMonth()] + ' • ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    },
+    async syncNow() {
       if (this.syncing) return;
       this.syncing = true;
+      const before = {
+        sprint: this.classLevel('sprint').level,
+        mid: this.classLevel('mid').level,
+        long: this.classLevel('long').level,
+        ultra: this.classLevel('ultra').level,
+        overall: this.overall().level,
+      };
+      const hasReal = await this.loadRealStats();
+      if (hasReal) {
+        const ups = this.classOrder.filter(k => this.classLevel(k).level > before[k]);
+        let msg = `✅ อัปเดตจาก Apple Health แล้ว (รวม ${this.stats.totalKm} km)`;
+        if (ups.length) msg += ` 🎉 ${ups.map(k => this.classMeta[k].icon + ' ' + this.classMeta[k].name + ' Lv.' + this.classLevel(k).level).join(' · ')}`;
+        if (this.overall().level > before.overall) msg += ` 🏆 Overall Lv.${this.overall().level}`;
+        this.lastSync = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        this.syncing = false;
+        this.showToast(msg);
+        return;
+      }
+      // ยังไม่มีข้อมูลจริง → โหมดสาธิต (จำลอง)
       setTimeout(() => {
         const types = ['sprint', 'mid', 'long', 'ultra'];
         const type = types[Math.floor(Math.random() * types.length)];
-        const before = {
-          sprint: this.classLevel('sprint').level,
-          mid: this.classLevel('mid').level,
-          long: this.classLevel('long').level,
-          ultra: this.classLevel('ultra').level,
-          overall: this.overall().level,
-        };
         let km, detail;
         if (type === 'sprint') {
           km = 0.4;
@@ -2261,7 +2306,7 @@ document.addEventListener('alpine:init', () => {
         let msg = `✅ ซิงก์ +${km} km (${this.classMeta[type].name})`;
         if (ups.length) msg += ` 🎉 ${ups.map(k => this.classMeta[k].icon + ' ' + this.classMeta[k].name + ' Lv.' + this.classLevel(k).level).join(' · ')}`;
         if (this.overall().level > before.overall) msg += ` 🏆 Overall Lv.${this.overall().level}`;
-        this.selectedClass = type; // สลับโปรไฟล์ไปสายที่เพิ่งเทรน (สีเปลี่ยนตาม)
+        this.selectedClass = type;
         localStorage.setItem('runquest_selected_class', type);
         this.lastSync = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
         this.syncing = false;

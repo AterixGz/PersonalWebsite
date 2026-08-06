@@ -17,6 +17,7 @@ type Config struct {
 	GoogleClientSecret string
 	GoogleRedirectURI  string
 	TrelloAPIKey       string
+	RunQuestAPIKey     string
 }
 
 func Load() Config {
@@ -58,6 +59,7 @@ func Load() Config {
 		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		GoogleRedirectURI:  googleRedirect,
 		TrelloAPIKey:       os.Getenv("TRELLO_API_KEY"),
+		RunQuestAPIKey:     os.Getenv("RUNQUEST_API_KEY"),
 	}
 }
 
