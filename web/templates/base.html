@@ -44,20 +44,20 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth39">
+  <link rel="stylesheet" href="/static/app.css?v=oauth40">
 
   <!-- App JS modules (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/js/core.js?v=oauth39"></script>
-  <script src="/static/js/stores/auth.js?v=oauth39"></script>
-  <script src="/static/js/stores/notification.js?v=oauth39"></script>
-  <script src="/static/js/stores/keypass.js?v=oauth39"></script>
-  <script src="/static/js/stores/ui.js?v=oauth39"></script>
-  <script src="/static/js/stores/logs.js?v=oauth39"></script>
-  <script src="/static/js/stores/finance.js?v=oauth39"></script>
-  <script src="/static/js/stores/workspace.js?v=oauth39"></script>
-  <script src="/static/js/stores/chat.js?v=oauth39"></script>
-  <script src="/static/js/stores/aiUsage.js?v=oauth39"></script>
-  <script src="/static/js/stores/game.js?v=oauth39"></script>
+  <script src="/static/js/core.js?v=oauth40"></script>
+  <script src="/static/js/stores/auth.js?v=oauth40"></script>
+  <script src="/static/js/stores/notification.js?v=oauth40"></script>
+  <script src="/static/js/stores/keypass.js?v=oauth40"></script>
+  <script src="/static/js/stores/ui.js?v=oauth40"></script>
+  <script src="/static/js/stores/logs.js?v=oauth40"></script>
+  <script src="/static/js/stores/finance.js?v=oauth40"></script>
+  <script src="/static/js/stores/workspace.js?v=oauth40"></script>
+  <script src="/static/js/stores/chat.js?v=oauth40"></script>
+  <script src="/static/js/stores/aiUsage.js?v=oauth40"></script>
+  <script src="/static/js/stores/game.js?v=oauth40"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -71,7 +71,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth39', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth40', { updateViaCache: 'none' });
       });
     }
 
@@ -113,27 +113,23 @@
   <main class="w-full h-full max-w-md mx-auto relative flex flex-col bg-slate-50 shadow-xl overflow-hidden" style="height: 100dvh;">
 
     <!-- Mobile Sidebar Drawer -->
-    <div x-cloak class="fixed inset-0 z-50 flex pointer-events-none" :class="$store.ui.sidebarOpen ? 'pointer-events-auto' : ''" role="dialog" aria-modal="true">
-      <!-- Backdrop -->
-      <div id="sidebar-backdrop" x-show="$store.ui.sidebarOpen"
-           x-transition:enter="ease-ios duration-300"
-           x-transition:enter-start="opacity-0"
-           x-transition:enter-end="opacity-100"
-           x-transition:leave="ease-ios duration-200"
-           x-transition:leave-start="opacity-100"
-           x-transition:leave-end="opacity-0"
-           class="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px] transition-opacity"
+    <!-- Edge hit zone: ลากจากขอบซ้ายเพื่อเปิด (ติดนิ้ว) — ซ่อนเมื่อ sidebar เปิด -->
+    <div id="sidebar-edge-zone" x-cloak x-show="!$store.ui.sidebarOpen"
+         class="fixed left-0 top-0 bottom-0 w-5 z-40" style="touch-action: none;"></div>
+
+    <div x-cloak class="fixed inset-0 z-50 flex pointer-events-none" :class="($store.ui.sidebarOpen || $store.ui.sidebarDrag !== null) ? 'pointer-events-auto' : ''" role="dialog" aria-modal="true">
+      <!-- Backdrop (opacity ตามระยะลาก realtime) -->
+      <div id="sidebar-backdrop"
+           :style="'opacity:' + $store.ui.backdropOpacity() + ';' + ($store.ui.sidebarDrag !== null ? 'transition:none;' : 'transition:opacity .28s cubic-bezier(0.32,0.72,0,1);')"
+           :class="($store.ui.sidebarOpen || $store.ui.sidebarDrag !== null) ? 'backdrop-blur-[2px]' : ''"
+           class="fixed inset-0 bg-slate-900/50"
            @click="$store.ui.closeSidebar()"></div>
 
-      <!-- Drawer Content -->
-      <div id="sidebar-drawer" x-show="$store.ui.sidebarOpen"
-           x-transition:enter="ease-ios duration-300"
-           x-transition:enter-start="-translate-x-full"
-           x-transition:enter-end="translate-x-0"
-           x-transition:leave="ease-ios duration-200"
-           x-transition:leave-start="translate-x-0"
-           x-transition:leave-end="-translate-x-full"
-           class="relative w-4/5 max-w-xs bg-white h-full shadow-2xl flex flex-col z-10 safe-top safe-bottom overflow-y-auto no-scrollbar transition-transform" style="will-change: transform, opacity;">
+      <!-- Drawer Content (transform ตามระยะลาก realtime) -->
+      <div id="sidebar-drawer"
+           :style="'transform:translateX(' + $store.ui.drawerX() + 'px);will-change:transform,opacity;' + ($store.ui.sidebarDrag !== null ? 'transition:none;' : 'transition:transform .28s cubic-bezier(0.32,0.72,0,1);')"
+           :inert="($store.ui.sidebarOpen || $store.ui.sidebarDrag !== null) ? undefined : ''"
+           class="relative w-4/5 max-w-xs bg-white h-full shadow-2xl flex flex-col z-10 safe-top safe-bottom overflow-y-auto no-scrollbar">
         
         <div class="shrink-0">
           <!-- Sidebar Header / Profile Info -->

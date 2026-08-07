@@ -2,6 +2,7 @@ document.addEventListener('alpine:init', () => {
 Alpine.store('ui', {
     activeTab: 'finance',
     sidebarOpen: false,
+    sidebarDrag: null,   // px offset while finger-dragging (0..width); null = not dragging
     configModalOpen: false,
     addExpenseModalOpen: false,
     addIncomeModalOpen: false,
@@ -103,12 +104,11 @@ Alpine.store('ui', {
       el._swipeBound = true;
       const self = this;
 
-      let sx = 0, sy = 0, swiping = false, edge = false;
+      let sx = 0, sy = 0, swiping = false;
 
       el.addEventListener('pointerdown', function(e) {
         if (self.sidebarOpen || Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen) return;
         sx = e.clientX; sy = e.clientY; swiping = false;
-        edge = e.clientX < 30;
       });
 
       el.addEventListener('pointermove', function(e) {
@@ -128,88 +128,144 @@ Alpine.store('ui', {
         const THRESHOLD = 60;
         if (Math.abs(dx) < THRESHOLD) return;
 
-        // Swipe right from left edge → open sidebar
-        if (edge && dx > THRESHOLD) { self.sidebarOpen = true; return; }
-
         const i = self.tabOrder.indexOf(self.activeTab);
         if (i === -1) return;
         if (dx < -THRESHOLD && i < self.tabOrder.length - 1) {
           self.setTab(self.tabOrder[i + 1]);
         } else if (dx > THRESHOLD && i > 0) {
           self.setTab(self.tabOrder[i - 1]);
-        } else if (dx > THRESHOLD && i === 0) {
-          self.sidebarOpen = true;
         }
       });
 
       el.addEventListener('pointercancel', function() { sx = 0; swiping = false; });
     },
 
-    // --- Sidebar Swipe (edge right to open, swipe left on drawer/backdrop to close) ---
+    // --- Sidebar Finger-Drag (ติดนิ้ว realtime: edge drag open, drag left close, fling + threshold snap) ---
+    _sidebarW() {
+      const d = document.getElementById('sidebar-drawer');
+      return d ? d.offsetWidth : 312;
+    },
+    drawerX() {
+      if (this.sidebarDrag !== null) return this.sidebarDrag - this._sidebarW();
+      return this.sidebarOpen ? 0 : -this._sidebarW();
+    },
+    backdropOpacity() {
+      if (this.sidebarDrag !== null) {
+        const w = this._sidebarW();
+        return w ? Math.min(1, this.sidebarDrag / w) : 0;
+      }
+      return this.sidebarOpen ? 1 : 0;
+    },
     initSidebarSwipe() {
-      const mainEl = document.querySelector('main');
-      if (!mainEl || mainEl._sidebarSwipeBound) return;
-      mainEl._sidebarSwipeBound = true;
       const self = this;
-
-      let sx = 0, swiping = false;
-
-      // Edge swipe to OPEN sidebar
-      mainEl.addEventListener('pointerdown', function(e) {
-        sx = e.clientX; swiping = false;
-      });
-      mainEl.addEventListener('pointermove', function(e) {
-        if (sx && Math.abs(e.clientX - sx) > 15) swiping = true;
-      });
-      mainEl.addEventListener('pointerup', function(e) {
-        if (!swiping) { sx = 0; return; }
-        const dx = e.clientX - sx;
-        sx = 0; swiping = false;
-        if (dx > 60 && e.clientX - dx < 30 && !self.sidebarOpen) {
-          if (Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen) return;
-          self.sidebarOpen = true;
-        }
-      });
-      mainEl.addEventListener('pointercancel', function() { sx = 0; swiping = false; });
-
-      // Swipe LEFT on drawer → close
       const drawer = document.getElementById('sidebar-drawer');
-      if (drawer && !drawer._sidebarCloseBound) {
-        drawer._sidebarCloseBound = true;
-        let dsx = 0, dswiping = false;
-        drawer.addEventListener('pointerdown', function(e) { dsx = e.clientX; dswiping = false; });
-        drawer.addEventListener('pointermove', function(e) { if (dsx && Math.abs(e.clientX - dsx) > 15) dswiping = true; });
-        drawer.addEventListener('pointerup', function(e) {
-          if (!dswiping) { dsx = 0; return; }
-          const dx = e.clientX - dsx;
-          dsx = 0; dswiping = false;
-          if (dx < -60) self.closeSidebar();
-        });
-        drawer.addEventListener('pointercancel', function() { dsx = 0; dswiping = false; });
-      }
-
-      // Swipe LEFT on backdrop → close
       const backdrop = document.getElementById('sidebar-backdrop');
-      if (backdrop && !backdrop._sidebarCloseBound) {
-        backdrop._sidebarCloseBound = true;
-        let bsx = 0, bswiping = false;
-        backdrop.addEventListener('pointerdown', function(e) { bsx = e.clientX; bswiping = false; });
-        backdrop.addEventListener('pointermove', function(e) { if (bsx && Math.abs(e.clientX - bsx) > 15) bswiping = true; });
-        backdrop.addEventListener('pointerup', function(e) {
-          if (!bswiping) { bsx = 0; return; }
-          const dx = e.clientX - bsx;
-          bsx = 0; bswiping = false;
-          if (dx < -60) self.closeSidebar();
-        });
-        backdrop.addEventListener('pointercancel', function() { bsx = 0; bswiping = false; });
-      }
+      const zone = document.getElementById('sidebar-edge-zone');
+      if (!drawer || !backdrop || !zone || drawer._dragBound) return;
+      drawer._dragBound = true;
+      if (!backdrop._dragBound) backdrop._dragBound = true;
+      if (!zone._dragBound) zone._dragBound = true;
+
+      let startX = 0, startY = 0, startOpen = false, dragging = false;
+      let lastX = 0, lastT = 0, velX = 0, dragDist = 0;
+      let suppressClick = false;
+
+      const blockModals = () => Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen;
+
+      const suppressOnce = (el) => {
+        el.addEventListener('click', function(e) {
+          if (suppressClick) { e.preventDefault(); e.stopPropagation(); suppressClick = false; }
+        }, true);
+      };
+      suppressOnce(drawer);
+      suppressOnce(backdrop);
+
+      const begin = (e) => {
+        if (blockModals()) return;
+        // closed: เริ่มได้เฉพาะ edge zone (x < 34); open: ลากได้ทุกจุดบน drawer/backdrop
+        if (!self.sidebarOpen && e.clientX > 34) return;
+        startX = e.clientX; startY = e.clientY;
+        startOpen = self.sidebarOpen;
+        dragging = false; velX = 0; dragDist = 0;
+        self.sidebarDrag = startOpen ? self._sidebarW() : 0;
+        lastX = startX; lastT = performance.now();
+      };
+
+      const move = (e) => {
+        if (self.sidebarDrag === null) return;
+        const dx = e.clientX - startX, dy = e.clientY - startY;
+        if (!dragging) {
+          // กดค้างก่อน (ยังไม่ลาก) → ปล่อยให้เป็น tap/click
+          if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+          // เปิดจาก edge: เอาแนวนอน; ปิด: เอาแนวนอนซ้าย
+          if (Math.abs(dx) <= Math.abs(dy) && startOpen === false && dx < 8) { return; }
+          dragging = true;
+          suppressClick = true;
+        }
+        e.preventDefault();
+        const w = self._sidebarW();
+        let pos;
+        if (startOpen) pos = Math.max(0, Math.min(w, w + dx));
+        else pos = Math.max(0, Math.min(w, dx));
+        self.sidebarDrag = pos;
+        dragDist = Math.abs(dx);
+        const now = performance.now();
+        const dt = now - lastT;
+        if (dt > 0) velX = (e.clientX - lastX) / dt;
+        lastX = e.clientX; lastT = now;
+      };
+
+      const end = () => {
+        if (self.sidebarDrag === null) return;
+        const w = self._sidebarW();
+        const pos = self.sidebarDrag;
+        const TH = w * 0.3;
+        let open;
+        if (startOpen) {
+          open = pos > w - TH;
+          if (velX > 0.4) open = true;
+          else if (velX < -0.4) open = false;
+        } else {
+          open = pos > TH;
+          if (velX > 0.4) open = true;
+          else if (velX < -0.4) open = false;
+        }
+        if (!dragging) { self.sidebarDrag = null; return; } // tap → ไม่เปลี่ยนสถานะ
+        self.sidebarDrag = null;
+        self.sidebarOpen = open;
+      };
+
+      const cancel = () => {
+        if (self.sidebarDrag === null) return;
+        self.sidebarDrag = null;
+      };
+
+      // Edge zone (ตอนปิด) → ลากเปิด
+      zone.addEventListener('pointerdown', (e) => { begin(e); if (dragging !== undefined) { try { zone.setPointerCapture(e.pointerId); } catch (_) {} } });
+      zone.addEventListener('pointermove', move);
+      zone.addEventListener('pointerup', end);
+      zone.addEventListener('pointercancel', cancel);
+
+      // Drawer (ตอนเปิด) → ลากซ้ายปิด
+      drawer.addEventListener('pointerdown', (e) => { if (self.sidebarOpen) { begin(e); try { drawer.setPointerCapture(e.pointerId); } catch (_) {} } });
+      drawer.addEventListener('pointermove', move);
+      drawer.addEventListener('pointerup', end);
+      drawer.addEventListener('pointercancel', cancel);
+
+      // Backdrop (ตอนเปิด) → ลากซ้ายปิด
+      backdrop.addEventListener('pointerdown', (e) => { if (self.sidebarOpen) { begin(e); try { backdrop.setPointerCapture(e.pointerId); } catch (_) {} } });
+      backdrop.addEventListener('pointermove', move);
+      backdrop.addEventListener('pointerup', end);
+      backdrop.addEventListener('pointercancel', cancel);
     },
 
     toggleSidebar() {
+      this.sidebarDrag = null;
       this.sidebarOpen = !this.sidebarOpen;
     },
     
     closeSidebar() {
+      this.sidebarDrag = null;
       this.sidebarOpen = false;
     },
 
