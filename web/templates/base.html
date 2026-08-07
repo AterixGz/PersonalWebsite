@@ -44,20 +44,20 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth37">
+  <link rel="stylesheet" href="/static/app.css?v=oauth38">
 
   <!-- App JS modules (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/js/core.js?v=oauth37"></script>
-  <script src="/static/js/stores/auth.js?v=oauth37"></script>
-  <script src="/static/js/stores/notification.js?v=oauth37"></script>
-  <script src="/static/js/stores/keypass.js?v=oauth37"></script>
-  <script src="/static/js/stores/ui.js?v=oauth37"></script>
-  <script src="/static/js/stores/logs.js?v=oauth37"></script>
-  <script src="/static/js/stores/finance.js?v=oauth37"></script>
-  <script src="/static/js/stores/workspace.js?v=oauth37"></script>
-  <script src="/static/js/stores/chat.js?v=oauth37"></script>
-  <script src="/static/js/stores/aiUsage.js?v=oauth37"></script>
-  <script src="/static/js/stores/game.js?v=oauth37"></script>
+  <script src="/static/js/core.js?v=oauth38"></script>
+  <script src="/static/js/stores/auth.js?v=oauth38"></script>
+  <script src="/static/js/stores/notification.js?v=oauth38"></script>
+  <script src="/static/js/stores/keypass.js?v=oauth38"></script>
+  <script src="/static/js/stores/ui.js?v=oauth38"></script>
+  <script src="/static/js/stores/logs.js?v=oauth38"></script>
+  <script src="/static/js/stores/finance.js?v=oauth38"></script>
+  <script src="/static/js/stores/workspace.js?v=oauth38"></script>
+  <script src="/static/js/stores/chat.js?v=oauth38"></script>
+  <script src="/static/js/stores/aiUsage.js?v=oauth38"></script>
+  <script src="/static/js/stores/game.js?v=oauth38"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -71,7 +71,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth37', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth38', { updateViaCache: 'none' });
       });
     }
 
@@ -248,11 +248,6 @@
           </div>
           <div class="flex items-center gap-2">
             <!-- Notification Bell Icon -->
-            <button @click="$store.game.toggleGameSettings()"
-                    class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0"
-                    title="ตั้งค่าหน้าวิ่ง">
-              <i class="fa-solid fa-sliders text-sm"></i>
-            </button>
             <button @click="$store.notification.toggleModal()" 
                     class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0" 
                     title="การแจ้งเตือน">
@@ -483,11 +478,6 @@
           </div>
           <div class="flex items-center gap-2">
             <!-- Notification Bell Icon -->
-            <button @click="$store.game.toggleGameSettings()"
-                    class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0"
-                    title="ตั้งค่าหน้าวิ่ง">
-              <i class="fa-solid fa-sliders text-sm"></i>
-            </button>
             <button @click="$store.notification.toggleModal()" 
                     class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0" 
                     title="การแจ้งเตือน">
@@ -830,6 +820,11 @@
             <button @click="$store.ui.toggleSidebar()" class="w-10 h-10 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-700 hover:text-indigo-600 active:scale-90 transition-all">
               <i class="fa-solid fa-bars text-base"></i>
             </button>
+            <button @click="$store.game.toggleGameSettings()"
+                    class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0"
+                    title="ตั้งค่าหน้าวิ่ง">
+              <i class="fa-solid fa-sliders text-sm"></i>
+            </button>
             <div>
               <h1 class="text-xl font-bold tracking-tight text-slate-900 leading-tight">RunQuest MMO</h1>
               <!-- (order ตั้งไว้ที่ wrapper ด้านล่าง) -->
@@ -839,11 +834,6 @@
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <button @click="$store.game.toggleGameSettings()"
-                    class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0"
-                    title="ตั้งค่าหน้าวิ่ง">
-              <i class="fa-solid fa-sliders text-sm"></i>
-            </button>
             <button @click="$store.notification.toggleModal()" 
                     class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0" 
                     title="การแจ้งเตือน">
@@ -978,7 +968,7 @@
               <span class="text-sm font-bold text-slate-900">Google Health</span>
               <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black"
                     :class="$store.game.healthConnected ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'"
-                    x-text="$store.game.healthConnected ? 'เชื่อมต่อแล้ว' : 'ยังไม่เชื่อม'"></span>
+                    x-text="$store.game.healthConnected ? ($store.game.apiLastSync ? 'อัปเดต ' + $store.game.apiLastSync : 'เชื่อมต่อแล้ว') : 'ยังไม่เชื่อม'"></span>
             </div>
             <p class="text-[11px] text-slate-400 mt-0.5" x-text="$store.game.healthConnected ? 'ดึงข้อมูลวิ่ง (ระยะทาง/เวลา/แคลอรี่/HR) จาก Google Health API' : 'กดเชื่อมเพื่อให้เว็บอ่านข้อมูลวิ่งจาก Google Health' + ' • ต้องเปิด Google Health API ใน Google Cloud ก่อน'"></p>
           </div>
