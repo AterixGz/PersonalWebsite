@@ -1,0 +1,237 @@
+document.addEventListener('alpine:init', () => {
+Alpine.store('ui', {
+    activeTab: 'finance',
+    sidebarOpen: false,
+    configModalOpen: false,
+    addExpenseModalOpen: false,
+    addIncomeModalOpen: false,
+    keypassSettingsOpen: false,
+
+    // Swipe gesture state
+    tabOrder: ['finance', 'workspace', 'game'],
+    _touchStartX: 0,
+    _touchStartY: 0,
+    _touchEndX: 0,
+    _swiping: false,
+    _edgeSwipe: false,
+
+    init() {
+      // Initialize swipe gestures after DOM is ready
+      requestAnimationFrame(() => {
+        this.initSwipe();
+        this.initSidebarSwipe();
+        this.initPullToRefresh();
+      });
+    },
+
+    // --- Pull-to-refresh (workspace + AI token tabs) ---
+    initPullToRefresh() {
+      const el = document.getElementById('scroll-container');
+      if (!el || el._ptrBound) return;
+      el._ptrBound = true;
+      const self = this;
+      let startY = 0, pulling = false, dist = 0;
+      const THRESHOLD = 70;
+      const inner = document.getElementById('ptr-indicator-inner');
+      const outer = document.getElementById('ptr-indicator');
+
+      const reset = () => {
+        pulling = false; dist = 0;
+        if (outer) outer.style.opacity = '0';
+        if (inner) { inner.style.transform = 'translateY(-70px)'; inner.style.transition = 'transform .2s ease, opacity .2s ease'; }
+      };
+
+      el.addEventListener('touchstart', (e) => {
+        if (self.sidebarOpen || Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen) return;
+        const t = self.activeTab;
+        if (t !== 'workspace' && t !== 'stats') return;
+        if (el.scrollTop > 0) { startY = 0; return; }
+        startY = e.touches[0].clientY;
+        pulling = true;
+        dist = 0;
+        if (inner) inner.style.transition = 'none';
+      }, { passive: true });
+
+      el.addEventListener('touchmove', (e) => {
+        if (!pulling || !startY) return;
+        const dy = e.touches[0].clientY - startY;
+        if (dy <= 0 || el.scrollTop > 0) { reset(); return; }
+        dist = Math.min(dy * 0.5, 80);
+        if (outer) outer.style.opacity = dist > 8 ? 1 : 0;
+        if (inner) inner.style.transform = `translateY(${dist - 70}px)`;
+        if (dist > 8) e.preventDefault();
+      }, { passive: false });
+
+      el.addEventListener('touchend', async () => {
+        if (!pulling) return;
+        const willRefresh = dist >= THRESHOLD;
+        pulling = false; startY = 0;
+        if (willRefresh) {
+          if (inner) {
+            const icon = inner.querySelector('i');
+            if (icon) icon.className = 'fa-solid fa-spinner fa-spin';
+            inner.style.transform = 'translateY(0px)';
+            inner.style.transition = 'transform .2s ease, opacity .2s ease';
+          }
+          if (outer) outer.style.opacity = '1';
+          try {
+            await self.pullRefresh();
+          } catch (err) { console.error('pull refresh failed', err); }
+          if (inner) { const icon = inner.querySelector('i'); if (icon) icon.className = 'fa-solid fa-arrow-down'; }
+        }
+        reset();
+        dist = 0;
+      });
+
+      el.addEventListener('touchcancel', reset);
+    },
+
+    async pullRefresh() {
+      const t = this.activeTab;
+      if (t === 'workspace') {
+        const ws = Alpine.store('workspace');
+        await Promise.allSettled([ws.loadTrello(), ws.loadCalendar(), ws.loadGmail()]);
+      } else if (t === 'stats') {
+        await Alpine.store('aiUsage').loadData();
+      }
+    },
+
+    // --- Tab Swipe (pointer events + touch-action: pan-y) ---
+    initSwipe() {
+      const el = document.getElementById('scroll-container');
+      if (!el || el._swipeBound) return;
+      el._swipeBound = true;
+      const self = this;
+
+      let sx = 0, sy = 0, swiping = false, edge = false;
+
+      el.addEventListener('pointerdown', function(e) {
+        if (self.sidebarOpen || Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen) return;
+        sx = e.clientX; sy = e.clientY; swiping = false;
+        edge = e.clientX < 30;
+      });
+
+      el.addEventListener('pointermove', function(e) {
+        if (!sx) return;
+        const dx = Math.abs(e.clientX - sx);
+        const dy = Math.abs(e.clientY - sy);
+        if (dx > 15 && dx > dy * 1.5) swiping = true;
+      });
+
+      el.addEventListener('pointerup', function(e) {
+        if (!sx) { sx = 0; return; }
+        const dx = e.clientX - sx;
+        const wasSwiping = swiping;
+        sx = 0; sy = 0; swiping = false;
+        if (!wasSwiping) return;
+
+        const THRESHOLD = 60;
+        if (Math.abs(dx) < THRESHOLD) return;
+
+        // Swipe right from left edge → open sidebar
+        if (edge && dx > THRESHOLD) { self.sidebarOpen = true; return; }
+
+        const i = self.tabOrder.indexOf(self.activeTab);
+        if (i === -1) return;
+        if (dx < -THRESHOLD && i < self.tabOrder.length - 1) {
+          self.setTab(self.tabOrder[i + 1]);
+        } else if (dx > THRESHOLD && i > 0) {
+          self.setTab(self.tabOrder[i - 1]);
+        } else if (dx > THRESHOLD && i === 0) {
+          self.sidebarOpen = true;
+        }
+      });
+
+      el.addEventListener('pointercancel', function() { sx = 0; swiping = false; });
+    },
+
+    // --- Sidebar Swipe (edge right to open, swipe left on drawer/backdrop to close) ---
+    initSidebarSwipe() {
+      const mainEl = document.querySelector('main');
+      if (!mainEl || mainEl._sidebarSwipeBound) return;
+      mainEl._sidebarSwipeBound = true;
+      const self = this;
+
+      let sx = 0, swiping = false;
+
+      // Edge swipe to OPEN sidebar
+      mainEl.addEventListener('pointerdown', function(e) {
+        sx = e.clientX; swiping = false;
+      });
+      mainEl.addEventListener('pointermove', function(e) {
+        if (sx && Math.abs(e.clientX - sx) > 15) swiping = true;
+      });
+      mainEl.addEventListener('pointerup', function(e) {
+        if (!swiping) { sx = 0; return; }
+        const dx = e.clientX - sx;
+        sx = 0; swiping = false;
+        if (dx > 60 && e.clientX - dx < 30 && !self.sidebarOpen) {
+          if (Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen) return;
+          self.sidebarOpen = true;
+        }
+      });
+      mainEl.addEventListener('pointercancel', function() { sx = 0; swiping = false; });
+
+      // Swipe LEFT on drawer → close
+      const drawer = document.getElementById('sidebar-drawer');
+      if (drawer && !drawer._sidebarCloseBound) {
+        drawer._sidebarCloseBound = true;
+        let dsx = 0, dswiping = false;
+        drawer.addEventListener('pointerdown', function(e) { dsx = e.clientX; dswiping = false; });
+        drawer.addEventListener('pointermove', function(e) { if (dsx && Math.abs(e.clientX - dsx) > 15) dswiping = true; });
+        drawer.addEventListener('pointerup', function(e) {
+          if (!dswiping) { dsx = 0; return; }
+          const dx = e.clientX - dsx;
+          dsx = 0; dswiping = false;
+          if (dx < -60) self.closeSidebar();
+        });
+        drawer.addEventListener('pointercancel', function() { dsx = 0; dswiping = false; });
+      }
+
+      // Swipe LEFT on backdrop → close
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if (backdrop && !backdrop._sidebarCloseBound) {
+        backdrop._sidebarCloseBound = true;
+        let bsx = 0, bswiping = false;
+        backdrop.addEventListener('pointerdown', function(e) { bsx = e.clientX; bswiping = false; });
+        backdrop.addEventListener('pointermove', function(e) { if (bsx && Math.abs(e.clientX - bsx) > 15) bswiping = true; });
+        backdrop.addEventListener('pointerup', function(e) {
+          if (!bswiping) { bsx = 0; return; }
+          const dx = e.clientX - bsx;
+          bsx = 0; bswiping = false;
+          if (dx < -60) self.closeSidebar();
+        });
+        backdrop.addEventListener('pointercancel', function() { bsx = 0; bswiping = false; });
+      }
+    },
+
+    toggleSidebar() {
+      this.sidebarOpen = !this.sidebarOpen;
+    },
+    
+    closeSidebar() {
+      this.sidebarOpen = false;
+    },
+
+    setTab(tab) {
+      this.activeTab = tab;
+      
+      // Load data on demand
+      if (tab === 'stats') {
+        Alpine.store('aiUsage').loadData();
+        if (Alpine.store('logs')) Alpine.store('logs').log('system', 'เปิดแท็บ', 'สถิติการใช้งาน');
+      }
+      if (tab === 'game') {
+        Alpine.store('game').loadRealStats();
+        Alpine.store('game').checkHealth();
+        if (Alpine.store('logs')) Alpine.store('logs').log('game', 'เปิดแท็บ', 'RunQuest');
+      }
+      if (tab === 'finance' && Alpine.store('logs')) Alpine.store('logs').log('finance', 'เปิดแท็บ', 'สรุปการเงิน');
+      if (tab === 'workspace' && Alpine.store('logs')) Alpine.store('logs').log('workspace', 'เปิดแท็บ', 'พื้นที่ทำงาน');
+      
+      // Scroll to top
+      const scrollContainer = document.getElementById('scroll-container');
+      if (scrollContainer) scrollContainer.scrollTop = 0;
+    }
+  });
+});

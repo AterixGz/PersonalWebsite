@@ -1,12 +1,23 @@
-const CACHE_NAME = 'finflow-v29';
-const VERSION = "oauth35";
+const CACHE_NAME = 'finflow-v30';
+const VERSION = "oauth36";
 const ASSETS = [
   '/',
   '/static/app.css?v=' + VERSION,
-  '/static/app.js?v=' + VERSION,
+  '/static/js/core.js?v=' + VERSION,
+  '/static/js/stores/auth.js?v=' + VERSION,
+  '/static/js/stores/notification.js?v=' + VERSION,
+  '/static/js/stores/keypass.js?v=' + VERSION,
+  '/static/js/stores/ui.js?v=' + VERSION,
+  '/static/js/stores/logs.js?v=' + VERSION,
+  '/static/js/stores/finance.js?v=' + VERSION,
+  '/static/js/stores/workspace.js?v=' + VERSION,
+  '/static/js/stores/chat.js?v=' + VERSION,
+  '/static/js/stores/aiUsage.js?v=' + VERSION,
+  '/static/js/stores/game.js?v=' + VERSION,
   '/static/vendor/tailwind.js',
   '/static/vendor/alpine.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+  '/static/vendor/fontawesome/all.min.css',
+  '/static/vendor/fonts/fonts.css'
 ];
 
 self.addEventListener('install', event => {
