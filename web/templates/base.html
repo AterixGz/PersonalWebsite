@@ -17,14 +17,12 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
   <link rel="manifest" href="/static/manifest.json">
   
-  <!-- Minimal Fonts: Nunito (English) & IBM Plex Sans Thai (Thai) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Fonts + Icons: โฮสต์ในเครื่อง (ตัด CDN ออกจาก critical path — กันจอดำตอนโหลด) -->
+  <link href="/static/vendor/fonts/fonts.css" rel="stylesheet">
 
   <!-- Dependencies served locally from VPS (no CDN dependency) -->
   <script src="/static/vendor/tailwind.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/vendor/fontawesome/all.min.css">
   
   <!-- Cloudflare Turnstile Anti-Bot Security -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
@@ -46,10 +44,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth34">
+  <link rel="stylesheet" href="/static/app.css?v=oauth35">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth34"></script>
+  <script src="/static/app.js?v=oauth35"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +61,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth34', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth35', { updateViaCache: 'none' });
       });
     }
 
@@ -85,6 +83,21 @@
   </script>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased overflow-hidden w-full h-full safe-top" x-data>
+  <!-- Splash: โชว์ทันที (inline style ไม่พึ่ง Alpine) ซ่อนเมื่อพร้อม -->
+  <div id="app-splash" style="position:fixed;inset:0;z-index:9999;background:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+    <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:24px;">💰</div>
+    <div style="width:22px;height:22px;border:3px solid #e2e8f0;border-top-color:#4f46e5;border-radius:50%;animation:rqspin .8s linear infinite;"></div>
+    <div style="font-size:11px;color:#94a3b8;font-family:system-ui,sans-serif;">กำลังโหลด FinFlow…</div>
+  </div>
+  <style>@keyframes rqspin{to{transform:rotate(360deg)}}</style>
+  <script>
+    (function(){
+      function hide(){ var s=document.getElementById('app-splash'); if(s) s.style.display='none'; }
+      document.addEventListener('alpine:initialized', hide);
+      window.addEventListener('load', function(){ setTimeout(hide, 800); });
+      setTimeout(hide, 6000); // fallback กันค้าง
+    })();
+  </script>
   
   <!-- Main Container -->
   <main class="w-full h-full max-w-md mx-auto relative flex flex-col bg-slate-50 shadow-xl overflow-hidden" style="height: 100dvh;">
