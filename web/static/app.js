@@ -2293,7 +2293,7 @@ document.addEventListener('alpine:init', () => {
       const d = new Date(iso);
       if (isNaN(d.getTime())) return iso;
       const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-      return d.getDate() + ' ' + months[d.getMonth()] + ' • ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+      return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + ' • ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     },
     async healthDisconnect() {
       try {

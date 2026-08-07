@@ -46,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth27">
+  <link rel="stylesheet" href="/static/app.css?v=oauth28">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth27"></script>
+  <script src="/static/app.js?v=oauth28"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth27', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth28', { updateViaCache: 'none' });
       });
     }
 
