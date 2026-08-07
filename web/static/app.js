@@ -2124,8 +2124,8 @@ document.addEventListener('alpine:init', () => {
     ],
     syncing: false,
     lastSync: '—',
-    addRunOpen: false,
-    newRun: { date: '', km: '', min: '', sec: '' },
+    profileOpen: localStorage.getItem('runquest_profile_open') !== '0',
+    importing: false,
     classOpen: {},
     guideOpen: {},
     toast: '',
@@ -2200,30 +2200,22 @@ document.addEventListener('alpine:init', () => {
     // Fun facts
     currentFact() { return this.funFacts[this.factIndex]; },
     nextFact() { this.factIndex = (this.factIndex + 1 + Math.floor(Math.random() * (this.funFacts.length - 1))) % this.funFacts.length; },
-    // Gear CRUD
-    async submitAddRun() {
-      const km = parseFloat(this.newRun.km);
-      const min = parseInt(this.newRun.min || '0', 10);
-      const sec = parseInt(this.newRun.sec || '0', 10);
-      if (!km || km <= 0 || (min === 0 && sec === 0)) { this.showToast('⚠️ กรอกระยะทางและเวลาให้ครบ'); return; }
-      const date = this.newRun.date || new Date().toISOString().slice(0, 10);
-      const now = new Date();
-      const hh = String(now.getHours()).padStart(2, '0');
-      const mm = String(now.getMinutes()).padStart(2, '0');
-      const body = { runs: [{ start_date: date + 'T' + hh + ':' + mm + ':00', distance_km: km, duration_sec: min * 60 + sec }] };
+    toggleProfile() { this.profileOpen = !this.profileOpen; localStorage.setItem('runquest_profile_open', this.profileOpen ? '1' : '0'); },
+    async importHealth(file) {
+      if (!file) { this.showToast('⚠️ เลือกไฟล์ export.zip / export.xml ก่อน'); return; }
+      this.importing = true;
       try {
-        const res = await fetch('/api/runquest/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        if (!res.ok) { this.showToast('⚠️ บันทึกไม่สำเร็จ ลองใหม่'); return; }
-        this.addRunOpen = false;
-        this.newRun = { date: '', km: '', min: '', sec: '' };
-        await this.loadRealStats();
-        this.showToast('✅ เพิ่มการวิ่งแล้ว ' + km + ' km — สถิติอัปเดต!');
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch('/api/runquest/import', { method: 'POST', body: fd });
+        const d = await res.json();
+        if (!res.ok) { this.showToast('⚠️ ' + (d.error || 'นำเข้าไม่สำเร็จ')); return; }
+        this.showToast('✅ นำเข้าแล้ว ' + d.imported + ' รายการ' + (d.skipped ? ' (ข้ามซ้ำ ' + d.skipped + ')' : '') + ' — สถิติอัปเดต!');
+        if (d.imported > 0) await this.loadRealStats();
       } catch (e) { this.showToast('⚠️ เกิดข้อผิดพลาด'); }
+      finally { this.importing = false; }
     },
+    // Gear CRUD
     addGear() {
       const pool = this.gearPool.filter(p => !this.gear.some(g => g.name === p.name));
       if (!pool.length) { this.showToast('🎒 มีอุปกรณ์ครบแล้ว!'); return; }

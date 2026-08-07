@@ -46,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth22">
+  <link rel="stylesheet" href="/static/app.css?v=oauth24">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth22"></script>
+  <script src="/static/app.js?v=oauth24"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth22', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth24', { updateViaCache: 'none' });
       });
     }
 
@@ -820,19 +820,20 @@
         <!-- Demo notice -->
         <div class="rounded-xl bg-amber-50 border border-amber-200/70 px-3.5 py-2.5 text-[11px] font-semibold text-amber-700 flex items-center gap-2">
           <i class="fa-solid fa-flask text-xs"></i>
-          <span>Mockup demo — ข้อมูลจำลอง ยังไม่เชื่อมต่อ Apple Health จริง • กดซิงก์เพื่อจำลองวิ่ง 🎉</span>
+          <span>ข้อมูลจำลอง จนกว่าจะนำเข้าย้อนหลังจาก Apple Health • กดซิงก์เพื่อจำลองวิ่ง 🎉</span>
         </div>
 
-        <!-- Profile (แสดงตลอด ไม่ยุบ) -->
+        <!-- Profile (กดหัวการ์ดเพื่อย่อ/ขยาย — การ์ดสีแสดงตลอด ไม่ยุบตาม) -->
         <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-          <div class="p-4 pb-0 flex items-center gap-3">
+          <button @click="$store.game.toggleProfile()" class="w-full p-4 flex items-center gap-3 active:scale-[0.99] transition-transform">
             <div class="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-xl shrink-0">🏃</div>
             <div class="flex-1 min-w-0 text-left">
               <p class="text-sm font-bold text-slate-900">โปรไฟล์นักวิ่ง</p>
               <p class="text-[10px] text-slate-400 truncate" x-text="'🏆 Overall Lv.' + $store.game.overall().level + '/20 • ' + $store.game.overall().title"></p>
             </div>
             <span class="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[11px] font-black shrink-0" x-text="'Lv.' + $store.game.overall().level"></span>
-          </div>
+            <i class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform shrink-0" :class="$store.game.profileOpen ? 'rotate-180' : ''"></i>
+          </button>
 
           <div class="px-4 pb-4">
             <!-- การ์ดสายที่เลือกแสดง (สีตามสาย) -->
@@ -874,8 +875,8 @@
               </template>
             </div>
 
-            <!-- รายละเอียดคลาส: กดเพื่อขยายมาตรฐาน 20 เลเวล -->
-            <div class="mt-3 space-y-1.5">
+            <!-- รายละเอียดคลาส: กดเพื่อขยายมาตรฐาน 20 เลเวล (ยุบได้ — การ์ดสีข้างบนแสดงตลอด) -->
+            <div x-show="$store.game.profileOpen" x-cloak class="mt-3 space-y-1.5">
               <template x-for="(c, i) in $store.game.classOrder" :key="i">
                 <div class="border border-slate-100 rounded-xl overflow-hidden">
                   <button @click="$store.game.toggleClass(c)" class="w-full flex items-center gap-2.5 p-2.5 active:bg-slate-50/60 transition-colors">
@@ -917,7 +918,7 @@
               </template>
             </div>
 
-            <p class="mt-2.5 text-[9px] text-slate-400 leading-relaxed">🏆 Overall = ค่าเฉลี่ยเลเวลทั้ง 4 คลาส ÷ 4 (ดูคำอธิบาย + fun facts ด้านล่าง)</p>
+            <p x-show="$store.game.profileOpen" x-cloak class="mt-2.5 text-[9px] text-slate-400 leading-relaxed">🏆 Overall = ค่าเฉลี่ยเลเวลทั้ง 4 คลาส ÷ 4</p>
           </div>
         </div>
 
@@ -940,21 +941,22 @@
               <i class="fa-solid fa-rotate text-[11px]" :class="$store.game.syncing ? 'animate-spin' : ''"></i>
               <span x-text="$store.game.syncing ? 'กำลังซิงก์…' : ($store.game.realData ? 'รีเฟรช' : 'ซิงก์ตอนนี้')"></span>
             </button>
-            <button @click="$store.game.addRunOpen = true"
+            <button @click="$refs.rqImportFile.click()" :disabled="$store.game.importing"
                     class="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold bg-white border border-slate-200 text-slate-600 active:scale-95 transition-all">
-              <i class="fa-solid fa-plus text-[10px]"></i> เพิ่มด้วยมือ
+              <i class="fa-solid fa-file-import text-[10px]" :class="$store.game.importing ? 'animate-spin' : ''"></i>
+              <span x-text="$store.game.importing ? 'กำลังนำเข้า…' : 'นำเข้าย้อนหลัง'"></span>
             </button>
+            <input type="file" accept=".xml,.zip" class="hidden" x-ref="rqImportFile" @change="$store.game.importHealth($event.target.files[0])">
           </div>
         </div>
 
-        <!-- วิธีเพิ่มข้อมูล (ง่าย = เพิ่มด้วยมือ / อัตโนมัติ = iOS Shortcut) -->
+        <!-- วิธีนำเข้าย้อนหลัง (Apple Health export) -->
         <div x-show="!$store.game.realData" x-cloak class="rounded-xl bg-sky-50 border border-sky-100 px-3.5 py-2.5 text-[11px] font-semibold text-sky-700">
-          <p class="font-bold mb-1">🔗 วิธีใส่ข้อมูลจริง</p>
-          <p class="leading-relaxed"><span class="font-black">ง่ายสุด:</span> กด "➕ เพิ่มด้วยมือ" ใส่ระยะทาง/เวลาจากแอป Zepp • <span class="font-black">อัตโนมัติ (ไม่บังคับ):</span> สร้าง iOS Shortcut อ่าน Apple Health แล้ว POST ไป <span class="font-black">https://thanpisit.online/api/runquest/sync</span> (header <span class="font-black">X-RunQuest-Key</span>)
-          </p>
+          <p class="font-bold mb-1">📥 วิธีนำเข้าข้อมูลจริง (รวมประวัติย้อนหลัง)</p>
+          <p class="leading-relaxed">แอป <span class="font-black">Health (สุขภาพ)</span> → รูปโปรไฟล์ → <span class="font-black">ส่งออกข้อมูลสุขภาพทั้งหมด</span> (ได้ไฟล์ export.zip) → กด <span class="font-black">"นำเข้าย้อนหลัง"</span> เลือกไฟล์ zip หรือ xml — ระบบดึงการวิ่งทั้งหมดมาใส่ให้อัตโนมัติ</p>
         </div>
         <div x-show="$store.game.realData" x-cloak class="rounded-xl bg-emerald-50 border border-emerald-100 px-3.5 py-2.5 text-[11px] font-semibold text-emerald-700">
-          ✅ ใช้ข้อมูลจริงแล้ว — สถิติ เลเวล และการแข่ง คำนวณจากการวิ่งจริงของคุณ (กด ➕ เพิ่มด้วยมือได้เรื่อยๆ)
+          ✅ ใช้ข้อมูลจริงแล้ว — สถิติ เลเวล และการแข่ง คำนวณจากการวิ่งจริงของคุณ (กด "นำเข้าย้อนหลัง" เพื่ออัปเดตเพิ่มได้เรื่อยๆ)
         </div>
 
         <!-- Stats row -->
@@ -977,18 +979,8 @@
           </div>
         </div>
 
-        <!-- Overall explain + fun facts -->
+        <!-- Fun fact (ขำๆ จากสถิติปัจจุบัน) -->
         <div class="bg-white rounded-2xl border border-slate-100 p-4">
-          <h2 class="text-sm font-bold text-slate-900 mb-1">🧠 Overall วัดจากอะไร?</h2>
-          <p class="text-[10px] text-slate-500 leading-relaxed mb-3">Overall = ค่าเฉลี่ยเลเวลทั้ง 4 คลาส (สปรินเตอร์ + นักวิ่งกลาง + นักวิ่งไกล + อัลตร้า) ÷ 4 — สายไหนเก่งขึ้น เลเวลรวมก็สูงขึ้นตาม</p>
-          <div class="flex gap-1.5 mb-3">
-            <template x-for="(c, i) in $store.game.classOrder" :key="i">
-              <div class="flex-1 rounded-lg bg-slate-50 border border-slate-100 py-1.5 text-center">
-                <i class="fa-solid text-[10px] text-indigo-500" :class="$store.game.classMeta[c].icon"></i>
-                <p class="text-[9px] font-black text-slate-700" x-text="'Lv.' + $store.game.classLevel(c).level"></p>
-              </div>
-            </template>
-          </div>
           <div class="rounded-xl bg-amber-50/70 border border-amber-100 px-3 py-2.5 flex items-start gap-2">
             <span class="text-sm shrink-0">🤣</span>
             <div class="min-w-0">
@@ -1211,39 +1203,6 @@
     </nav>
 
   </main>
-
-  <!-- RunQuest add run modal (เพิ่มด้วยมือ) -->
-  <div x-show="$store.game.addRunOpen" x-cloak class="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">
-    <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" @click="$store.game.addRunOpen = false"></div>
-    <div class="bg-white rounded-t-3xl w-full max-w-md p-6 relative z-10 safe-bottom">
-      <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
-      <h3 class="text-xl font-bold text-slate-900 mb-1">➕ เพิ่มการวิ่งด้วยมือ</h3>
-      <p class="text-[11px] text-slate-400 mb-4">ใส่ข้อมูลจากแอป Zepp (ระยะทาง + เวลา) — สถิติและเลเวลคำนวณใหม่ทันที</p>
-      <div class="space-y-3">
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">วันที่</label>
-          <input type="date" x-model="$store.game.newRun.date" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">ระยะทาง (กม.)</label>
-          <input type="number" step="0.01" min="0.1" x-model.number="$store.game.newRun.km" placeholder="เช่น 5.2" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
-        </div>
-        <div class="flex gap-2">
-          <div class="flex-1">
-            <label class="block text-sm font-medium text-slate-700 mb-1">นาที</label>
-            <input type="number" min="0" x-model.number="$store.game.newRun.min" placeholder="เช่น 31" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
-          </div>
-          <div class="flex-1">
-            <label class="block text-sm font-medium text-slate-700 mb-1">วินาที</label>
-            <input type="number" min="0" max="59" x-model.number="$store.game.newRun.sec" placeholder="เช่น 30" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
-          </div>
-        </div>
-      </div>
-      <button @click="$store.game.submitAddRun()" class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold shadow-md shadow-indigo-200 active:scale-95 transition-transform mt-4">
-        บันทึกการวิ่ง
-      </button>
-    </div>
-  </div>
 
   <!-- Gear modals (อยู่นอก scroll container — กัน backdrop ไม่เต็มจอ) -->
   <div x-show="$store.game.gearEditOpen" x-cloak class="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">

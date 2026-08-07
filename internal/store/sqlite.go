@@ -449,6 +449,36 @@ func (s *Store) AddRunQuestRuns(runs []model.RunQuestRun) error {
 	return tx.Commit()
 }
 
+// ImportRunQuestRuns นำเข้าย้อนหลัง — ข้ามรายการที่ start_date ซ้ำกับที่มีอยู่
+func (s *Store) ImportRunQuestRuns(runs []model.RunQuestRun) (imported, skipped int, err error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return 0, 0, err
+	}
+	defer tx.Rollback()
+	now := time.Now().Format(time.RFC3339)
+	for _, r := range runs {
+		if r.DistanceKm <= 0 || r.DurationSec <= 0 {
+			skipped++
+			continue
+		}
+		var exists int
+		if err := tx.QueryRow("SELECT COUNT(*) FROM runquest_runs WHERE start_date = ?", r.StartDate).Scan(&exists); err != nil {
+			return 0, 0, err
+		}
+		if exists > 0 {
+			skipped++
+			continue
+		}
+		if _, err := tx.Exec("INSERT INTO runquest_runs (start_date, distance_km, duration_sec, created_at) VALUES (?, ?, ?, ?)",
+			r.StartDate, r.DistanceKm, r.DurationSec, now); err != nil {
+			return 0, 0, err
+		}
+		imported++
+	}
+	return imported, skipped, tx.Commit()
+}
+
 func (s *Store) GetRunQuestStats() (model.RunQuestStats, error) {
 	var st model.RunQuestStats
 	rows, err := s.db.Query("SELECT start_date, distance_km, duration_sec FROM runquest_runs ORDER BY start_date DESC LIMIT 500")
