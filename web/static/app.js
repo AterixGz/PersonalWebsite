@@ -1890,15 +1890,15 @@ document.addEventListener('alpine:init', () => {
     return out;
   }
 
-  // --- RunQuest MMO Store (Mockup Demo — ยังไม่เชื่อมต่อ Apple Health จริง) ---
+  // --- RunQuest MMO Store (รอข้อมูลจริงจาก Google Health / Apple Health) ---
   // 4 คลาส แต่ละคลาสมีมาตรฐานเฉพาะสาย 20 เลเวล (อ้างอิงสถิติจริง) + Overall = ค่าเฉลี่ย
   Alpine.store('game', {
-    // สถิติจริงต่อคลาส (mock — อนาคต: คำนวณจาก Apple Health)
-    sprint400: 80,   // 400m เร็วสุด (วินาที)
-    best5k: 1700,    // 5K เร็วสุด (วินาที) = 28:20
-    bestHalf: 7800,  // ฮาล์ฟเร็วสุด (วินาที) = 2:10:00
-    longestKm: 21.1, // ระยะไกลสุด (กม.)
-    stats: { totalKm: 186.4, runs: 42, calories: 12480 },
+    // สถิติจริงต่อคลาส (ยังไม่มีข้อมูล = 0 → แสดง "ยังไม่ได้เชื่อมต่อ")
+    sprint400: 0,
+    best5k: 0,
+    bestHalf: 0,
+    longestKm: 0,
+    stats: { totalKm: 0, runs: 0, totalCal: 0, avgHR: 0 },
     classOrder: ['sprint', 'mid', 'long', 'ultra'],
     classMeta: {
       overall: { icon: 'fa-trophy', name: 'Overall' },
@@ -1952,7 +1952,7 @@ document.addEventListener('alpine:init', () => {
     // Fun facts จำเพาะสาย (แสดงในตารางมาตรฐาน)
     classFacts: {
       sprint: [
-        'Lv.8 ของคุณ: 400m 1:20 — นักวิ่งเพื่อสุขภาพส่วนใหญ่ทำ 1:30–2:00',
+        '400m sub-1:20 = เร็วกว่านักวิ่งเพื่อสุขภาพส่วนใหญ่ (1:30–2:00)',
         'Usain Bolt ถ้าวิ่ง 400m ด้วย pace 100m (9.58s) = ~38 วิ — เหลือเชื่อ',
         'สปรินต์ที่ดี = ก้าวถี่ (cadence) สูง + ออกแรงเต็มที่เฉพาะช่วงท้าย',
         '400m คือระยะที่โหดที่สุดในกรีฑา (นักวิ่งบอกเอง)',
@@ -1961,25 +1961,25 @@ document.addEventListener('alpine:init', () => {
         'เทคนิค: วิ่งเขย่งปลายเท้าช่วง 50m แรก = ออกตัวดีขึ้น',
       ],
       mid: [
-        'Lv.8 ของคุณ: 5K 28:20 — ผ่านเกณฑ์ "5K 30 นาที" แล้ว',
+        '5K ใต้ 30 นาที = ผ่านเกณฑ์ยอดฮิตของมือใหม่ทั่วโลก',
         '"5K 30 นาที" คือเป้าหมายยอดฮิตของมือใหม่ทั่วโลก',
-        'Kipchoge วิ่ง 5K ได้ ~13 นาที — เร็วกว่าคุณ 2 เท่า แต่เขาซ้อมวันละ 2 รอบ',
+        'Kipchoge วิ่ง 5K ได้ ~13 นาที — เร็วแบบคนต่างดาว แต่เขาซ้อมวันละ 2 รอบ',
         'pace 6:00/กม. = 10 กม./ชม. — เท่ากับจ็อกกิ้งเบาๆ',
         'เป้าหมายแรกของทุกคน: วิ่ง 5K ให้จบโดยไม่เดิน',
         'เจลพลังงานไม่จำเป็นสำหรับ 5K (ใช้กับ 10K+ ขึ้นไป)',
         'หายใจแบบ 2-2 (หายใจเข้า 2 ก้าว / ออก 2 ก้าว) ช่วยจังหวะคงที่',
       ],
       long: [
-        'Lv.7 ของคุณ: ฮาล์ฟ 2:10 — จบใน 2 ชม. คือเป้าของ Lv.8',
+        'ฮาล์ฟ sub-2 ชม. = เป้ายอดนิยมของนักวิ่งครึ่งมาราธอน',
         'ฮาล์ฟ = 21.0975 km — เศษ 97.5m นี่แหละที่ฆ่านักวิ่ง 555',
         'มาราธอน 42.195 km ตามตำนานมาจากระยะทางกรีก-มาราธอน',
-        'pace 6:00 วิ่งฮาล์ฟ = จบ 2:06 — ใกล้เป้าคุณแล้ว',
-        'ฮาล์ฟ 2 ชม. = คนทั่วไปซ้อมจริงจัง 3–4 เดือน',
+        'pace 6:00 วิ่งฮาล์ฟ = จบ 2:06 — ลองคำนวณ pace ตัวเองดู',
+        'ฮาล์ฟ sub-2 ชม. = คนทั่วไปซ้อมจริงจัง 3–4 เดือน',
         'คาร์โบโหลด 3 วันก่อนฮาล์ฟ = วิ่งง่ายขึ้นจริง (มีงานวิจัยรองรับ)',
         'ฮาล์ฟครั้งแรก อย่าออกตัวเร็วกว่าเป้า — 90% พังเพราะข้อนี้',
       ],
       ultra: [
-        'Lv.11 ของคุณ: ไกลสุด 21.1 km — เป้าต่อไป 30K (Lv.12)',
+        'เป้าหมายอัลตร้าแรก: 30K → 50K → 100K ค่อยๆ เพิ่มทีละขั้น',
         'อัลตร้า 50K เผา ~4,000 kcal — กินระหว่างวิ่งสำคัญกว่าความเร็ว',
         'กฎเหล็กอัลตร้า: เดิน uphill, วิ่ง flat, ระวัง downhill',
         '100K นักวิ่งส่วนใหญ่ใช้ 12–16 ชม. — เตรียมใจไว้นานๆ',
@@ -2003,23 +2003,23 @@ document.addEventListener('alpine:init', () => {
     gearEditingIndex: null,
     gearEdit: { name: '', type: '', note: '' },
     gearConfirmIndex: null,
-    // Fun facts (ขำๆ จากสถิติปัจจุบัน)
+    // Fun facts (ขำๆ จากสถิติปัจจุบัน — ตัวเลขอ้างอิงจากข้อมูลจริง)
     funFacts: [
-      { icon: 'fa-person-walking', text: 'ระยะไกลสุด 21.1 km — ชนะคนเดิน 10,000 ก้าว (≈7 km) ถึง 3 เท่า แบบไม่เหนื่อย 🚶' },
-      { icon: 'fa-dog', text: 'สปรินต์ 400m 1:20 — ชนะหมาปั๊กในระยะ 400m ได้ (หมาวิ่งเร็วแต่ต้องพักทุก 100m 555) 🐶' },
-      { icon: 'fa-robot', text: 'ฮาล์ฟ 2:10:00 = ครึ่งทางของมาราธอน Elon Musk (4:20) — เสมอ Elon แบบครึ่งๆ กลางๆ 🚀' },
-      { icon: 'fa-car', text: '5K 28:20 = ชนะรถติดบนถนนพระราม 9 ในชั่วโมงเร่งด่วน แบบขาดลอย 🚗' },
-      { icon: 'fa-bolt', text: 'สถิติโลก 5K 12:49 (Aregawi) — คุณช้ากว่า 2.2 เท่า แต่ยังเร็วกว่าคนไทย 95% ที่ไม่วิ่ง 😂' },
-      { icon: 'fa-bicycle', text: 'ปั่นจักรยานชิลๆ 15 กม./ชม. — คุณวิ่ง 10.6 กม./ชม. ตามทันครึ่งทาง ก่อนโดนทิ้ง 🚲' },
-      { icon: 'fa-stopwatch', text: '400m 1:20 vs WR 43.03 วิ — ต่างกันแค่ 37 วิ... ยังไงก็แพ้ แต่สู้ๆ 💪' },
-      { icon: 'fa-mountain', text: 'อัลตร้า Lv.11 — เป้า 100 km ตอนนี้ทำได้ 21.1 ต้องวิ่งเพิ่มอีกเกือบ 4 เท่า 🏔️' },
-      { icon: 'fa-trophy', text: 'Overall Lv.9 — ถ้าเป็นมวยก็ไฟต์กลางๆ แล้ว แต่ยังไม่ใช่แชมป์โลก 555' },
+      { icon: 'fa-person-walking', text: 'วิ่งไกลสุดของคุณ = ชนะคนเดิน 10,000 ก้าว (≈7 km) แบบไม่เหนื่อย 🚶' },
+      { icon: 'fa-dog', text: 'สปรินต์ 400m ชนะหมาปั๊กได้ (หมาวิ่งเร็วแต่ต้องพักทุก 100m 555) 🐶' },
+      { icon: 'fa-robot', text: 'ฮาล์ฟ = ครึ่งทางของมาราธอน Elon Musk (4:20) — เสมอ Elon แบบครึ่งๆ กลางๆ 🚀' },
+      { icon: 'fa-car', text: '5K = ชนะรถติดบนถนนพระราม 9 ในชั่วโมงเร่งด่วน แบบขาดลอย 🚗' },
+      { icon: 'fa-bolt', text: 'สถิติโลก 5K 12:49 (Aregawi) — เร็วแบบคนต่างดาว แต่เราก็วิ่งของเราไปเรื่อยๆ 😂' },
+      { icon: 'fa-bicycle', text: 'ปั่นจักรยานชิลๆ 15 กม./ชม. — วิ่งตามทันครึ่งทาง ก่อนโดนทิ้ง 🚲' },
+      { icon: 'fa-stopwatch', text: '400m vs WR 43.03 วิ — ต่างกันเยอะ แต่สู้ๆ 💪' },
+      { icon: 'fa-mountain', text: 'อัลตร้า 100 km = ต้องวิ่งเพิ่มอีกหลายเท่า แต่เป้าหมายเล็กๆ ไปก่อน 🏔️' },
+      { icon: 'fa-trophy', text: 'Overall level — ถ้าเป็นมวยก็ไฟต์กลางๆ แล้ว แต่ยังไม่ใช่แชมป์โลก 555' },
       { icon: 'fa-chart-line', text: 'ซิงก์ทุกวัน ~4 km/วัน = ปีนึงได้ 1,460 km = กรุงเทพฯ-เชียงใหม่ไปกลับ! 📈' },
-      { icon: 'fa-music', text: '5K 28:20 = ฟังเพลง 6 เพลงจบพอดี (เพลงละ ~4:40) 🎵' },
+      { icon: 'fa-music', text: '5K = ฟังเพลง ~6 เพลงจบพอดี (เพลงละ ~4:40) 🎵' },
       { icon: 'fa-bowl-rice', text: 'วิ่ง 5K เผา ~300 kcal = กล้วย 2 ลูก หรือชานมไข่มุก 1/4 แก้ว 🍌' },
       { icon: 'fa-bed', text: 'นักวิ่งนอนหลับลึกกว่าคนนั่งทั้งวัน ~30% — วิ่ง = ยานอนหลับธรรมชาติ 🛏️' },
       { icon: 'fa-droplet', text: 'ควรดื่มน้ำ 500ml–1L ต่อการวิ่ง 1 ชม. — วันนี้ดื่มครบยัง? 💧' },
-      { icon: 'fa-shoe-prints', text: 'รองเท้าควรเปลี่ยนทุก 600–800 km — Pegasus 41 ของคุณเหลืออีก ~380 km 👟' },
+      { icon: 'fa-shoe-prints', text: 'รองเท้าควรเปลี่ยนทุก 600–800 km — อย่าลืมเช็คระยะรองเท้าตัวเอง 👟' },
       { icon: 'fa-socks', text: 'ถุงเท้า 2 คู่สลับกันใช้ ยืดอายุได้ 2 เท่า — เรื่องจริงจากช่างกีฬา 🧦' },
       { icon: 'fa-temperature-half', text: 'อุณหภูมิ 20–24°C = ช่วงวิ่งเร็วที่สุด — หน้าร้อนไทยลดเป้าไป 5% 🌡️' },
       { icon: 'fa-heart', text: 'วิ่ง 6 เดือน หัวใจแข็งแรงขึ้น = ชีพจรพักลดลง ~10 ครั้ง/นาที 🫀' },
@@ -2125,12 +2125,7 @@ document.addEventListener('alpine:init', () => {
         ],
       },
     },
-    recentRuns: [
-      { date: 'วันนี้ 19:02 น.', km: 5.2, pace: '6:05', dur: '32 นาที' },
-      { date: 'เมื่อวาน', km: 8.4, pace: '5:48', dur: '49 นาที' },
-      { date: '3 วันที่แล้ว', km: 3.1, pace: '6:40', dur: '21 นาที' },
-      { date: '5 วันที่แล้ว', km: 10.0, pace: '5:52', dur: '59 นาที' },
-    ],
+    recentRuns: [],
     syncing: false,
     lastSync: '—',
     healthConnected: false,
@@ -2151,11 +2146,14 @@ document.addEventListener('alpine:init', () => {
       return m + ':' + String(s).padStart(2, '0');
     },
     best5kLabel() { return this.fmtTime(this.best5k, false); },
-    bestPaceLabel() { return this.fmtTime(Math.round(this.best5k / 5), false) + '/กม.'; },
+    bestPaceLabel() { return this.best5k > 0 ? this.fmtTime(Math.round(this.best5k / 5), false) + '/กม.' : '—'; },
     // เลเวลรายคลาสตามมาตรฐานของสายนั้นๆ
     classLevel(key) {
       const st = this.standards[key];
       const val = this[st.target];
+      if (!val || val <= 0) {
+        return { level: 1, lvObj: st.levels[0], pct: 0, metric: 'ยังไม่มีข้อมูล' };
+      }
       let lvObj, pct;
       if (st.dir === 'up') {
         lvObj = st.levels.find(l => val >= l.fast && val < l.slow) || st.levels[st.levels.length - 1];
@@ -2176,7 +2174,10 @@ document.addEventListener('alpine:init', () => {
     // โปรไฟล์: สายที่เลือกแสดง
     setClass(k) { this.selectedClass = k; localStorage.setItem('runquest_selected_class', k); },
     visibleRaceClasses() { return this.selectedClass === 'overall' ? this.classOrder : [this.selectedClass]; },
-    classFact(cls) { const facts = this.classFacts[cls]; return facts[(this.classFactIdx[cls] || 0) % facts.length]; },
+    classFact(cls) {
+      if (!this.realData) return 'ยังไม่ได้เชื่อมต่อ — กด "เชื่อม Google Health" หรือ "นำเข้าย้อนหลัง" เพื่อดูสถิติจริง';
+      const facts = this.classFacts[cls]; return facts[(this.classFactIdx[cls] || 0) % facts.length];
+    },
     nextClassFact(cls) { this.classFactIdx[cls] = ((this.classFactIdx[cls] || 0) + 1 + Math.floor(Math.random() * (this.classFacts[cls].length - 1))) % this.classFacts[cls].length; },
     // สถานะการลงแข่งของแต่ละรายการ (อิงเลเวลปัจจุบัน)
     distStatus(cls, d) {
@@ -2202,14 +2203,17 @@ document.addEventListener('alpine:init', () => {
       return ready.length ? [...new Set(ready)].join(' • ') : 'ยังไม่มี — ดูรายการแข่งด้านล่าง';
     },
     selectedName() { return this.selectedClass === 'overall' ? 'Overall (รวมทุกสาย)' : this.classMeta[this.selectedClass].name; },
-    selectedTitle() { return this.selectedClass === 'overall' ? this.overall().title : this.classLevel(this.selectedClass).lvObj.title; },
-    selectedLevel() { return this.selectedClass === 'overall' ? this.overall().level : this.classLevel(this.selectedClass).level; },
-    selectedPct() { return this.selectedClass === 'overall' ? this.overall().pct : this.classLevel(this.selectedClass).pct; },
-    selectedMetric() { return this.selectedClass === 'overall' ? 'ค่าเฉลี่ยเลเวล 4 คลาส' : this.classLevel(this.selectedClass).metric; },
+    selectedTitle() { return !this.realData ? 'ยังไม่ได้เชื่อมต่อ' : (this.selectedClass === 'overall' ? this.overall().title : this.classLevel(this.selectedClass).lvObj.title); },
+    selectedLevel() { return !this.realData ? '—' : (this.selectedClass === 'overall' ? this.overall().level : this.classLevel(this.selectedClass).level); },
+    selectedPct() { return !this.realData ? 0 : (this.selectedClass === 'overall' ? this.overall().pct : this.classLevel(this.selectedClass).pct); },
+    selectedMetric() { return !this.realData ? 'กด "เชื่อม Google Health" หรือ "นำเข้าย้อนหลัง" เพื่อดึงข้อมูล' : (this.selectedClass === 'overall' ? 'ค่าเฉลี่ยเลเวล 4 คลาส' : this.classLevel(this.selectedClass).metric); },
     toggleClass(key) { this.classOpen[key] = !this.classOpen[key]; },
     toggleGuide(key) { this.guideOpen[key] = !this.guideOpen[key]; },
     // Fun facts
-    currentFact() { return this.funFacts[this.factIndex]; },
+    currentFact() {
+      if (!this.realData) return { icon: 'fa-plug', text: 'ยังไม่ได้เชื่อมต่อ — กด "เชื่อม Google Health" หรือ "นำเข้าย้อนหลัง" เพื่อดูสถิติจริง' };
+      return this.funFacts[this.factIndex];
+    },
     nextFact() { this.factIndex = (this.factIndex + 1 + Math.floor(Math.random() * (this.funFacts.length - 1))) % this.funFacts.length; },
     toggleProfile() { this.profileOpen = !this.profileOpen; localStorage.setItem('runquest_profile_open', this.profileOpen ? '1' : '0'); },
     async importHealth(file) {
@@ -2311,59 +2315,14 @@ document.addEventListener('alpine:init', () => {
     async syncNow() {
       if (this.syncing) return;
       this.syncing = true;
-      const before = {
-        sprint: this.classLevel('sprint').level,
-        mid: this.classLevel('mid').level,
-        long: this.classLevel('long').level,
-        ultra: this.classLevel('ultra').level,
-        overall: this.overall().level,
-      };
       const hasReal = await this.loadRealStats();
+      this.syncing = false;
       if (hasReal) {
-        const ups = this.classOrder.filter(k => this.classLevel(k).level > before[k]);
-        let msg = `✅ อัปเดตจาก Apple Health แล้ว (รวม ${this.stats.totalKm} km)`;
-        if (ups.length) msg += ` 🎉 ${ups.map(k => this.classMeta[k].icon + ' ' + this.classMeta[k].name + ' Lv.' + this.classLevel(k).level).join(' · ')}`;
-        if (this.overall().level > before.overall) msg += ` 🏆 Overall Lv.${this.overall().level}`;
         this.lastSync = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-        this.syncing = false;
-        this.showToast(msg);
+        this.showToast('✅ รีเฟรชข้อมูลแล้ว (รวม ' + this.stats.totalKm + ' km)');
         return;
       }
-      // ยังไม่มีข้อมูลจริง → โหมดสาธิต (จำลอง)
-      setTimeout(() => {
-        const types = ['sprint', 'mid', 'long', 'ultra'];
-        const type = types[Math.floor(Math.random() * types.length)];
-        let km, detail;
-        if (type === 'sprint') {
-          km = 0.4;
-          this.sprint400 = Math.max(45, this.sprint400 - (Math.floor(Math.random() * 3) + 1));
-          detail = 'เทรน 400m';
-        } else if (type === 'mid') {
-          km = Math.round((3 + Math.random() * 4) * 10) / 10;
-          this.best5k = Math.max(770, this.best5k - (Math.floor(Math.random() * 11) + 5));
-          detail = 'เทรน 5K';
-        } else if (type === 'long') {
-          km = Math.round((10 + Math.random() * 11) * 10) / 10;
-          this.bestHalf = Math.max(3450, this.bestHalf - (Math.floor(Math.random() * 61) + 15));
-          detail = 'เทรนฮาล์ฟ';
-        } else {
-          km = Math.round((25 + Math.random() * 17) * 10) / 10;
-          this.longestKm = Math.round(Math.max(this.longestKm, km) * 10) / 10;
-          detail = 'เทรนยาว';
-        }
-        this.stats.totalKm = Math.round((this.stats.totalKm + km) * 10) / 10;
-        this.stats.runs += 1;
-        this.recentRuns.unshift({ date: 'ตอนนี้ (ซิงก์สด)', km: km, pace: detail, dur: 'รอ Apple Health' });
-        const ups = this.classOrder.filter(k => this.classLevel(k).level > before[k]);
-        let msg = `✅ ซิงก์ +${km} km (${this.classMeta[type].name})`;
-        if (ups.length) msg += ` 🎉 ${ups.map(k => this.classMeta[k].icon + ' ' + this.classMeta[k].name + ' Lv.' + this.classLevel(k).level).join(' · ')}`;
-        if (this.overall().level > before.overall) msg += ` 🏆 Overall Lv.${this.overall().level}`;
-        this.selectedClass = type;
-        localStorage.setItem('runquest_selected_class', type);
-        this.lastSync = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-        this.syncing = false;
-        this.showToast(msg);
-      }, 1600);
+      this.showToast('🔌 ยังไม่ได้เชื่อมต่อ — กด "เชื่อม Google Health" หรือ "นำเข้าย้อนหลัง" ก่อน');
     },
     showToast(msg) {
       this.toast = msg;
