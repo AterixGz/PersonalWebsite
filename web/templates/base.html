@@ -44,20 +44,20 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth38">
+  <link rel="stylesheet" href="/static/app.css?v=oauth39">
 
   <!-- App JS modules (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/js/core.js?v=oauth38"></script>
-  <script src="/static/js/stores/auth.js?v=oauth38"></script>
-  <script src="/static/js/stores/notification.js?v=oauth38"></script>
-  <script src="/static/js/stores/keypass.js?v=oauth38"></script>
-  <script src="/static/js/stores/ui.js?v=oauth38"></script>
-  <script src="/static/js/stores/logs.js?v=oauth38"></script>
-  <script src="/static/js/stores/finance.js?v=oauth38"></script>
-  <script src="/static/js/stores/workspace.js?v=oauth38"></script>
-  <script src="/static/js/stores/chat.js?v=oauth38"></script>
-  <script src="/static/js/stores/aiUsage.js?v=oauth38"></script>
-  <script src="/static/js/stores/game.js?v=oauth38"></script>
+  <script src="/static/js/core.js?v=oauth39"></script>
+  <script src="/static/js/stores/auth.js?v=oauth39"></script>
+  <script src="/static/js/stores/notification.js?v=oauth39"></script>
+  <script src="/static/js/stores/keypass.js?v=oauth39"></script>
+  <script src="/static/js/stores/ui.js?v=oauth39"></script>
+  <script src="/static/js/stores/logs.js?v=oauth39"></script>
+  <script src="/static/js/stores/finance.js?v=oauth39"></script>
+  <script src="/static/js/stores/workspace.js?v=oauth39"></script>
+  <script src="/static/js/stores/chat.js?v=oauth39"></script>
+  <script src="/static/js/stores/aiUsage.js?v=oauth39"></script>
+  <script src="/static/js/stores/game.js?v=oauth39"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -71,7 +71,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth38', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth39', { updateViaCache: 'none' });
       });
     }
 
@@ -190,29 +190,7 @@
 
             <hr class="my-3 border-slate-100">
 
-            <p class="text-xs font-bold text-slate-400 px-3 py-1 uppercase tracking-wider">ความปลอดภัย & การแจ้งเตือน</p>
-
-            <div class="px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <i class="fa-solid fa-shield-halved text-indigo-600 text-base"></i>
-                <div class="text-left">
-                  <p class="text-xs font-bold text-slate-800">Keypass / Face ID</p>
-                  <p class="text-[10px] text-slate-400">ล็อกแอปด้วย iPhone Keypass</p>
-                </div>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" :checked="$store.keypass.enabled" @change="$store.keypass.toggleKeypass($event.target.checked)" class="sr-only peer">
-                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-              </label>
-            </div>
-
             <!-- Web Push enable moved to notification center -->
-
-            <button @click="$store.ui.configModalOpen = true; $store.ui.closeSidebar()" 
-                    class="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-medium text-sm text-slate-600 hover:bg-slate-50 transition-colors">
-              <i class="fa-solid fa-gear text-lg w-5 text-center"></i>
-              <span>ตั้งค่าเป้าหมายการเงิน</span>
-            </button>
           </div>
         </div>
 
