@@ -145,11 +145,15 @@ func HandleRunQuestHealthSync(st *store.Store, cfg config.Config) http.HandlerFu
 		}
 
 		// ดึง distance dataPoints (Google Health เก็บระยะทางแยก data type) — paginate
-		distPts := []struct {
-			Start time.Time
-			End   time.Time
-			Mm    float64
-		}{}
+		// มีหลายแหล่งซ้อนกัน (นาฬิกา + Apple Health passive) → ต้องเลือกแหล่งที่ถูกต้อง กันนับซ้ำ
+		type distPt struct {
+			Start  time.Time
+			End    time.Time
+			Mm     float64
+			Source string
+			Method string
+		}
+		distPts := []distPt{}
 		pageToken := ""
 		for {
 			dq := url.Values{}
@@ -174,6 +178,12 @@ func HandleRunQuestHealthSync(st *store.Store, cfg config.Config) http.HandlerFu
 			}
 			var dparsed struct {
 				DataPoints []struct {
+					DataSource struct {
+						RecordingMethod string `json:"recordingMethod"`
+						Application     struct {
+							PackageName string `json:"packageName"`
+						} `json:"application"`
+					} `json:"dataSource"`
 					Distance struct {
 						Interval struct {
 							StartTime string `json:"startTime"`
@@ -195,16 +205,26 @@ func HandleRunQuestHealthSync(st *store.Store, cfg config.Config) http.HandlerFu
 					continue
 				}
 				mm, _ := strconv.ParseFloat(dp.Distance.Millimeters, 64)
-				distPts = append(distPts, struct {
-					Start time.Time
-					End   time.Time
-					Mm    float64
-				}{Start: s, End: e, Mm: mm})
+				distPts = append(distPts, distPt{
+					Start: s, End: e, Mm: mm,
+					Source: dp.DataSource.Application.PackageName,
+					Method: dp.DataSource.RecordingMethod,
+				})
 			}
 			if dparsed.NextPageToken == "" || len(distPts) > 50000 {
 				break
 			}
 			pageToken = dparsed.NextPageToken
+		}
+
+		// เลือกแหล่ง distance: ใช้นาฬิกา/อุปกรณ์ (ไม่ใช่ PASSIVELY_MEASURED) ก่อน
+		// เพราะ Apple Health passive วัดทั้งวัน รวมเดินก่อน/หลังวิ่ง → นับเกิน
+		preferredSource := ""
+		for _, d := range distPts {
+			if d.Method != "PASSIVELY_MEASURED" && d.Source != "" {
+				preferredSource = d.Source
+				break
+			}
 		}
 
 		// รวมระยะทางของ distance points ที่ทับซ้อนกับช่วงวิ่งของแต่ละ exercise
@@ -224,6 +244,9 @@ func HandleRunQuestHealthSync(st *store.Store, cfg config.Config) http.HandlerFu
 			}
 			var km float64
 			for _, d := range distPts {
+				if preferredSource != "" && d.Source != preferredSource {
+					continue
+				}
 				if d.End.After(start) && d.Start.Before(end) { // ช่วงทับซ้อน
 					km += d.Mm / 1_000_000
 				}
