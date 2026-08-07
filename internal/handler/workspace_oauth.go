@@ -25,6 +25,7 @@ const (
 	trelloAPI      = "https://api.trello.com/1/members/me/cards"
 	trelloAuthURL  = "https://trello.com/1/authorize"
 	googleScopes   = "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly"
+	googleHealthScopes = "https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly"
 )
 
 func userEmail(r *http.Request) string {
@@ -95,10 +96,22 @@ func HandleWorkspaceConnectGoogle(cfg config.Config) http.HandlerFunc {
 }
 
 // GET /api/workspace/oauth2/google/callback?code=...&state=...
+// state = email ปกติ (workspace) หรือ "health:<email>" (Google Health API)
 func HandleGoogleOAuthCallback(st *store.Store, cfg config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code := r.URL.Query().Get("code")
-		u := r.URL.Query().Get("state")
+		state := r.URL.Query().Get("state")
+
+		provider := "google"
+		scope := googleScopes
+		redirect := cfg.SiteBaseURL + "/?oauth=google&user="
+		u := state
+		if strings.HasPrefix(state, "health:") {
+			provider = "google_health"
+			scope = googleHealthScopes
+			redirect = cfg.SiteBaseURL + "/?health=1&user="
+			u = strings.TrimPrefix(state, "health:")
+		}
 		if u == "" {
 			u = "admin@myfinance.app"
 		}
@@ -129,15 +142,15 @@ func HandleGoogleOAuthCallback(st *store.Store, cfg config.Config) http.HandlerF
 			return
 		}
 		tok := model.OAuthToken{
-			Provider:     "google",
+			Provider:     provider,
 			UserEmail:    u,
 			AccessToken:  tr.AccessToken,
 			RefreshToken: tr.RefreshToken,
-			Scope:        googleScopes,
+			Scope:        scope,
 			ExpiresAt:    time.Now().Add(time.Duration(tr.ExpiresIn) * time.Second).Unix(),
 		}
 		st.UpsertOAuthToken(tok)
-		http.Redirect(w, r, cfg.SiteBaseURL+"/?oauth=google&user="+url.QueryEscape(u), http.StatusFound)
+		http.Redirect(w, r, redirect+url.QueryEscape(u), http.StatusFound)
 	}
 }
 
@@ -182,7 +195,12 @@ func HandleWorkspaceDisconnect(st *store.Store) http.HandlerFunc {
 }
 
 func googleAccessToken(st *store.Store, cfg config.Config, u string) (string, error) {
-	tok, err := st.GetOAuthToken("google", u)
+	return googleProviderAccessToken(st, cfg, u, "google")
+}
+
+// googleProviderAccessToken ดึง access token ของ provider ใดๆ ของ Google (refresh ถ้าหมดอายุ)
+func googleProviderAccessToken(st *store.Store, cfg config.Config, u, provider string) (string, error) {
+	tok, err := st.GetOAuthToken(provider, u)
 	if err != nil {
 		return "", err
 	}

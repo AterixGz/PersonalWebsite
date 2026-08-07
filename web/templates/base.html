@@ -46,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth24">
+  <link rel="stylesheet" href="/static/app.css?v=oauth25">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth24"></script>
+  <script src="/static/app.js?v=oauth25"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth24', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth25', { updateViaCache: 'none' });
       });
     }
 
@@ -959,6 +959,28 @@
           ✅ ใช้ข้อมูลจริงแล้ว — สถิติ เลเวล และการแข่ง คำนวณจากการวิ่งจริงของคุณ (กด "นำเข้าย้อนหลัง" เพื่ออัปเดตเพิ่มได้เรื่อยๆ)
         </div>
 
+        <!-- Google Health sync banner -->
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-heart-pulse text-emerald-500"></i>
+              <span class="text-sm font-bold text-slate-900">Google Health</span>
+              <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black"
+                    :class="$store.game.healthConnected ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'"
+                    x-text="$store.game.healthConnected ? 'เชื่อมต่อแล้ว' : 'ยังไม่เชื่อม'"></span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-0.5" x-text="$store.game.healthConnected ? 'ดึงข้อมูลวิ่ง (ระยะทาง/เวลา/แคลอรี่/HR) จาก Google Health API' : 'กดเชื่อมเพื่อให้เว็บอ่านข้อมูลวิ่งจาก Google Health' + ' • ต้องเปิด Google Health API ใน Google Cloud ก่อน'"></p>
+          </div>
+          <div class="shrink-0">
+            <button @click="$store.game.healthSync()" :disabled="$store.game.healthSyncing"
+                    class="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
+                    :class="$store.game.healthSyncing ? 'bg-slate-100 text-slate-400' : 'bg-emerald-600 text-white shadow-md shadow-emerald-200'">
+              <i class="fa-solid fa-rotate text-[11px]" :class="$store.game.healthSyncing ? 'animate-spin' : ''"></i>
+              <span x-text="$store.game.healthSyncing ? 'กำลังซิงก์…' : ($store.game.healthConnected ? 'ซิงก์ Google Health' : 'เชื่อม Google Health')"></span>
+            </button>
+          </div>
+        </div>
+
         <!-- Stats row -->
         <div class="grid grid-cols-2 gap-2">
           <div class="bg-white p-3 rounded-xl border border-slate-100">
@@ -976,6 +998,14 @@
           <div class="bg-white p-3 rounded-xl border border-slate-100">
             <span class="text-[10px] text-slate-400 font-semibold uppercase block">ระยะไกลสุด</span>
             <span class="text-lg font-bold text-slate-900" x-text="$store.game.longestKm + ' km'"></span>
+          </div>
+          <div class="bg-white p-3 rounded-xl border border-slate-100">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase block">แคลอรี่รวม</span>
+            <span class="text-lg font-bold text-slate-900" x-text="$store.game.stats.totalCal ? $store.game.stats.totalCal.toLocaleString() + ' kcal' : '—'"></span>
+          </div>
+          <div class="bg-white p-3 rounded-xl border border-slate-100">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase block">HR เฉลี่ย</span>
+            <span class="text-lg font-bold text-slate-900" x-text="$store.game.stats.avgHR ? $store.game.stats.avgHR + ' bpm' : '—'"></span>
           </div>
         </div>
 
@@ -1134,7 +1164,7 @@
         <div class="bg-white rounded-2xl border border-slate-100 p-4">
           <div class="flex items-center justify-between mb-3">
             <h2 class="text-sm font-bold text-slate-900">🏃 การวิ่งล่าสุด</h2>
-            <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1"><i class="fa-solid fa-heart-pulse text-rose-400"></i> จาก Apple Health</span>
+            <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1"><i class="fa-solid fa-heart-pulse text-rose-400"></i> จาก Google Health / Apple Health</span>
           </div>
           <div class="space-y-1.5">
             <template x-for="(r, i) in $store.game.recentRuns" :key="i">

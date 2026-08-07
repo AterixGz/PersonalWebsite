@@ -91,6 +91,8 @@ func runMigrations(db *sql.DB) error {
 			start_date TEXT,
 			distance_km REAL,
 			duration_sec REAL,
+			calories REAL DEFAULT 0,
+			avg_hr REAL DEFAULT 0,
 			created_at TEXT
 		)`,
 	}
@@ -100,6 +102,10 @@ func runMigrations(db *sql.DB) error {
 			return err
 		}
 	}
+
+	// Safe migration: add columns if upgrading existing DB
+	db.Exec("ALTER TABLE runquest_runs ADD COLUMN calories REAL DEFAULT 0;")
+	db.Exec("ALTER TABLE runquest_runs ADD COLUMN avg_hr REAL DEFAULT 0;")
 
 	// Safe migration: Add sort_order column if upgrading existing DB
 	db.Exec("ALTER TABLE expenses ADD COLUMN sort_order INTEGER DEFAULT 0;")
@@ -425,7 +431,7 @@ func (s *Store) DeleteOAuthToken(provider, userEmail string) error {
 	return err
 }
 
-// --- RunQuest: ข้อมูลการวิ่งจริงจาก Apple Health (ผ่าน iOS Shortcut) ---
+// --- RunQuest: ข้อมูลการวิ่งจริงจาก Apple Health (ผ่าน iOS Shortcut) / Google Fit API ---
 func (s *Store) AddRunQuestRuns(runs []model.RunQuestRun) error {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -441,8 +447,8 @@ func (s *Store) AddRunQuestRuns(runs []model.RunQuestRun) error {
 		if start == "" {
 			start = now
 		}
-		if _, err := tx.Exec("INSERT INTO runquest_runs (start_date, distance_km, duration_sec, created_at) VALUES (?, ?, ?, ?)",
-			start, r.DistanceKm, r.DurationSec, now); err != nil {
+		if _, err := tx.Exec("INSERT INTO runquest_runs (start_date, distance_km, duration_sec, calories, avg_hr, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+			start, r.DistanceKm, r.DurationSec, r.Calories, r.AvgHR, now); err != nil {
 			return err
 		}
 	}
@@ -470,8 +476,8 @@ func (s *Store) ImportRunQuestRuns(runs []model.RunQuestRun) (imported, skipped 
 			skipped++
 			continue
 		}
-		if _, err := tx.Exec("INSERT INTO runquest_runs (start_date, distance_km, duration_sec, created_at) VALUES (?, ?, ?, ?)",
-			r.StartDate, r.DistanceKm, r.DurationSec, now); err != nil {
+		if _, err := tx.Exec("INSERT INTO runquest_runs (start_date, distance_km, duration_sec, calories, avg_hr, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+			r.StartDate, r.DistanceKm, r.DurationSec, r.Calories, r.AvgHR, now); err != nil {
 			return 0, 0, err
 		}
 		imported++
@@ -481,7 +487,7 @@ func (s *Store) ImportRunQuestRuns(runs []model.RunQuestRun) (imported, skipped 
 
 func (s *Store) GetRunQuestStats() (model.RunQuestStats, error) {
 	var st model.RunQuestStats
-	rows, err := s.db.Query("SELECT start_date, distance_km, duration_sec FROM runquest_runs ORDER BY start_date DESC LIMIT 500")
+	rows, err := s.db.Query("SELECT start_date, distance_km, duration_sec, calories, avg_hr FROM runquest_runs ORDER BY start_date DESC LIMIT 500")
 	if err != nil {
 		return st, err
 	}
@@ -489,11 +495,12 @@ func (s *Store) GetRunQuestStats() (model.RunQuestStats, error) {
 
 	var bestPace5k, bestPaceHalf, bestPaceSprint float64
 	has5k, hasHalf, hasSprint := false, false, false
+	hrSum, hrCount := 0.0, 0
 
 	for rows.Next() {
 		var start string
-		var km, dur float64
-		if err := rows.Scan(&start, &km, &dur); err != nil {
+		var km, dur, cal, hr float64
+		if err := rows.Scan(&start, &km, &dur, &cal, &hr); err != nil {
 			return st, err
 		}
 		if km <= 0 || dur <= 0 {
@@ -501,6 +508,11 @@ func (s *Store) GetRunQuestStats() (model.RunQuestStats, error) {
 		}
 		st.TotalKm += km
 		st.RunCount++
+		st.TotalCal += cal
+		if hr > 0 {
+			hrSum += hr
+			hrCount++
+		}
 		if km > st.LongestKm {
 			st.LongestKm = km
 		}
@@ -520,8 +532,11 @@ func (s *Store) GetRunQuestStats() (model.RunQuestStats, error) {
 			}
 		}
 		if len(st.Recent) < 6 {
-			st.Recent = append(st.Recent, model.RunQuestRun{StartDate: start, DistanceKm: km, DurationSec: dur})
+			st.Recent = append(st.Recent, model.RunQuestRun{StartDate: start, DistanceKm: km, DurationSec: dur, Calories: cal, AvgHR: hr})
 		}
+	}
+	if hrCount > 0 {
+		st.AvgHR = hrSum / float64(hrCount)
 	}
 	if has5k {
 		st.Best5KSec = bestPace5k * 5

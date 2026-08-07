@@ -45,6 +45,8 @@ type RunQuestRun struct {
 	StartDate   string  `json:"start_date"`
 	DistanceKm  float64 `json:"distance_km"`
 	DurationSec float64 `json:"duration_sec"`
+	Calories    float64 `json:"calories"`
+	AvgHR       float64 `json:"avg_hr"`
 	CreatedAt   string  `json:"created_at"`
 }
 
@@ -53,13 +55,15 @@ type RunQuestSyncRequest struct {
 }
 
 type RunQuestStats struct {
-	TotalKm     float64       `json:"total_km"`
-	RunCount    int           `json:"run_count"`
-	Best5KSec   float64       `json:"best_5k_sec"`
-	BestHalfSec float64       `json:"best_half_sec"`
-	Sprint400Sec float64      `json:"sprint_400_sec"`
-	LongestKm   float64       `json:"longest_km"`
-	Recent      []RunQuestRun `json:"recent"`
+	TotalKm      float64       `json:"total_km"`
+	RunCount     int           `json:"run_count"`
+	Best5KSec    float64       `json:"best_5k_sec"`
+	BestHalfSec  float64       `json:"best_half_sec"`
+	Sprint400Sec float64       `json:"sprint_400_sec"`
+	LongestKm    float64       `json:"longest_km"`
+	TotalCal     float64       `json:"total_cal"`
+	AvgHR        float64       `json:"avg_hr"`
+	Recent       []RunQuestRun `json:"recent"`
 }
 
 type ExpenseRequest struct {

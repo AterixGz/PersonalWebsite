@@ -76,6 +76,11 @@ func (s *Server) SetupRoutes() http.Handler {
 	mux.HandleFunc("GET /api/runquest/stats", handler.HandleRunQuestStats(s.store))
 	mux.HandleFunc("POST /api/runquest/import", handler.HandleRunQuestImport(s.store, s.config.RunQuestAPIKey))
 
+	// RunQuest — Google Health API (health.googleapis.com)
+	mux.HandleFunc("GET /api/runquest/health/connect", handler.HandleRunQuestHealthConnect(s.config))
+	mux.HandleFunc("GET /api/runquest/health/status", handler.HandleRunQuestHealthStatus(s.store))
+	mux.HandleFunc("GET /api/runquest/health/sync", handler.HandleRunQuestHealthSync(s.store, s.config))
+
 	// Workspace (real OAuth connections: Trello / Google Calendar / Gmail)
 	mux.HandleFunc("GET /api/workspace/status", handler.HandleWorkspaceStatus(s.store))
 	mux.HandleFunc("GET /api/workspace/connect/trello", handler.HandleWorkspaceConnectTrello(s.config))

@@ -754,6 +754,7 @@ document.addEventListener('alpine:init', () => {
       }
       if (tab === 'game') {
         Alpine.store('game').loadRealStats();
+        Alpine.store('game').checkHealth();
       }
       
       // Scroll to top
@@ -1292,6 +1293,7 @@ document.addEventListener('alpine:init', () => {
       const params = new URLSearchParams(window.location.search);
       const isTrelloReturn = params.get('trello_token') === '1';
       const isGoogleReturn = params.get('oauth') === 'google';
+      const isHealthReturn = params.get('health') === '1';
 
       if (isTrelloReturn && window.location.hash && window.location.hash.startsWith('#token=')) {
         const token = window.location.hash.slice(7);
@@ -1303,6 +1305,13 @@ document.addEventListener('alpine:init', () => {
       if (isGoogleReturn) {
         history.replaceState(null, '', '/');
         this.reloadStatus();
+        return;
+      }
+      if (isHealthReturn) {
+        history.replaceState(null, '', '/');
+        // ไปหน้าเกม + อัปเดตสถานะ Google Health
+        Alpine.store('ui').setTab('game');
+        Alpine.store('game').checkHealth();
         return;
       }
 
@@ -2124,6 +2133,8 @@ document.addEventListener('alpine:init', () => {
     ],
     syncing: false,
     lastSync: '—',
+    healthConnected: false,
+    healthSyncing: false,
     profileOpen: localStorage.getItem('runquest_profile_open') !== '0',
     importing: false,
     classOpen: {},
@@ -2252,6 +2263,8 @@ document.addEventListener('alpine:init', () => {
         this.realData = true;
         this.stats.totalKm = Math.round(d.total_km * 10) / 10;
         this.stats.runs = d.run_count;
+        this.stats.totalCal = Math.round(d.total_cal || 0);
+        this.stats.avgHR = Math.round(d.avg_hr || 0);
         if (d.best_5k_sec > 0) this.best5k = Math.round(d.best_5k_sec);
         if (d.best_half_sec > 0) this.bestHalf = Math.round(d.best_half_sec);
         if (d.sprint_400_sec > 0) this.sprint400 = Math.round(d.sprint_400_sec);
@@ -2260,11 +2273,33 @@ document.addEventListener('alpine:init', () => {
           date: this.fmtApiDate(r.start_date),
           km: r.distance_km,
           pace: r.distance_km > 0 ? this.fmtTime(Math.round(r.duration_sec / r.distance_km), false) : '—',
-          dur: Math.round(r.duration_sec / 60) + ' นาที',
+          dur: Math.round(r.duration_sec / 60) + ' นาที' + (r.calories ? ' • 🔥' + Math.round(r.calories) : '') + (r.avg_hr ? ' • HR ' + Math.round(r.avg_hr) : ''),
         }));
         this.apiLastSync = this.fmtApiDate((d.recent && d.recent[0]) ? d.recent[0].start_date : null);
         return true;
       } catch (e) { return false; }
+    },
+    async checkHealth() {
+      try {
+        const res = await fetch('/api/runquest/health/status', { cache: 'no-store' });
+        if (res.ok) { const d = await res.json(); this.healthConnected = !!d.connected; }
+      } catch (e) {}
+    },
+    async healthSync() {
+      if (!this.healthConnected) {
+        window.location.href = '/api/runquest/health/connect';
+        return;
+      }
+      if (this.healthSyncing) return;
+      this.healthSyncing = true;
+      try {
+        const res = await fetch('/api/runquest/health/sync', { cache: 'no-store' });
+        const d = await res.json();
+        if (!res.ok) { this.showToast('⚠️ ' + (d.error || 'ซิงก์ไม่สำเร็จ')); return; }
+        this.showToast('✅ ซิงก์ Google Health: นำเข้า ' + d.imported + ' รายการ' + (d.skipped ? ' (ข้ามซ้ำ ' + d.skipped + ')' : ''));
+        await this.loadRealStats();
+      } catch (e) { this.showToast('⚠️ เกิดข้อผิดพลาด'); }
+      finally { this.healthSyncing = false; }
     },
     fmtApiDate(iso) {
       if (!iso) return '—';
