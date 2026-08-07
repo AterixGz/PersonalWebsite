@@ -169,14 +169,10 @@ Alpine.store('ui', {
 
       const blockModals = () => Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen;
 
-      // กัน click ที่เกิดหลัง drag (ไม่อยากให้โดนปุ่มใน drawer)
-      const suppressOnce = (el) => {
-        el.addEventListener('click', function(e) {
-          if (suppressClick) { e.preventDefault(); e.stopPropagation(); suppressClick = false; }
-        }, true);
-      };
-      suppressOnce(drawer);
-      suppressOnce(backdrop);
+      // กัน click ที่เกิดหลัง drag (ไม่อยากให้โดนปุ่มใน drawer/content)
+      document.addEventListener('click', function(e) {
+        if (suppressClick) { e.preventDefault(); e.stopPropagation(); suppressClick = false; }
+      }, true);
 
       const cleanup = () => {
         window.removeEventListener('pointermove', onMove);
@@ -187,7 +183,9 @@ Alpine.store('ui', {
 
       const begin = (e) => {
         if (blockModals()) return;
-        if (!self.sidebarOpen && e.clientX > 34) return; // ปิดอยู่ → เริ่มได้เฉพาะ edge
+        // finance: ลากตรงไหนของจอก็เปิดได้; หน้าอื่น: ต้องลากจากขอบซ้ายเท่านั้น
+        const anywhereOK = !self.sidebarOpen && self.activeTab === 'finance';
+        if (!self.sidebarOpen && !anywhereOK && e.clientX > 34) return;
         suppressClick = false; // gesture ใหม่ → ปล่อย click ผ่าน (กันกด 2 ที)
         startX = e.clientX; startY = e.clientY;
         startOpen = self.sidebarOpen;
@@ -207,6 +205,7 @@ Alpine.store('ui', {
         if (!dragging) {
           if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return; // ยังเป็น tap → ปล่อย click ผ่าน
           if (Math.abs(dx) <= Math.abs(dy)) return;          // ลากแนวตั้ง = scroll ปกติ
+          if (!startOpen && dx < 0) return;                  // ปิดอยู่ → ลากขวาเท่านั้น (ซ้าย = สลับ tab)
           dragging = true;
           suppressClick = true;
           self.sidebarDrag = startOpen ? self._dragW : 0;
@@ -252,6 +251,13 @@ Alpine.store('ui', {
       zone.addEventListener('pointerdown', (e) => begin(e));
       drawer.addEventListener('pointerdown', (e) => { if (self.sidebarOpen) begin(e); });
       backdrop.addEventListener('pointerdown', (e) => { if (self.sidebarOpen) begin(e); });
+
+      // content ทั้งหมด (เฉพาะ finance → ลากตรงไหนก็เปิด)
+      const content = document.getElementById('scroll-container');
+      if (content && !content._sidebarDragBound) {
+        content._sidebarDragBound = true;
+        content.addEventListener('pointerdown', (e) => { if (self.activeTab === 'finance') begin(e); });
+      }
     },
 
     toggleSidebar() {
