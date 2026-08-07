@@ -485,6 +485,24 @@ func (s *Store) ImportRunQuestRuns(runs []model.RunQuestRun) (imported, skipped 
 	return imported, skipped, tx.Commit()
 }
 
+// ListRunQuestRuns คืนรายการวิ่งทั้งหมด (ใหม่สุดก่อน) สำหรับหน้า "ดูย้อนหลัง"
+func (s *Store) ListRunQuestRuns(limit int) ([]model.RunQuestRun, error) {
+	rows, err := s.db.Query("SELECT id, start_date, distance_km, duration_sec, calories, avg_hr FROM runquest_runs ORDER BY start_date DESC LIMIT ?", limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var runs []model.RunQuestRun
+	for rows.Next() {
+		var r model.RunQuestRun
+		if err := rows.Scan(&r.ID, &r.StartDate, &r.DistanceKm, &r.DurationSec, &r.Calories, &r.AvgHR); err != nil {
+			return nil, err
+		}
+		runs = append(runs, r)
+	}
+	return runs, nil
+}
+
 func (s *Store) GetRunQuestStats() (model.RunQuestStats, error) {
 	var st model.RunQuestStats
 	rows, err := s.db.Query("SELECT start_date, distance_km, duration_sec, calories, avg_hr FROM runquest_runs ORDER BY start_date DESC LIMIT 500")

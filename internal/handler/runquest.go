@@ -76,6 +76,18 @@ func HandleRunQuestHealthConnect(cfg config.Config) http.HandlerFunc {
 	}
 }
 
+// GET /api/runquest/runs?user=... → รายการวิ่งทั้งหมด (ย้อนหลัง)
+func HandleRunQuestRuns(st *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		runs, err := st.ListRunQuestRuns(1000)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"runs": runs})
+	}
+}
+
 // GET /api/runquest/health/status?user=... → {connected: bool}
 func HandleRunQuestHealthStatus(st *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

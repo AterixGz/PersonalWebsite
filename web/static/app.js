@@ -2310,5 +2310,57 @@ document.addEventListener('alpine:init', () => {
       clearTimeout(this._toastTimer);
       this._toastTimer = setTimeout(() => { this.toast = ''; }, 3500);
     },
+    // --- ตั้งค่าลำดับหัวข้อ (ลาก grip จัด) ---
+    sectionOrder: (() => { try { const o = JSON.parse(localStorage.getItem('rq_section_order')); if (Array.isArray(o) && o.length) return o; } catch (e) {} return ['profile', 'health', 'stats', 'fun', 'gear', 'guides', 'races', 'recent']; })(),
+    gameSettingsOpen: false,
+    rqDraggedIndex: null,
+    rqHoverIndex: null,
+    sectionIndex(key) { const i = this.sectionOrder.indexOf(key); return i === -1 ? 99 : i + 1; },
+    toggleGameSettings() { this.gameSettingsOpen = !this.gameSettingsOpen; },
+    onRqDragStart(i) { this.rqDraggedIndex = i; this.rqHoverIndex = i; },
+    onRqDragOver(i) { if (this.rqDraggedIndex !== null && this.rqHoverIndex !== i) this.rqHoverIndex = i; },
+    onRqDragEnd() {
+      if (this.rqDraggedIndex !== null && this.rqHoverIndex !== null && this.rqDraggedIndex !== this.rqHoverIndex) {
+        const item = this.sectionOrder.splice(this.rqDraggedIndex, 1)[0];
+        this.sectionOrder.splice(this.rqHoverIndex, 0, item);
+        localStorage.setItem('rq_section_order', JSON.stringify(this.sectionOrder));
+      }
+      this.rqDraggedIndex = null;
+      this.rqHoverIndex = null;
+    },
+    onRqTouchStart(e, i) { this.rqDraggedIndex = i; this.rqHoverIndex = i; },
+    onRqTouchMove(e) {
+      if (this.rqDraggedIndex === null) return;
+      const t = e.touches[0]; if (!t) return;
+      const el = document.elementFromPoint(t.clientX, t.clientY);
+      const card = el && el.closest('[data-rq-index]');
+      if (card) {
+        const idx = parseInt(card.getAttribute('data-rq-index'), 10);
+        if (!isNaN(idx) && idx >= 0 && idx < this.sectionOrder.length && this.rqHoverIndex !== idx) this.rqHoverIndex = idx;
+      }
+    },
+    onRqTouchEnd() { this.onRqDragEnd(); },
+    // --- ประวัติวิ่งทั้งหมด (modal) ---
+    allRuns: [],
+    runsModalOpen: false,
+    fmtKm(km) { return (km || 0).toFixed(3); },
+    async loadAllRuns() {
+      try {
+        const res = await fetch('/api/runquest/runs', { cache: 'no-store' });
+        if (res.ok) {
+          const d = await res.json();
+          this.allRuns = (d.runs || []).map(r => ({
+            date: this.fmtApiDate(r.start_date),
+            km: r.distance_km,
+            pace: r.distance_km > 0 ? this.fmtTime(Math.round(r.duration_sec / r.distance_km), false) : '—',
+            dur: Math.round(r.duration_sec / 60) + ' นาที',
+            cal: r.calories,
+            hr: r.avg_hr,
+          }));
+        }
+      } catch (e) {}
+    },
+    openRuns() { this.runsModalOpen = true; this.loadAllRuns(); },
+    closeRuns() { this.runsModalOpen = false; },
   });
 });

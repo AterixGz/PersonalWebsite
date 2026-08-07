@@ -74,6 +74,7 @@ func (s *Server) SetupRoutes() http.Handler {
 	// RunQuest (ข้อมูลการวิ่งจริงจาก Apple Health ผ่าน iOS Shortcut)
 	mux.HandleFunc("POST /api/runquest/sync", handler.HandleRunQuestSync(s.store, s.config.RunQuestAPIKey))
 	mux.HandleFunc("GET /api/runquest/stats", handler.HandleRunQuestStats(s.store))
+	mux.HandleFunc("GET /api/runquest/runs", handler.HandleRunQuestRuns(s.store))
 
 	// RunQuest — Google Health API (health.googleapis.com)
 	mux.HandleFunc("GET /api/runquest/health/connect", handler.HandleRunQuestHealthConnect(s.config))

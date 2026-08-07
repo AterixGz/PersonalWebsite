@@ -46,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth29">
+  <link rel="stylesheet" href="/static/app.css?v=oauth30">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth29"></script>
+  <script src="/static/app.js?v=oauth30"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth29', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth30', { updateViaCache: 'none' });
       });
     }
 
@@ -225,6 +225,11 @@
           </div>
           <div class="flex items-center gap-2">
             <!-- Notification Bell Icon -->
+            <button @click="$store.game.toggleGameSettings()"
+                    class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0"
+                    title="ตั้งค่าหน้าวิ่ง">
+              <i class="fa-solid fa-sliders text-sm"></i>
+            </button>
             <button @click="$store.notification.toggleModal()" 
                     class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0" 
                     title="การแจ้งเตือน">
@@ -455,6 +460,11 @@
           </div>
           <div class="flex items-center gap-2">
             <!-- Notification Bell Icon -->
+            <button @click="$store.game.toggleGameSettings()"
+                    class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0"
+                    title="ตั้งค่าหน้าวิ่ง">
+              <i class="fa-solid fa-sliders text-sm"></i>
+            </button>
             <button @click="$store.notification.toggleModal()" 
                     class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0" 
                     title="การแจ้งเตือน">
@@ -713,6 +723,11 @@
           </div>
           <div class="flex items-center gap-2">
             <!-- Notification Bell Icon -->
+            <button @click="$store.game.toggleGameSettings()"
+                    class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0"
+                    title="ตั้งค่าหน้าวิ่ง">
+              <i class="fa-solid fa-sliders text-sm"></i>
+            </button>
             <button @click="$store.notification.toggleModal()" 
                     class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0" 
                     title="การแจ้งเตือน">
@@ -780,7 +795,7 @@
 
       <!-- TAB 4: RunQuest MMO (Mockup Demo) -->
       <div x-show="$store.ui.activeTab === 'game'" x-cloak
-           class="space-y-4 pb-24"
+           class="flex flex-col space-y-4 pb-24"
            x-transition:enter="transition ease-out duration-100"
            x-transition:enter-start="opacity-0"
            x-transition:enter-end="opacity-100">
@@ -788,20 +803,26 @@
         <!-- Tailwind CDN: กัน gradient คลาสที่ Alpine เปลี่ยนตอน runtime -->
         <div class="hidden from-indigo-600 via-indigo-500 to-violet-600 from-amber-500 via-orange-500 to-rose-500 from-sky-500 via-blue-500 to-indigo-500 from-emerald-500 via-teal-500 to-cyan-500 from-violet-500 via-purple-500 to-fuchsia-500"></div>
 
-        <!-- Header -->
-        <div class="flex justify-between items-center shrink-0">
+        <!-- Header (order -2 = อยู่บนสุดเสมอ) -->
+        <div class="flex justify-between items-center shrink-0" :style="'order:-2'">
           <div class="flex items-center gap-3">
             <button @click="$store.ui.toggleSidebar()" class="w-10 h-10 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-700 hover:text-indigo-600 active:scale-90 transition-all">
               <i class="fa-solid fa-bars text-base"></i>
             </button>
             <div>
               <h1 class="text-xl font-bold tracking-tight text-slate-900 leading-tight">RunQuest MMO</h1>
+              <!-- (order ตั้งไว้ที่ wrapper ด้านล่าง) -->
               <span class="text-[10px] font-semibold text-slate-400 flex items-center gap-1 mt-0.5">
                 <i class="fa-solid fa-gamepad text-[9px]"></i> เลเวล = ระดับฝีเท้าจริง อ้างอิงสถิติโลก
               </span>
             </div>
           </div>
           <div class="flex items-center gap-2">
+            <button @click="$store.game.toggleGameSettings()"
+                    class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0"
+                    title="ตั้งค่าหน้าวิ่ง">
+              <i class="fa-solid fa-sliders text-sm"></i>
+            </button>
             <button @click="$store.notification.toggleModal()" 
                     class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0" 
                     title="การแจ้งเตือน">
@@ -819,14 +840,14 @@
           </div>
         </div>
 
-        <!-- Demo notice -->
-        <div x-show="!$store.game.realData" x-cloak class="rounded-xl bg-amber-50 border border-amber-200/70 px-3.5 py-2.5 text-[11px] font-semibold text-amber-700 flex items-center gap-2">
+        <!-- Demo notice (order -1) -->
+        <div :style="'order:-1'" x-show="!$store.game.realData" x-cloak class="rounded-xl bg-amber-50 border border-amber-200/70 px-3.5 py-2.5 text-[11px] font-semibold text-amber-700 flex items-center gap-2">
           <i class="fa-solid fa-plug text-xs"></i>
           <span>ยังไม่ได้เชื่อมต่อ — กดเชื่อม Google Health เพื่อนำเข้าข้อมูลจริง</span>
         </div>
 
-        <!-- Profile (กดหัวการ์ดเพื่อย่อ/ขยาย — การ์ดสีแสดงตลอด ไม่ยุบตาม) -->
-        <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+        <!-- Profile -->
+        <div :style="'order:' + $store.game.sectionIndex('profile')" class="bg-white rounded-2xl border border-slate-100 overflow-hidden">
           <button @click="$store.game.toggleProfile()" class="w-full p-4 flex items-center gap-3 active:scale-[0.99] transition-transform">
             <div class="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-xl shrink-0">🏃</div>
             <div class="flex-1 min-w-0 text-left">
@@ -925,7 +946,7 @@
         </div>
 
         <!-- Google Health sync banner -->
-        <div class="bg-white rounded-2xl border border-slate-100 p-4 flex items-center justify-between gap-3">
+        <div :style="'order:' + $store.game.sectionIndex('health')" class="bg-white rounded-2xl border border-slate-100 p-4 flex items-center justify-between gap-3">
           <div class="min-w-0">
             <div class="flex items-center gap-2">
               <i class="fa-solid fa-heart-pulse text-emerald-500"></i>
@@ -951,10 +972,10 @@
         </div>
 
         <!-- Stats row -->
-        <div class="grid grid-cols-2 gap-2">
+        <div :style="'order:' + $store.game.sectionIndex('stats')" class="grid grid-cols-2 gap-2">
           <div class="bg-white p-3 rounded-xl border border-slate-100">
             <span class="text-[10px] text-slate-400 font-semibold uppercase block">ระยะทางรวม</span>
-            <span class="text-lg font-bold text-slate-900" x-text="$store.game.realData ? $store.game.stats.totalKm + ' km' : '—'"></span>
+            <span class="text-lg font-bold text-slate-900" x-text="$store.game.realData ? $store.game.fmtKm($store.game.stats.totalKm) + ' km' : '—'"></span>
           </div>
           <div class="bg-white p-3 rounded-xl border border-slate-100">
             <span class="text-[10px] text-slate-400 font-semibold uppercase block">วิ่งทั้งหมด</span>
@@ -966,7 +987,7 @@
           </div>
           <div class="bg-white p-3 rounded-xl border border-slate-100">
             <span class="text-[10px] text-slate-400 font-semibold uppercase block">ระยะไกลสุด</span>
-            <span class="text-lg font-bold text-slate-900" x-text="$store.game.realData ? $store.game.longestKm + ' km' : '—'"></span>
+            <span class="text-lg font-bold text-slate-900" x-text="$store.game.realData ? $store.game.fmtKm($store.game.longestKm) + ' km' : '—'"></span>
           </div>
           <div class="bg-white p-3 rounded-xl border border-slate-100">
             <span class="text-[10px] text-slate-400 font-semibold uppercase block">แคลอรี่รวม</span>
@@ -978,8 +999,8 @@
           </div>
         </div>
 
-        <!-- Fun fact (ขำๆ จากสถิติปัจจุบัน) -->
-        <div class="bg-white rounded-2xl border border-slate-100 p-4">
+        <!-- Fun fact -->
+        <div :style="'order:' + $store.game.sectionIndex('fun')" class="bg-white rounded-2xl border border-slate-100 p-4">
           <div class="rounded-xl bg-amber-50/70 border border-amber-100 px-3 py-2.5 flex items-start gap-2">
             <span class="text-sm shrink-0">🤣</span>
             <div class="min-w-0">
@@ -991,7 +1012,7 @@
         </div>
 
         <!-- Gear -->
-        <div class="bg-white rounded-2xl border border-slate-100 p-4">
+        <div :style="'order:' + $store.game.sectionIndex('gear')" class="bg-white rounded-2xl border border-slate-100 p-4">
           <div class="flex items-center justify-between mb-3">
             <h2 class="text-sm font-bold text-slate-900">🎒 อุปกรณ์ปัจจุบัน</h2>
             <button @click="$store.game.addGear()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white text-[10px] font-bold active:scale-95 transition-transform">
@@ -1025,7 +1046,7 @@
         </div>
 
         <!-- Training guides -->
-        <div>
+        <div :style="'order:' + $store.game.sectionIndex('guides')">
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-sm font-bold text-slate-900">📖 แนวทางฝึกซ้อม & Scale Up</h2>
             <span class="text-[10px] font-bold text-slate-400">ตามสายของคุณ</span>
@@ -1087,7 +1108,7 @@
         </div>
 
         <!-- Races -->
-        <div>
+        <div :style="'order:' + $store.game.sectionIndex('races')">
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-sm font-bold text-slate-900">🏁 รายการแข่งที่เปิดรับสมัคร</h2>
             <span class="text-[10px] font-bold text-slate-400">อิงเลเวลปัจจุบันของคุณ</span>
@@ -1130,10 +1151,12 @@
         </div>
 
         <!-- Recent runs -->
-        <div class="bg-white rounded-2xl border border-slate-100 p-4">
+        <div :style="'order:' + $store.game.sectionIndex('recent')" class="bg-white rounded-2xl border border-slate-100 p-4">
           <div class="flex items-center justify-between mb-3">
             <h2 class="text-sm font-bold text-slate-900">🏃 การวิ่งล่าสุด</h2>
-            <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1"><i class="fa-solid fa-heart-pulse text-rose-400"></i> จาก Google Health</span>
+            <button @click="$store.game.openRuns()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-bold active:scale-95 transition-transform shrink-0">
+              <i class="fa-solid fa-clock-rotate-left text-[9px]"></i> ดูทั้งหมด
+            </button>
           </div>
           <div class="space-y-1.5">
             <div x-show="$store.game.recentRuns.length === 0" x-cloak class="px-2.5 py-4 rounded-xl bg-slate-50/60 text-center text-[11px] text-slate-400">ยังไม่มีข้อมูลการวิ่ง — เชื่อม Google Health ก่อน</div>
@@ -1143,7 +1166,7 @@
                   <i class="fa-solid fa-person-running text-sm"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="text-xs font-bold text-slate-800" x-text="r.km + ' km'"></p>
+                  <p class="text-xs font-bold text-slate-800" x-text="$store.game.fmtKm(r.km) + ' km'"></p>
                   <p class="text-[10px] text-slate-400" x-text="r.date"></p>
                 </div>
                 <div class="text-right shrink-0">
@@ -1203,6 +1226,74 @@
     </nav>
 
   </main>
+
+  <!-- RunQuest: ประวัติวิ่งทั้งหมด (ดูย้อนหลัง) -->
+  <div x-show="$store.game.runsModalOpen" x-cloak class="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" @click="$store.game.closeRuns()"></div>
+    <div class="bg-white rounded-t-3xl w-full max-w-md flex flex-col relative z-10 safe-bottom max-h-[85vh]">
+      <div class="p-6 pb-3 shrink-0">
+        <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
+        <h3 class="text-xl font-bold text-slate-900">🏃 ประวัติการวิ่งทั้งหมด</h3>
+        <p class="text-[11px] text-slate-400 mt-1">รวม <span x-text="$store.game.allRuns.length"></span> รอบ จาก Google Health</p>
+      </div>
+      <div class="px-4 pb-6 overflow-y-auto no-scrollbar space-y-1.5 flex-1">
+        <div x-show="$store.game.allRuns.length === 0" x-cloak class="px-2.5 py-6 rounded-xl bg-slate-50/60 text-center text-[11px] text-slate-400">กำลังโหลด…</div>
+        <template x-for="(r, i) in $store.game.allRuns" :key="i">
+          <div class="flex items-center gap-3 px-2.5 py-2.5 rounded-xl bg-slate-50/60">
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 shrink-0">
+              <i class="fa-solid fa-person-running text-sm"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-bold text-slate-800" x-text="$store.game.fmtKm(r.km) + ' km'"></p>
+              <p class="text-[10px] text-slate-400" x-text="r.date"></p>
+            </div>
+            <div class="text-right shrink-0">
+              <p class="text-[11px] font-bold text-slate-700" x-text="r.pace"></p>
+              <p class="text-[10px] text-slate-400" x-text="r.dur + (r.cal ? ' • 🔥' + Math.round(r.cal) : '') + (r.hr ? ' • HR ' + Math.round(r.hr) : '')"></p>
+            </div>
+          </div>
+        </template>
+      </div>
+      <div class="p-4 pt-2 shrink-0 safe-bottom">
+        <button @click="$store.game.closeRuns()" class="w-full py-3 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs active:scale-95 transition-transform">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RunQuest: ตั้งค่าลำดับหัวข้อ (ลาก grip จัด) -->
+  <div x-show="$store.game.gameSettingsOpen" x-cloak class="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" @click="$store.game.toggleGameSettings()"></div>
+    <div class="bg-white rounded-t-3xl w-full max-w-md p-6 relative z-10 safe-bottom">
+      <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
+      <h3 class="text-xl font-bold text-slate-900 mb-1">⚙️ ตั้งค่าหน้าวิ่ง</h3>
+      <p class="text-[11px] text-slate-400 mb-4">ลาก grip เพื่อจัดลำดับการแสดงของแต่ละหัวข้อ (บนสุด = เห็นก่อน)</p>
+      <div class="space-y-2">
+        <template x-for="(key, idx) in $store.game.sectionOrder" :key="key">
+          <div class="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5"
+               :data-rq-index="idx"
+               :class="{
+                 'border-indigo-400 bg-indigo-50/60': $store.game.rqHoverIndex === idx && $store.game.rqDraggedIndex !== null && $store.game.rqDraggedIndex !== idx,
+                 'opacity-40': $store.game.rqDraggedIndex === idx
+               }"
+               @dragover.prevent="$store.game.onRqDragOver(idx)">
+            <div x-init="$nextTick(() => $store.game.initRqDragHandles())"
+                 :draggable="!('ontouchstart' in window)"
+                 @dragstart="$store.game.onRqDragStart(idx)"
+                 @dragend="$store.game.onRqDragEnd()"
+                 @touchstart="$store.game.onRqTouchStart($event, idx)"
+                 @touchend="$store.game.onRqTouchEnd()"
+                 @touchcancel="$store.game.onRqTouchEnd()"
+                 class="rq-grip-handle cursor-grab active:cursor-grabbing p-2 -ml-2 text-slate-300 hover:text-indigo-600 active:text-indigo-600 shrink-0">
+              <i class="fa-solid fa-grip-vertical text-base pointer-events-none"></i>
+            </div>
+            <i class="fa-solid shrink-0 text-sm" :class="key === 'profile' ? 'fa-id-card text-indigo-500' : key === 'health' ? 'fa-heart-pulse text-emerald-500' : key === 'stats' ? 'fa-chart-simple text-sky-500' : key === 'fun' ? 'fa-face-laugh-squint text-amber-500' : key === 'gear' ? 'fa-shoe-prints text-slate-500' : key === 'guides' ? 'fa-book-open text-violet-500' : key === 'races' ? 'fa-flag-checkered text-rose-500' : 'fa-clock-rotate-left text-teal-500'"></i>
+            <span class="text-sm font-semibold text-slate-800" x-text="key === 'profile' ? 'โปรไฟล์นักวิ่ง' : key === 'health' ? 'เชื่อมต่อ Google Health' : key === 'stats' ? 'สถิติรวม' : key === 'fun' ? 'Fun Fact' : key === 'gear' ? 'อุปกรณ์' : key === 'guides' ? 'แนวทางฝึกซ้อม' : key === 'races' ? 'รายการแข่ง' : 'การวิ่งล่าสุด'"></span>
+          </div>
+        </template>
+      </div>
+      <button @click="$store.game.toggleGameSettings()" class="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-md shadow-indigo-200 active:scale-95 transition-all mt-4">เสร็จสิ้น</button>
+    </div>
+  </div>
 
   <!-- Gear modals (อยู่นอก scroll container — กัน backdrop ไม่เต็มจอ) -->
   <div x-show="$store.game.gearEditOpen" x-cloak class="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">
