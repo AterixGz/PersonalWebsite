@@ -85,6 +85,11 @@ body {
   backface-visibility: hidden;
 }
 
+/* iOS-like expo-out easing — ใช้กับ sidebar/drawer เพื่อให้ลื่นแบบ native */
+.ease-ios {
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1) !important;
+}
+
 /* Remove 300ms tap delay on mobile */
 button, a, [role="button"] {
   touch-action: manipulation;

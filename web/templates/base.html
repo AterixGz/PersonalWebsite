@@ -44,20 +44,20 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth36">
+  <link rel="stylesheet" href="/static/app.css?v=oauth37">
 
   <!-- App JS modules (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/js/core.js?v=oauth36"></script>
-  <script src="/static/js/stores/auth.js?v=oauth36"></script>
-  <script src="/static/js/stores/notification.js?v=oauth36"></script>
-  <script src="/static/js/stores/keypass.js?v=oauth36"></script>
-  <script src="/static/js/stores/ui.js?v=oauth36"></script>
-  <script src="/static/js/stores/logs.js?v=oauth36"></script>
-  <script src="/static/js/stores/finance.js?v=oauth36"></script>
-  <script src="/static/js/stores/workspace.js?v=oauth36"></script>
-  <script src="/static/js/stores/chat.js?v=oauth36"></script>
-  <script src="/static/js/stores/aiUsage.js?v=oauth36"></script>
-  <script src="/static/js/stores/game.js?v=oauth36"></script>
+  <script src="/static/js/core.js?v=oauth37"></script>
+  <script src="/static/js/stores/auth.js?v=oauth37"></script>
+  <script src="/static/js/stores/notification.js?v=oauth37"></script>
+  <script src="/static/js/stores/keypass.js?v=oauth37"></script>
+  <script src="/static/js/stores/ui.js?v=oauth37"></script>
+  <script src="/static/js/stores/logs.js?v=oauth37"></script>
+  <script src="/static/js/stores/finance.js?v=oauth37"></script>
+  <script src="/static/js/stores/workspace.js?v=oauth37"></script>
+  <script src="/static/js/stores/chat.js?v=oauth37"></script>
+  <script src="/static/js/stores/aiUsage.js?v=oauth37"></script>
+  <script src="/static/js/stores/game.js?v=oauth37"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -71,7 +71,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth36', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth37', { updateViaCache: 'none' });
       });
     }
 
@@ -113,27 +113,27 @@
   <main class="w-full h-full max-w-md mx-auto relative flex flex-col bg-slate-50 shadow-xl overflow-hidden" style="height: 100dvh;">
 
     <!-- Mobile Sidebar Drawer -->
-    <div x-show="$store.ui.sidebarOpen" style="display: none;" class="fixed inset-0 z-50 flex" role="dialog" aria-modal="true">
+    <div x-cloak class="fixed inset-0 z-50 flex pointer-events-none" :class="$store.ui.sidebarOpen ? 'pointer-events-auto' : ''" role="dialog" aria-modal="true">
       <!-- Backdrop -->
       <div id="sidebar-backdrop" x-show="$store.ui.sidebarOpen"
-           x-transition:enter="ease-out duration-150"
+           x-transition:enter="ease-ios duration-300"
            x-transition:enter-start="opacity-0"
            x-transition:enter-end="opacity-100"
-           x-transition:leave="ease-in duration-100"
+           x-transition:leave="ease-ios duration-200"
            x-transition:leave-start="opacity-100"
            x-transition:leave-end="opacity-0"
-           class="fixed inset-0 bg-slate-900/50 transition-opacity"
+           class="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px] transition-opacity"
            @click="$store.ui.closeSidebar()"></div>
 
       <!-- Drawer Content -->
       <div id="sidebar-drawer" x-show="$store.ui.sidebarOpen"
-           x-transition:enter="transform transition ease-out duration-150"
+           x-transition:enter="ease-ios duration-300"
            x-transition:enter-start="-translate-x-full"
            x-transition:enter-end="translate-x-0"
-           x-transition:leave="transform transition ease-in duration-100"
+           x-transition:leave="ease-ios duration-200"
            x-transition:leave-start="translate-x-0"
            x-transition:leave-end="-translate-x-full"
-           class="relative w-4/5 max-w-xs bg-white h-full shadow-2xl flex flex-col z-10 safe-top safe-bottom overflow-y-auto no-scrollbar" style="will-change: transform;">
+           class="relative w-4/5 max-w-xs bg-white h-full shadow-2xl flex flex-col z-10 safe-top safe-bottom overflow-y-auto no-scrollbar transition-transform" style="will-change: transform, opacity;">
         
         <div class="shrink-0">
           <!-- Sidebar Header / Profile Info -->
