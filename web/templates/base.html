@@ -46,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth32">
+  <link rel="stylesheet" href="/static/app.css?v=oauth33">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth32"></script>
+  <script src="/static/app.js?v=oauth33"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth32', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth33', { updateViaCache: 'none' });
       });
     }
 
@@ -852,7 +852,7 @@
             <div class="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-xl shrink-0">🏃</div>
             <div class="flex-1 min-w-0 text-left">
               <p class="text-sm font-bold text-slate-900">โปรไฟล์นักวิ่ง</p>
-              <p class="text-[10px] text-slate-400 truncate" x-text="$store.game.realData ? '🏆 Overall Lv.' + $store.game.overall().level + '/20 • ' + $store.game.overall().title : 'ยังไม่ได้เชื่อมต่อ — รอข้อมูลจาก Google Health'"></p>
+              <p class="text-[10px] text-slate-400 truncate" x-text="$store.game.realData ? '🏆 Overall Lv.' + $store.game.overall().level + '/30 • ' + $store.game.overall().title : 'ยังไม่ได้เชื่อมต่อ — รอข้อมูลจาก Google Health'"></p>
             </div>
             <span class="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[11px] font-black shrink-0" x-text="$store.game.realData ? 'Lv.' + $store.game.overall().level : '—'"></span>
             <i class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform shrink-0" :class="$store.game.profileOpen ? 'rotate-180' : ''"></i>
@@ -869,7 +869,7 @@
                   <p class="text-2xl font-extrabold leading-tight mt-0.5" x-text="'Lv.' + $store.game.selectedLevel()"></p>
                   <p class="text-[11px] font-bold mt-0.5">คุณคือ: <span x-text="$store.game.selectedTitle()"></span></p>
                   <p class="text-[10px] opacity-90 mt-0.5" x-text="$store.game.selectedMetric()"></p>
-                  <p class="text-[10px] font-bold mt-1" x-show="$store.game.realData">🌍 ดีกว่า <span x-text="$store.game.selectedPop()"></span>% ของนักวิ่งทั่วโลก (สายนี้)</p>
+                  <p class="text-[10px] font-bold mt-1" x-show="$store.game.realData">ตอนนี้คุณคือ 1 ใน <span x-text="$store.game.selectedTop()"></span>% ของคนทั่วโลกที่ทำได้ (สายนี้)</p>
                 </div>
                 <div class="text-4xl shrink-0">
                   <i class="fa-solid" :class="$store.game.selectedClass === 'overall' ? 'fa-trophy' : $store.game.classMeta[$store.game.selectedClass].icon"></i>
@@ -877,7 +877,7 @@
               </div>
               <div class="mt-3 relative">
                 <div class="flex justify-between text-[10px] font-bold opacity-90 mb-1">
-                  <span x-text="$store.game.selectedLevel() >= 20 ? 'ระดับสูงสุด!' : 'คืบหน้าไป Lv.' + ($store.game.selectedLevel() + 1)"></span>
+                  <span x-text="$store.game.selectedLevel() >= 30 ? 'ระดับสูงสุด!' : 'คืบหน้าไป Lv.' + ($store.game.selectedLevel() + 1)"></span>
                   <span x-text="$store.game.selectedPct() + '%'"></span>
                 </div>
                 <div class="h-2 bg-white/25 rounded-full overflow-hidden">
@@ -901,7 +901,7 @@
 
             <!-- รายละเอียดคลาส: กดเพื่อขยายมาตรฐาน 20 เลเวล (ยุบได้ — การ์ดสีข้างบนแสดงตลอด) -->
             <div x-show="$store.game.profileOpen" x-cloak class="mt-3 space-y-1.5">
-              <p class="text-[9px] text-slate-400 leading-relaxed">🪜 ทุกสายเริ่มต้นที่ Lv.1 • 🌍 = ดีกว่ากี่ % ของคนทั้งโลกในสายนั้น • 🏁 = เลเวลที่เริ่มลงแข่งรายการนั้นได้</p>
+              <p class="text-[9px] text-slate-400 leading-relaxed">🪜 ทุกสายเริ่มต้นที่ Lv.1 • ตอนนี้คุณคือ 1 ในกี่ % ของคนทั่วโลกที่ทำได้ • 🏁 = เลเวลที่เริ่มลงแข่ง • ⏱️ = เลเวลที่ผ่านขั้นต่ำ (cutoff)</p>
               <template x-for="(c, i) in $store.game.visibleRaceClasses()" :key="i">
                 <div class="border border-slate-100 rounded-xl overflow-hidden">
                   <button @click="$store.game.toggleClass(c)" class="w-full flex items-center gap-2.5 p-2.5 active:bg-slate-50/60 transition-colors">
@@ -911,7 +911,7 @@
                     <div class="flex-1 min-w-0 text-left">
                       <p class="text-xs font-bold text-slate-900" x-text="$store.game.classMeta[c].name"></p>
                       <p class="text-[9px] text-slate-400 truncate" x-text="$store.game.classLevel(c).metric"></p>
-                      <p class="text-[8px] text-slate-400 truncate">🪜 เริ่มต้น Lv.1</p>
+                      <p class="text-[8px] font-bold text-indigo-500 truncate" x-text="'⏱️ ผ่านขั้นต่ำ: ' + $store.game.classCutoff(c)"></p>
                       <p class="text-[8px] font-bold text-emerald-500 truncate" x-text="'🏅 พร้อมลง: ' + $store.game.classReadyRaces(c)"></p>
                     </div>
                     <div class="w-14 shrink-0">
@@ -935,7 +935,7 @@
                         <div class="flex-1 min-w-0">
                           <p class="text-[9px] font-bold truncate" :class="lv.lv === $store.game.classLevel(c).level ? 'text-indigo-700' : 'text-slate-800'" x-text="lv.title"></p>
                           <p class="text-[8px] text-slate-400 truncate" x-text="lv.ref"></p>
-                          <p class="text-[8px] truncate" :class="lv.lv === $store.game.classLevel(c).level ? 'text-indigo-500' : 'text-slate-400'" x-text="'🌍 ดีกว่า ' + lv.pop + '% ของนักวิ่งทั่วโลก' + (lv.unlock ? ' • 🏁 เริ่มลง: ' + lv.unlock : '')"></p>
+                          <p class="text-[8px] truncate" :class="lv.lv === $store.game.classLevel(c).level ? 'text-indigo-500' : 'text-slate-400'" x-text="'ตอนนี้คุณคือ 1 ใน ' + lv.top + '% ของคนทั่วโลกที่ทำได้' + (lv.unlock ? ' • 🏁 เริ่มลง: ' + lv.unlock : '') + (lv.cut ? ' • ⏱️ ' + lv.cut : '')"></p>
                         </div>
                         <span class="text-[8px] font-black shrink-0" :class="lv.lv === $store.game.classLevel(c).level ? 'text-indigo-600' : 'text-slate-300'" x-text="lv.lv === 1 ? '🪜 เริ่ม' : (lv.lv === $store.game.classLevel(c).level ? '▶ คุณ' : '')"></span>
                       </div>
