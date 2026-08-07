@@ -540,7 +540,7 @@ document.addEventListener('alpine:init', () => {
     keypassSettingsOpen: false,
 
     // Swipe gesture state
-    tabOrder: ['finance', 'workspace', 'chat', 'game'],
+    tabOrder: ['finance', 'workspace', 'game'],
     _touchStartX: 0,
     _touchStartY: 0,
     _touchEndX: 0,
@@ -576,7 +576,7 @@ document.addEventListener('alpine:init', () => {
       el.addEventListener('touchstart', (e) => {
         if (self.sidebarOpen || Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen) return;
         const t = self.activeTab;
-        if (t !== 'workspace' && t !== 'chat') return;
+        if (t !== 'workspace' && t !== 'stats') return;
         if (el.scrollTop > 0) { startY = 0; return; }
         startY = e.touches[0].clientY;
         pulling = true;
@@ -623,7 +623,7 @@ document.addEventListener('alpine:init', () => {
       if (t === 'workspace') {
         const ws = Alpine.store('workspace');
         await Promise.allSettled([ws.loadTrello(), ws.loadCalendar(), ws.loadGmail()]);
-      } else if (t === 'chat') {
+      } else if (t === 'stats') {
         await Alpine.store('aiUsage').loadData();
       }
     },
@@ -749,13 +749,17 @@ document.addEventListener('alpine:init', () => {
       this.activeTab = tab;
       
       // Load data on demand
-      if (tab === 'chat') {
+      if (tab === 'stats') {
         Alpine.store('aiUsage').loadData();
+        if (Alpine.store('logs')) Alpine.store('logs').log('system', 'เปิดแท็บ', 'สถิติการใช้งาน');
       }
       if (tab === 'game') {
         Alpine.store('game').loadRealStats();
         Alpine.store('game').checkHealth();
+        if (Alpine.store('logs')) Alpine.store('logs').log('game', 'เปิดแท็บ', 'RunQuest');
       }
+      if (tab === 'finance' && Alpine.store('logs')) Alpine.store('logs').log('finance', 'เปิดแท็บ', 'สรุปการเงิน');
+      if (tab === 'workspace' && Alpine.store('logs')) Alpine.store('logs').log('workspace', 'เปิดแท็บ', 'พื้นที่ทำงาน');
       
       // Scroll to top
       const scrollContainer = document.getElementById('scroll-container');
@@ -763,6 +767,55 @@ document.addEventListener('alpine:init', () => {
     }
   });
 
+
+
+  // --- Activity Logs Store (สถิติการใช้งาน) ---
+  Alpine.store('logs', {
+    items: [],
+    filter: 'all',
+    categories: [
+      { key: 'all', label: 'ทั้งหมด', icon: 'fa-layer-group' },
+      { key: 'system', label: 'ระบบ', icon: 'fa-gear' },
+      { key: 'finance', label: 'การเงิน', icon: 'fa-chart-pie' },
+      { key: 'workspace', label: 'งาน', icon: 'fa-list-check' },
+      { key: 'game', label: 'เกม', icon: 'fa-gamepad' },
+      { key: 'ai', label: 'AI', icon: 'fa-microchip' }
+    ],
+    catMeta: {
+      system: 'bg-slate-100 text-slate-600',
+      finance: 'bg-emerald-50 text-emerald-600',
+      workspace: 'bg-sky-50 text-sky-600',
+      game: 'bg-violet-50 text-violet-600',
+      ai: 'bg-rose-50 text-rose-600'
+    },
+    init() {
+      try { this.items = JSON.parse(localStorage.getItem('app_logs') || '[]'); } catch (e) { this.items = []; }
+    },
+    save() {
+      try { localStorage.setItem('app_logs', JSON.stringify(this.items.slice(0, 500))); } catch (e) {}
+    },
+    log(cat, action, detail) {
+      this.items.unshift({ ts: Date.now(), cat, action, detail: detail || '' });
+      if (this.items.length > 500) this.items = this.items.slice(0, 500);
+      this.save();
+    },
+    clear() { this.items = []; this.save(); },
+    catLabel(key) { const c = this.categories.find(c => c.key === key); return c ? c.label : key; },
+    catIcon(key) { const c = this.categories.find(c => c.key === key); return c ? c.icon : 'fa-circle'; },
+    catColor(key) { return this.catMeta[key] || 'bg-slate-100 text-slate-500'; },
+    countByCat(key) { return key === 'all' ? this.items.length : this.items.filter(l => l.cat === key).length; },
+    todayCount() {
+      const d = new Date(); const start = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      return this.items.filter(l => l.ts >= start).length;
+    },
+    filtered() {
+      return this.filter === 'all' ? this.items : this.items.filter(l => l.cat === this.filter);
+    },
+    fmtTime(ts) {
+      const d = new Date(ts); const pad = n => String(n).padStart(2, '0');
+      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+  });
 
   // --- Finance Store ---
   Alpine.store('finance', {
@@ -896,6 +949,7 @@ document.addEventListener('alpine:init', () => {
     async addIncome() {
       try {
         const payload = { ...this.newIncome };
+        const wasEdit = !!this.editingIncomeId;
         if (this.editingIncomeId) {
           const res = await fetch(`/api/finance/incomes/${this.editingIncomeId}`, {
             method: 'PUT',
@@ -920,6 +974,7 @@ document.addEventListener('alpine:init', () => {
             throw new Error('Failed');
           }
         }
+        if (Alpine.store('logs')) Alpine.store('logs').log('finance', wasEdit ? 'แก้ไขรายได้' : 'เพิ่มรายได้', payload.name + ' ' + (payload.amount || 0) + ' บาท');
       } catch (err) {
         console.error('Failed to save income', err);
         if (!this.editingIncomeId) this.incomes.push({ ...this.newIncome, id: Date.now() });
@@ -1193,6 +1248,7 @@ document.addEventListener('alpine:init', () => {
         } else {
           throw new Error('Failed');
         }
+        if (Alpine.store('logs')) Alpine.store('logs').log('finance', 'เพิ่มรายจ่าย', payload.name + ' ' + (payload.amount || 0) + ' บาท');
       } catch (err) {
         console.error('Failed to add expense', err);
         this.expenses.push({...this.newExpense, id: Date.now(), is_paid: false});
@@ -1483,6 +1539,7 @@ document.addEventListener('alpine:init', () => {
 
     async connectService(service) {
       this.connecting[service] = true;
+      if (Alpine.store('logs')) Alpine.store('logs').log('workspace', 'เชื่อมต่อ', service);
       const user = encodeURIComponent(this.currentUser());
       if (service === 'trello') {
         window.location.href = '/api/workspace/connect/trello?user=' + user;
@@ -1500,6 +1557,7 @@ document.addEventListener('alpine:init', () => {
       } catch (err) {
         console.error('Failed to disconnect', err);
       }
+      if (Alpine.store('logs')) Alpine.store('logs').log('workspace', 'ยกเลิกการเชื่อมต่อ', service);
       if (provider === 'trello') {
         this.trelloConnected = false;
         this.trello = [];
@@ -1778,7 +1836,9 @@ document.addEventListener('alpine:init', () => {
         });
 
         if (res.ok) {
+          const savedName = this.editItem.name;
           await this.loadData();
+          if (Alpine.store('logs')) Alpine.store('logs').log('ai', 'บันทึก API', savedName);
           this.closeEditModal();
         }
       } catch (err) {
@@ -2507,6 +2567,7 @@ document.addEventListener('alpine:init', () => {
         const d = await res.json();
         if (!res.ok) { this.showToast('⚠️ ' + (d.error || 'ซิงก์ไม่สำเร็จ')); return; }
         this.showToast('✅ ซิงก์ Google Health: นำเข้า ' + d.imported + ' รายการ' + (d.skipped ? ' (ข้ามซ้ำ ' + d.skipped + ')' : ''));
+        if (Alpine.store('logs')) Alpine.store('logs').log('game', 'ซิงก์ Google Health', 'นำเข้า ' + d.imported + ' รายการ');
         await this.loadRealStats();
       } catch (e) { this.showToast('⚠️ เกิดข้อผิดพลาด'); }
       finally { this.healthSyncing = false; }
