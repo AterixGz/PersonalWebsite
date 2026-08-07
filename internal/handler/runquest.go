@@ -116,44 +116,58 @@ func HandleRunQuestHealthSync(st *store.Store, cfg config.Config) http.HandlerFu
 			return
 		}
 
-		// ดึง exercise ตั้งแต่ 1 ปีที่แล้ว (URL-encode filter ให้ถูกต้อง)
+		// ดึง exercise ตั้งแต่ 1 ปีที่แล้ว — paginate ให้ครบทุกหน้า (API ตัดหน้าแรกแค่ 25 จุด)
 		from := time.Now().AddDate(-1, 0, 0).Format("2006-01-02T15:04:05")
-		q := url.Values{}
-		q.Set("filter", `exercise.interval.civil_start_time >= "`+from+`"`)
-		req, _ := http.NewRequest("GET", googleHealthAPI+"?"+q.Encode(), nil)
-		req.Header.Set("Authorization", "Bearer "+token)
-		req.Header.Set("Accept", "application/json")
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			writeJSON(w, http.StatusBadGateway, map[string]any{"error": "เชื่อม Google Health ไม่ได้: " + err.Error()})
-			return
+		type exPt struct {
+			Exercise struct {
+				Interval struct {
+					StartTime string `json:"startTime"`
+					EndTime   string `json:"endTime"`
+				} `json:"interval"`
+				ExerciseType string `json:"exerciseType"`
+				Metrics      struct {
+					CaloriesKcal  float64 `json:"caloriesKcal"`
+					AvgHR         string  `json:"averageHeartRateBeatsPerMinute"`
+					ActiveZoneMin string  `json:"activeZoneMinutes"`
+				} `json:"metricsSummary"`
+			} `json:"exercise"`
 		}
-		defer resp.Body.Close()
-		raw, _ := io.ReadAll(resp.Body)
-		if resp.StatusCode != 200 {
-			writeJSON(w, http.StatusBadGateway, map[string]any{"error": "Google Health API (HTTP " + strconv.Itoa(resp.StatusCode) + "): " + string(raw)})
-			return
-		}
-
-		var parsed struct {
-			DataPoints []struct {
-				Exercise struct {
-					Interval struct {
-						StartTime string `json:"startTime"`
-						EndTime   string `json:"endTime"`
-					} `json:"interval"`
-					ExerciseType string `json:"exerciseType"`
-					Metrics      struct {
-						CaloriesKcal  float64 `json:"caloriesKcal"`
-						AvgHR         string  `json:"averageHeartRateBeatsPerMinute"`
-						ActiveZoneMin string  `json:"activeZoneMinutes"`
-					} `json:"metricsSummary"`
-				} `json:"exercise"`
-			} `json:"dataPoints"`
-		}
-		if err := json.Unmarshal(raw, &parsed); err != nil {
-			writeJSON(w, http.StatusBadGateway, map[string]any{"error": "parse Google Health response ล้มเหลว"})
-			return
+		var allEx []exPt
+		pageToken := ""
+		for {
+			eq := url.Values{}
+			eq.Set("filter", `exercise.interval.civil_start_time >= "`+from+`"`)
+			eu := googleHealthAPI + "?" + eq.Encode()
+			if pageToken != "" {
+				eu += "&pageToken=" + url.QueryEscape(pageToken)
+			}
+			eReq, _ := http.NewRequest("GET", eu, nil)
+			eReq.Header.Set("Authorization", "Bearer "+token)
+			eReq.Header.Set("Accept", "application/json")
+			eResp, err := http.DefaultClient.Do(eReq)
+			if err != nil {
+				writeJSON(w, http.StatusBadGateway, map[string]any{"error": "เชื่อม Google Health ไม่ได้: " + err.Error()})
+				return
+			}
+			eRaw, _ := io.ReadAll(eResp.Body)
+			eResp.Body.Close()
+			if eResp.StatusCode != 200 {
+				writeJSON(w, http.StatusBadGateway, map[string]any{"error": "Google Health API (HTTP " + strconv.Itoa(eResp.StatusCode) + "): " + string(eRaw)})
+				return
+			}
+			var ep struct {
+				DataPoints    []exPt `json:"dataPoints"`
+				NextPageToken string `json:"nextPageToken"`
+			}
+			if err := json.Unmarshal(eRaw, &ep); err != nil {
+				writeJSON(w, http.StatusBadGateway, map[string]any{"error": "parse Google Health response ล้มเหลว"})
+				return
+			}
+			allEx = append(allEx, ep.DataPoints...)
+			if ep.NextPageToken == "" || len(allEx) > 50000 {
+				break
+			}
+			pageToken = ep.NextPageToken
 		}
 
 		// ดึง distance dataPoints (Google Health เก็บระยะทางแยก data type) — paginate
@@ -166,7 +180,7 @@ func HandleRunQuestHealthSync(st *store.Store, cfg config.Config) http.HandlerFu
 			Method string
 		}
 		distPts := []distPt{}
-		pageToken := ""
+		pageToken = ""
 		for {
 			dq := url.Values{}
 			dq.Set("filter", `distance.interval.civil_start_time >= "`+from+`"`)
@@ -241,7 +255,7 @@ func HandleRunQuestHealthSync(st *store.Store, cfg config.Config) http.HandlerFu
 
 		// รวมระยะทางของ distance points ที่ทับซ้อนกับช่วงวิ่งของแต่ละ exercise
 		var runs []model.RunQuestRun
-		for _, dp := range parsed.DataPoints {
+		for _, dp := range allEx {
 			ex := dp.Exercise
 			if !strings.Contains(strings.ToUpper(ex.ExerciseType), "RUN") {
 				continue

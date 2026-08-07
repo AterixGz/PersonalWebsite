@@ -46,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth30">
+  <link rel="stylesheet" href="/static/app.css?v=oauth31">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth30"></script>
+  <script src="/static/app.js?v=oauth31"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth30', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth31', { updateViaCache: 'none' });
       });
     }
 
@@ -1281,9 +1281,10 @@
                  @dragstart="$store.game.onRqDragStart(idx)"
                  @dragend="$store.game.onRqDragEnd()"
                  @touchstart="$store.game.onRqTouchStart($event, idx)"
+                 @touchmove.prevent="$store.game.onRqTouchMove($event)"
                  @touchend="$store.game.onRqTouchEnd()"
                  @touchcancel="$store.game.onRqTouchEnd()"
-                 class="rq-grip-handle cursor-grab active:cursor-grabbing p-2 -ml-2 text-slate-300 hover:text-indigo-600 active:text-indigo-600 shrink-0">
+                 class="rq-grip-handle cursor-grab active:cursor-grabbing p-2 -ml-2 text-slate-300 hover:text-indigo-600 active:text-indigo-600 shrink-0" style="touch-action:none">
               <i class="fa-solid fa-grip-vertical text-base pointer-events-none"></i>
             </div>
             <i class="fa-solid shrink-0 text-sm" :class="key === 'profile' ? 'fa-id-card text-indigo-500' : key === 'health' ? 'fa-heart-pulse text-emerald-500' : key === 'stats' ? 'fa-chart-simple text-sky-500' : key === 'fun' ? 'fa-face-laugh-squint text-amber-500' : key === 'gear' ? 'fa-shoe-prints text-slate-500' : key === 'guides' ? 'fa-book-open text-violet-500' : key === 'races' ? 'fa-flag-checkered text-rose-500' : 'fa-clock-rotate-left text-teal-500'"></i>

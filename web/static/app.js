@@ -2248,14 +2248,14 @@ document.addEventListener('alpine:init', () => {
         const d = await res.json();
         if (!d.run_count || d.run_count <= 0) return false;
         this.realData = true;
-        this.stats.totalKm = Math.round(d.total_km * 10) / 10;
+        this.stats.totalKm = Math.round(d.total_km * 100) / 100;
         this.stats.runs = d.run_count;
         this.stats.totalCal = Math.round(d.total_cal || 0);
         this.stats.avgHR = Math.round(d.avg_hr || 0);
         if (d.best_5k_sec > 0) this.best5k = Math.round(d.best_5k_sec);
         if (d.best_half_sec > 0) this.bestHalf = Math.round(d.best_half_sec);
         if (d.sprint_400_sec > 0) this.sprint400 = Math.round(d.sprint_400_sec);
-        if (d.longest_km > 0) this.longestKm = Math.round(d.longest_km * 10) / 10;
+        if (d.longest_km > 0) this.longestKm = Math.round(d.longest_km * 100) / 100;
         this.recentRuns = (d.recent || []).slice(0, 6).map(r => ({
           date: this.fmtApiDate(r.start_date),
           km: r.distance_km,
@@ -2317,6 +2317,9 @@ document.addEventListener('alpine:init', () => {
     rqHoverIndex: null,
     sectionIndex(key) { const i = this.sectionOrder.indexOf(key); return i === -1 ? 99 : i + 1; },
     toggleGameSettings() { this.gameSettingsOpen = !this.gameSettingsOpen; },
+    initRqDragHandles() {
+      // grip ใช้ Alpine @touchmove/@dragstart อยู่แล้ว — ไม่ต้อง attach เพิ่ม
+    },
     onRqDragStart(i) { this.rqDraggedIndex = i; this.rqHoverIndex = i; },
     onRqDragOver(i) { if (this.rqDraggedIndex !== null && this.rqHoverIndex !== i) this.rqHoverIndex = i; },
     onRqDragEnd() {
@@ -2343,7 +2346,7 @@ document.addEventListener('alpine:init', () => {
     // --- ประวัติวิ่งทั้งหมด (modal) ---
     allRuns: [],
     runsModalOpen: false,
-    fmtKm(km) { return (km || 0).toFixed(3); },
+    fmtKm(km) { return (km || 0).toFixed(2); },
     async loadAllRuns() {
       try {
         const res = await fetch('/api/runquest/runs', { cache: 'no-store' });
