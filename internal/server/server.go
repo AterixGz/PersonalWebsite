@@ -74,12 +74,12 @@ func (s *Server) SetupRoutes() http.Handler {
 	// RunQuest (ข้อมูลการวิ่งจริงจาก Apple Health ผ่าน iOS Shortcut)
 	mux.HandleFunc("POST /api/runquest/sync", handler.HandleRunQuestSync(s.store, s.config.RunQuestAPIKey))
 	mux.HandleFunc("GET /api/runquest/stats", handler.HandleRunQuestStats(s.store))
-	mux.HandleFunc("POST /api/runquest/import", handler.HandleRunQuestImport(s.store, s.config.RunQuestAPIKey))
 
 	// RunQuest — Google Health API (health.googleapis.com)
 	mux.HandleFunc("GET /api/runquest/health/connect", handler.HandleRunQuestHealthConnect(s.config))
 	mux.HandleFunc("GET /api/runquest/health/status", handler.HandleRunQuestHealthStatus(s.store))
 	mux.HandleFunc("GET /api/runquest/health/sync", handler.HandleRunQuestHealthSync(s.store, s.config))
+	mux.HandleFunc("GET /api/runquest/health/disconnect", handler.HandleRunQuestHealthDisconnect(s.store))
 
 	// Workspace (real OAuth connections: Trello / Google Calendar / Gmail)
 	mux.HandleFunc("GET /api/workspace/status", handler.HandleWorkspaceStatus(s.store))
@@ -102,11 +102,7 @@ func (s *Server) SetupRoutes() http.Handler {
 func middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Limit request body to 1MB (DoS protection); import route allows bigger files
-		if strings.HasPrefix(r.URL.Path, "/api/runquest/import") {
-			r.Body = http.MaxBytesReader(w, r.Body, 256<<20) // 256MB
-		} else {
-			r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
-		}
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
 		// Cache control: never cache SW / HTML / app assets (prevents stale PWA)
 		switch {

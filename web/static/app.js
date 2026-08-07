@@ -1890,7 +1890,7 @@ document.addEventListener('alpine:init', () => {
     return out;
   }
 
-  // --- RunQuest MMO Store (รอข้อมูลจริงจาก Google Health / Apple Health) ---
+  // --- RunQuest MMO Store (รอข้อมูลจริงจาก Google Health) ---
   // 4 คลาส แต่ละคลาสมีมาตรฐานเฉพาะสาย 20 เลเวล (อ้างอิงสถิติจริง) + Overall = ค่าเฉลี่ย
   Alpine.store('game', {
     // สถิติจริงต่อคลาส (ยังไม่มีข้อมูล = 0 → แสดง "ยังไม่ได้เชื่อมต่อ")
@@ -1990,7 +1990,7 @@ document.addEventListener('alpine:init', () => {
     },
     // อุปกรณ์ (mock)
     gear: [
-      { icon: 'fa-clock', type: 'นาฬิกา', name: 'Amazfit GTR mini', note: 'ซิงก์ Zepp → Apple Health', status: 'เชื่อมต่อ', color: 'bg-indigo-50 border-indigo-100 text-indigo-600' },
+      { icon: 'fa-clock', type: 'นาฬิกา', name: 'Amazfit GTR mini', note: 'ซิงก์ Zepp → Google Health', status: 'เชื่อมต่อ', color: 'bg-indigo-50 border-indigo-100 text-indigo-600' },
       { icon: 'fa-shoe-prints', type: 'รองเท้าวิ่ง', name: '2000KM 3.0 (สีขาว)', note: 'ใช้งาน 0 / 800 km', status: 'ใหม่', color: 'bg-sky-50 border-sky-100 text-sky-600' },
     ],
     gearPool: [
@@ -2126,12 +2126,9 @@ document.addEventListener('alpine:init', () => {
       },
     },
     recentRuns: [],
-    syncing: false,
-    lastSync: '—',
     healthConnected: false,
     healthSyncing: false,
     profileOpen: localStorage.getItem('runquest_profile_open') !== '0',
-    importing: false,
     classOpen: {},
     guideOpen: {},
     toast: '',
@@ -2175,7 +2172,7 @@ document.addEventListener('alpine:init', () => {
     setClass(k) { this.selectedClass = k; localStorage.setItem('runquest_selected_class', k); },
     visibleRaceClasses() { return this.selectedClass === 'overall' ? this.classOrder : [this.selectedClass]; },
     classFact(cls) {
-      if (!this.realData) return 'ยังไม่ได้เชื่อมต่อ — กด "เชื่อม Google Health" หรือ "นำเข้าย้อนหลัง" เพื่อดูสถิติจริง';
+      if (!this.realData) return 'ยังไม่ได้เชื่อมต่อ — กด "เชื่อม Google Health" เพื่อดูสถิติจริง';
       const facts = this.classFacts[cls]; return facts[(this.classFactIdx[cls] || 0) % facts.length];
     },
     nextClassFact(cls) { this.classFactIdx[cls] = ((this.classFactIdx[cls] || 0) + 1 + Math.floor(Math.random() * (this.classFacts[cls].length - 1))) % this.classFacts[cls].length; },
@@ -2206,30 +2203,16 @@ document.addEventListener('alpine:init', () => {
     selectedTitle() { return !this.realData ? 'ยังไม่ได้เชื่อมต่อ' : (this.selectedClass === 'overall' ? this.overall().title : this.classLevel(this.selectedClass).lvObj.title); },
     selectedLevel() { return !this.realData ? '—' : (this.selectedClass === 'overall' ? this.overall().level : this.classLevel(this.selectedClass).level); },
     selectedPct() { return !this.realData ? 0 : (this.selectedClass === 'overall' ? this.overall().pct : this.classLevel(this.selectedClass).pct); },
-    selectedMetric() { return !this.realData ? 'กด "เชื่อม Google Health" หรือ "นำเข้าย้อนหลัง" เพื่อดึงข้อมูล' : (this.selectedClass === 'overall' ? 'ค่าเฉลี่ยเลเวล 4 คลาส' : this.classLevel(this.selectedClass).metric); },
+    selectedMetric() { return !this.realData ? 'กด "เชื่อม Google Health" เพื่อดึงข้อมูล' : (this.selectedClass === 'overall' ? 'ค่าเฉลี่ยเลเวล 4 คลาส' : this.classLevel(this.selectedClass).metric); },
     toggleClass(key) { this.classOpen[key] = !this.classOpen[key]; },
     toggleGuide(key) { this.guideOpen[key] = !this.guideOpen[key]; },
     // Fun facts
     currentFact() {
-      if (!this.realData) return { icon: 'fa-plug', text: 'ยังไม่ได้เชื่อมต่อ — กด "เชื่อม Google Health" หรือ "นำเข้าย้อนหลัง" เพื่อดูสถิติจริง' };
+      if (!this.realData) return { icon: 'fa-plug', text: 'ยังไม่ได้เชื่อมต่อ — กด "เชื่อม Google Health" เพื่อดูสถิติจริง' };
       return this.funFacts[this.factIndex];
     },
     nextFact() { this.factIndex = (this.factIndex + 1 + Math.floor(Math.random() * (this.funFacts.length - 1))) % this.funFacts.length; },
     toggleProfile() { this.profileOpen = !this.profileOpen; localStorage.setItem('runquest_profile_open', this.profileOpen ? '1' : '0'); },
-    async importHealth(file) {
-      if (!file) { this.showToast('⚠️ เลือกไฟล์ export.zip / export.xml ก่อน'); return; }
-      this.importing = true;
-      try {
-        const fd = new FormData();
-        fd.append('file', file);
-        const res = await fetch('/api/runquest/import', { method: 'POST', body: fd });
-        const d = await res.json();
-        if (!res.ok) { this.showToast('⚠️ ' + (d.error || 'นำเข้าไม่สำเร็จ')); return; }
-        this.showToast('✅ นำเข้าแล้ว ' + d.imported + ' รายการ' + (d.skipped ? ' (ข้ามซ้ำ ' + d.skipped + ')' : '') + ' — สถิติอัปเดต!');
-        if (d.imported > 0) await this.loadRealStats();
-      } catch (e) { this.showToast('⚠️ เกิดข้อผิดพลาด'); }
-      finally { this.importing = false; }
-    },
     // Gear CRUD
     addGear() {
       const pool = this.gearPool.filter(p => !this.gear.some(g => g.name === p.name));
@@ -2312,17 +2295,15 @@ document.addEventListener('alpine:init', () => {
       const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
       return d.getDate() + ' ' + months[d.getMonth()] + ' • ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     },
-    async syncNow() {
-      if (this.syncing) return;
-      this.syncing = true;
-      const hasReal = await this.loadRealStats();
-      this.syncing = false;
-      if (hasReal) {
-        this.lastSync = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-        this.showToast('✅ รีเฟรชข้อมูลแล้ว (รวม ' + this.stats.totalKm + ' km)');
-        return;
-      }
-      this.showToast('🔌 ยังไม่ได้เชื่อมต่อ — กด "เชื่อม Google Health" หรือ "นำเข้าย้อนหลัง" ก่อน');
+    async healthDisconnect() {
+      try {
+        const res = await fetch('/api/runquest/health/disconnect', { cache: 'no-store' });
+        if (res.ok) {
+          this.healthConnected = false;
+          this.showToast('🔌 ยกเลิกการเชื่อมต่อ Google Health แล้ว');
+          await this.loadRealStats();
+        }
+      } catch (e) { this.showToast('⚠️ เกิดข้อผิดพลาด'); }
     },
     showToast(msg) {
       this.toast = msg;

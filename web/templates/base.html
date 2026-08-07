@@ -46,10 +46,10 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth26">
+  <link rel="stylesheet" href="/static/app.css?v=oauth27">
 
   <!-- App JS (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/app.js?v=oauth26"></script>
+  <script src="/static/app.js?v=oauth27"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -63,7 +63,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth26', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth27', { updateViaCache: 'none' });
       });
     }
 
@@ -822,7 +822,7 @@
         <!-- Demo notice -->
         <div x-show="!$store.game.realData" x-cloak class="rounded-xl bg-amber-50 border border-amber-200/70 px-3.5 py-2.5 text-[11px] font-semibold text-amber-700 flex items-center gap-2">
           <i class="fa-solid fa-plug text-xs"></i>
-          <span>ยังไม่ได้เชื่อมต่อ — กดเชื่อม Google Health หรือนำเข้าย้อนหลัง เพื่อนำเข้าข้อมูลจริง</span>
+          <span>ยังไม่ได้เชื่อมต่อ — กดเชื่อม Google Health เพื่อนำเข้าข้อมูลจริง</span>
         </div>
 
         <!-- Profile (กดหัวการ์ดเพื่อย่อ/ขยาย — การ์ดสีแสดงตลอด ไม่ยุบตาม) -->
@@ -924,43 +924,6 @@
           </div>
         </div>
 
-        <!-- Apple Health sync banner -->
-        <div class="bg-white rounded-2xl border border-slate-100 p-4 flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <i class="fa-solid fa-heart-pulse text-rose-500"></i>
-              <span class="text-sm font-bold text-slate-900">Apple Health</span>
-              <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black"
-                    :class="$store.game.realData ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'"
-                    x-text="$store.game.realData ? 'เชื่อมต่อจริง' : 'ยังไม่เชื่อม'"></span>
-            </div>
-            <p class="text-[11px] text-slate-400 mt-0.5" x-text="$store.game.realData ? 'ข้อมูลจริงจาก Apple Health • อัปเดตล่าสุด: ' + $store.game.apiLastSync : 'ยังไม่ได้เชื่อมต่อข้อมูล • กดเชื่อม Google Health หรือนำเข้าย้อนหลัง'"></p>
-          </div>
-          <div class="shrink-0 flex flex-col gap-1.5">
-            <button @click="$store.game.syncNow()" :disabled="$store.game.syncing"
-                    class="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
-                    :class="$store.game.syncing ? 'bg-slate-100 text-slate-400' : 'bg-indigo-600 text-white shadow-md shadow-indigo-200'">
-              <i class="fa-solid fa-rotate text-[11px]" :class="$store.game.syncing ? 'animate-spin' : ''"></i>
-              <span x-text="$store.game.syncing ? 'กำลังซิงก์…' : 'รีเฟรช'"></span>
-            </button>
-            <button @click="$refs.rqImportFile.click()" :disabled="$store.game.importing"
-                    class="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold bg-white border border-slate-200 text-slate-600 active:scale-95 transition-all">
-              <i class="fa-solid fa-file-import text-[10px]" :class="$store.game.importing ? 'animate-spin' : ''"></i>
-              <span x-text="$store.game.importing ? 'กำลังนำเข้า…' : 'นำเข้าย้อนหลัง'"></span>
-            </button>
-            <input type="file" accept=".xml,.zip" class="hidden" x-ref="rqImportFile" @change="$store.game.importHealth($event.target.files[0])">
-          </div>
-        </div>
-
-        <!-- วิธีนำเข้าย้อนหลัง (Apple Health export) -->
-        <div x-show="!$store.game.realData" x-cloak class="rounded-xl bg-sky-50 border border-sky-100 px-3.5 py-2.5 text-[11px] font-semibold text-sky-700">
-          <p class="font-bold mb-1">📥 วิธีนำเข้าข้อมูลจริง (รวมประวัติย้อนหลัง)</p>
-          <p class="leading-relaxed">แอป <span class="font-black">Health (สุขภาพ)</span> → รูปโปรไฟล์ → <span class="font-black">ส่งออกข้อมูลสุขภาพทั้งหมด</span> (ได้ไฟล์ export.zip) → กด <span class="font-black">"นำเข้าย้อนหลัง"</span> เลือกไฟล์ zip หรือ xml — ระบบดึงการวิ่งทั้งหมดมาใส่ให้อัตโนมัติ</p>
-        </div>
-        <div x-show="$store.game.realData" x-cloak class="rounded-xl bg-emerald-50 border border-emerald-100 px-3.5 py-2.5 text-[11px] font-semibold text-emerald-700">
-          ✅ ใช้ข้อมูลจริงแล้ว — สถิติ เลเวล และการแข่ง คำนวณจากการวิ่งจริงของคุณ (กด "นำเข้าย้อนหลัง" เพื่ออัปเดตเพิ่มได้เรื่อยๆ)
-        </div>
-
         <!-- Google Health sync banner -->
         <div class="bg-white rounded-2xl border border-slate-100 p-4 flex items-center justify-between gap-3">
           <div class="min-w-0">
@@ -973,12 +936,16 @@
             </div>
             <p class="text-[11px] text-slate-400 mt-0.5" x-text="$store.game.healthConnected ? 'ดึงข้อมูลวิ่ง (ระยะทาง/เวลา/แคลอรี่/HR) จาก Google Health API' : 'กดเชื่อมเพื่อให้เว็บอ่านข้อมูลวิ่งจาก Google Health' + ' • ต้องเปิด Google Health API ใน Google Cloud ก่อน'"></p>
           </div>
-          <div class="shrink-0">
+          <div class="shrink-0 flex flex-col gap-1.5">
             <button @click="$store.game.healthSync()" :disabled="$store.game.healthSyncing"
                     class="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
                     :class="$store.game.healthSyncing ? 'bg-slate-100 text-slate-400' : 'bg-emerald-600 text-white shadow-md shadow-emerald-200'">
               <i class="fa-solid fa-rotate text-[11px]" :class="$store.game.healthSyncing ? 'animate-spin' : ''"></i>
               <span x-text="$store.game.healthSyncing ? 'กำลังซิงก์…' : ($store.game.healthConnected ? 'ซิงก์ Google Health' : 'เชื่อม Google Health')"></span>
+            </button>
+            <button x-show="$store.game.healthConnected" x-cloak @click="$store.game.healthDisconnect()"
+                    class="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold bg-white border border-rose-200 text-rose-500 active:scale-95 transition-all">
+              <i class="fa-solid fa-unlink text-[10px]"></i> ยกเลิกการเชื่อมต่อ
             </button>
           </div>
         </div>
@@ -1166,10 +1133,10 @@
         <div class="bg-white rounded-2xl border border-slate-100 p-4">
           <div class="flex items-center justify-between mb-3">
             <h2 class="text-sm font-bold text-slate-900">🏃 การวิ่งล่าสุด</h2>
-            <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1"><i class="fa-solid fa-heart-pulse text-rose-400"></i> จาก Google Health / Apple Health</span>
+            <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1"><i class="fa-solid fa-heart-pulse text-rose-400"></i> จาก Google Health</span>
           </div>
           <div class="space-y-1.5">
-            <div x-show="$store.game.recentRuns.length === 0" x-cloak class="px-2.5 py-4 rounded-xl bg-slate-50/60 text-center text-[11px] text-slate-400">ยังไม่มีข้อมูลการวิ่ง — เชื่อม Google Health หรือนำเข้าย้อนหลังก่อน</div>
+            <div x-show="$store.game.recentRuns.length === 0" x-cloak class="px-2.5 py-4 rounded-xl bg-slate-50/60 text-center text-[11px] text-slate-400">ยังไม่มีข้อมูลการวิ่ง — เชื่อม Google Health ก่อน</div>
             <template x-for="(r, i) in $store.game.recentRuns" :key="i">
               <div class="flex items-center gap-3 px-2.5 py-2.5 rounded-xl bg-slate-50/60">
                 <div class="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 shrink-0">
