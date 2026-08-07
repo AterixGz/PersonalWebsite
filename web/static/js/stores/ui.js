@@ -163,11 +163,13 @@ Alpine.store('ui', {
       if (!zone._dragBound) zone._dragBound = true;
 
       let startX = 0, startY = 0, startOpen = false, dragging = false;
-      let lastX = 0, lastT = 0, velX = 0, dragDist = 0;
+      let lastX = 0, lastT = 0, velX = 0;
       let suppressClick = false;
+      let gestureEl = null;
 
       const blockModals = () => Alpine.store('notification').modalOpen || Alpine.store('notification').detailModalOpen;
 
+      // กัน click ที่เกิดหลัง drag (ไม่อยากให้โดนปุ่มใน drawer)
       const suppressOnce = (el) => {
         el.addEventListener('click', function(e) {
           if (suppressClick) { e.preventDefault(); e.stopPropagation(); suppressClick = false; }
@@ -176,28 +178,37 @@ Alpine.store('ui', {
       suppressOnce(drawer);
       suppressOnce(backdrop);
 
-      const begin = (e) => {
-        if (blockModals()) return;
-        // closed: เริ่มได้เฉพาะ edge zone (x < 34); open: ลากได้ทุกจุดบน drawer/backdrop
-        if (!self.sidebarOpen && e.clientX > 34) return;
-        startX = e.clientX; startY = e.clientY;
-        startOpen = self.sidebarOpen;
-        dragging = false; velX = 0; dragDist = 0;
-        self._dragW = self._sidebarW() || 312;
-        self.sidebarDrag = startOpen ? self._dragW : 0;
-        lastX = startX; lastT = performance.now();
+      const cleanup = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onEnd);
+        window.removeEventListener('pointercancel', onCancel);
+        gestureEl = null;
       };
 
-      const move = (e) => {
-        if (self.sidebarDrag === null) return;
+      const begin = (e) => {
+        if (blockModals()) return;
+        if (!self.sidebarOpen && e.clientX > 34) return; // ปิดอยู่ → เริ่มได้เฉพาะ edge
+        startX = e.clientX; startY = e.clientY;
+        startOpen = self.sidebarOpen;
+        dragging = false; velX = 0;
+        self._dragW = self._sidebarW() || 312;
+        lastX = startX; lastT = performance.now();
+        gestureEl = e.target;
+        // ใช้ window listeners (ไม่ setPointerCapture — capture จะแย่ง click ไปจากปุ่มลูก)
+        window.addEventListener('pointermove', onMove, { passive: false });
+        window.addEventListener('pointerup', onEnd);
+        window.addEventListener('pointercancel', onCancel);
+      };
+
+      const onMove = (e) => {
+        if (!gestureEl) return;
         const dx = e.clientX - startX, dy = e.clientY - startY;
         if (!dragging) {
-          // กดค้างก่อน (ยังไม่ลาก) → ปล่อยให้เป็น tap/click
-          if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-          // เปิดจาก edge: เอาแนวนอน; ปิด: เอาแนวนอนซ้าย
-          if (Math.abs(dx) <= Math.abs(dy) && startOpen === false && dx < 8) { return; }
+          if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return; // ยังเป็น tap → ปล่อย click ผ่าน
+          if (Math.abs(dx) <= Math.abs(dy)) return;          // ลากแนวตั้ง = scroll ปกติ
           dragging = true;
           suppressClick = true;
+          self.sidebarDrag = startOpen ? self._dragW : 0;
         }
         e.preventDefault();
         const w = self._dragW || self._sidebarW() || 312;
@@ -205,15 +216,15 @@ Alpine.store('ui', {
         if (startOpen) pos = Math.max(0, Math.min(w, w + dx));
         else pos = Math.max(0, Math.min(w, dx));
         self.sidebarDrag = pos;
-        dragDist = Math.abs(dx);
         const now = performance.now();
         const dt = now - lastT;
         if (dt > 0) velX = (e.clientX - lastX) / dt;
         lastX = e.clientX; lastT = now;
       };
 
-      const end = () => {
-        if (self.sidebarDrag === null) return;
+      const onEnd = () => {
+        cleanup();
+        if (!dragging) { self.sidebarDrag = null; return; } // tap → ไม่เปลี่ยนสถานะ, click ทำงานปกติ
         const w = self._dragW || self._sidebarW() || 312;
         const pos = self.sidebarDrag;
         const TH = w * 0.3;
@@ -227,33 +238,18 @@ Alpine.store('ui', {
           if (velX > 0.4) open = true;
           else if (velX < -0.4) open = false;
         }
-        if (!dragging) { self.sidebarDrag = null; return; } // tap → ไม่เปลี่ยนสถานะ
         self.sidebarDrag = null;
         self.sidebarOpen = open;
       };
 
-      const cancel = () => {
-        if (self.sidebarDrag === null) return;
-        self.sidebarDrag = null;
+      const onCancel = () => {
+        cleanup();
+        if (self.sidebarDrag !== null) self.sidebarDrag = null;
       };
 
-      // Edge zone (ตอนปิด) → ลากเปิด
-      zone.addEventListener('pointerdown', (e) => { begin(e); if (dragging !== undefined) { try { zone.setPointerCapture(e.pointerId); } catch (_) {} } });
-      zone.addEventListener('pointermove', move);
-      zone.addEventListener('pointerup', end);
-      zone.addEventListener('pointercancel', cancel);
-
-      // Drawer (ตอนเปิด) → ลากซ้ายปิด
-      drawer.addEventListener('pointerdown', (e) => { if (self.sidebarOpen) { begin(e); try { drawer.setPointerCapture(e.pointerId); } catch (_) {} } });
-      drawer.addEventListener('pointermove', move);
-      drawer.addEventListener('pointerup', end);
-      drawer.addEventListener('pointercancel', cancel);
-
-      // Backdrop (ตอนเปิด) → ลากซ้ายปิด
-      backdrop.addEventListener('pointerdown', (e) => { if (self.sidebarOpen) { begin(e); try { backdrop.setPointerCapture(e.pointerId); } catch (_) {} } });
-      backdrop.addEventListener('pointermove', move);
-      backdrop.addEventListener('pointerup', end);
-      backdrop.addEventListener('pointercancel', cancel);
+      zone.addEventListener('pointerdown', (e) => begin(e));
+      drawer.addEventListener('pointerdown', (e) => { if (self.sidebarOpen) begin(e); });
+      backdrop.addEventListener('pointerdown', (e) => { if (self.sidebarOpen) begin(e); });
     },
 
     toggleSidebar() {
