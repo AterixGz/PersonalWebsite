@@ -188,6 +188,7 @@ Alpine.store('ui', {
       const begin = (e) => {
         if (blockModals()) return;
         if (!self.sidebarOpen && e.clientX > 34) return; // ปิดอยู่ → เริ่มได้เฉพาะ edge
+        suppressClick = false; // gesture ใหม่ → ปล่อย click ผ่าน (กันกด 2 ที)
         startX = e.clientX; startY = e.clientY;
         startOpen = self.sidebarOpen;
         dragging = false; velX = 0;
@@ -224,7 +225,7 @@ Alpine.store('ui', {
 
       const onEnd = () => {
         cleanup();
-        if (!dragging) { self.sidebarDrag = null; return; } // tap → ไม่เปลี่ยนสถานะ, click ทำงานปกติ
+        if (!dragging) { suppressClick = false; self.sidebarDrag = null; return; } // tap → ไม่เปลี่ยนสถานะ, click ทำงานปกติ
         const w = self._dragW || self._sidebarW() || 312;
         const pos = self.sidebarDrag;
         const TH = w * 0.3;
@@ -244,6 +245,7 @@ Alpine.store('ui', {
 
       const onCancel = () => {
         cleanup();
+        suppressClick = false;
         if (self.sidebarDrag !== null) self.sidebarDrag = null;
       };
 
