@@ -44,20 +44,20 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth40">
+  <link rel="stylesheet" href="/static/app.css?v=oauth41">
 
   <!-- App JS modules (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/js/core.js?v=oauth40"></script>
-  <script src="/static/js/stores/auth.js?v=oauth40"></script>
-  <script src="/static/js/stores/notification.js?v=oauth40"></script>
-  <script src="/static/js/stores/keypass.js?v=oauth40"></script>
-  <script src="/static/js/stores/ui.js?v=oauth40"></script>
-  <script src="/static/js/stores/logs.js?v=oauth40"></script>
-  <script src="/static/js/stores/finance.js?v=oauth40"></script>
-  <script src="/static/js/stores/workspace.js?v=oauth40"></script>
-  <script src="/static/js/stores/chat.js?v=oauth40"></script>
-  <script src="/static/js/stores/aiUsage.js?v=oauth40"></script>
-  <script src="/static/js/stores/game.js?v=oauth40"></script>
+  <script src="/static/js/core.js?v=oauth41"></script>
+  <script src="/static/js/stores/auth.js?v=oauth41"></script>
+  <script src="/static/js/stores/notification.js?v=oauth41"></script>
+  <script src="/static/js/stores/keypass.js?v=oauth41"></script>
+  <script src="/static/js/stores/ui.js?v=oauth41"></script>
+  <script src="/static/js/stores/logs.js?v=oauth41"></script>
+  <script src="/static/js/stores/finance.js?v=oauth41"></script>
+  <script src="/static/js/stores/workspace.js?v=oauth41"></script>
+  <script src="/static/js/stores/chat.js?v=oauth41"></script>
+  <script src="/static/js/stores/aiUsage.js?v=oauth41"></script>
+  <script src="/static/js/stores/game.js?v=oauth41"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -71,7 +71,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth40', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth41', { updateViaCache: 'none' });
       });
     }
 
@@ -125,11 +125,12 @@
            class="fixed inset-0 bg-slate-900/50"
            @click="$store.ui.closeSidebar()"></div>
 
-      <!-- Drawer Content (transform ตามระยะลาก realtime) -->
+      <!-- Drawer Content (ไม่ลาก = ใช้ class translate ±100%; ลาก = inline px ตามนิ้ว) -->
       <div id="sidebar-drawer"
-           :style="'transform:translateX(' + $store.ui.drawerX() + 'px);will-change:transform,opacity;' + ($store.ui.sidebarDrag !== null ? 'transition:none;' : 'transition:transform .28s cubic-bezier(0.32,0.72,0,1);')"
+           :style="$store.ui.sidebarDrag !== null ? 'transform:translateX(' + ($store.ui.sidebarDrag - $store.ui._sidebarW()) + 'px);transition:none;will-change:transform,opacity;' : 'will-change:transform,opacity;'"
+           :class="$store.ui.sidebarDrag !== null ? '' : ($store.ui.sidebarOpen ? 'translate-x-0' : '-translate-x-full')"
            :inert="($store.ui.sidebarOpen || $store.ui.sidebarDrag !== null) ? undefined : ''"
-           class="relative w-4/5 max-w-xs bg-white h-full shadow-2xl flex flex-col z-10 safe-top safe-bottom overflow-y-auto no-scrollbar">
+           class="relative w-4/5 max-w-xs bg-white h-full shadow-2xl flex flex-col z-10 safe-top safe-bottom overflow-y-auto no-scrollbar transition-transform duration-300 ease-ios">
         
         <div class="shrink-0">
           <!-- Sidebar Header / Profile Info -->

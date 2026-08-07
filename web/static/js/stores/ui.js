@@ -145,10 +145,6 @@ Alpine.store('ui', {
       const d = document.getElementById('sidebar-drawer');
       return d ? d.offsetWidth : 312;
     },
-    drawerX() {
-      if (this.sidebarDrag !== null) return this.sidebarDrag - this._sidebarW();
-      return this.sidebarOpen ? 0 : -this._sidebarW();
-    },
     backdropOpacity() {
       if (this.sidebarDrag !== null) {
         const w = this._sidebarW();
@@ -187,7 +183,8 @@ Alpine.store('ui', {
         startX = e.clientX; startY = e.clientY;
         startOpen = self.sidebarOpen;
         dragging = false; velX = 0; dragDist = 0;
-        self.sidebarDrag = startOpen ? self._sidebarW() : 0;
+        self._dragW = self._sidebarW() || 312;
+        self.sidebarDrag = startOpen ? self._dragW : 0;
         lastX = startX; lastT = performance.now();
       };
 
@@ -203,7 +200,7 @@ Alpine.store('ui', {
           suppressClick = true;
         }
         e.preventDefault();
-        const w = self._sidebarW();
+        const w = self._dragW || self._sidebarW() || 312;
         let pos;
         if (startOpen) pos = Math.max(0, Math.min(w, w + dx));
         else pos = Math.max(0, Math.min(w, dx));
@@ -217,7 +214,7 @@ Alpine.store('ui', {
 
       const end = () => {
         if (self.sidebarDrag === null) return;
-        const w = self._sidebarW();
+        const w = self._dragW || self._sidebarW() || 312;
         const pos = self.sidebarDrag;
         const TH = w * 0.3;
         let open;
