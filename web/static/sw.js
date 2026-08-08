@@ -1,5 +1,5 @@
-const CACHE_NAME = 'finflow-v47';
-const VERSION = "oauth53";
+const CACHE_NAME = 'finflow-v48';
+const VERSION = "oauth54";
 const ASSETS = [
   '/',
   '/static/app.css?v=' + VERSION,
@@ -43,7 +43,6 @@ self.addEventListener('activate', event => {
       );
     })
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
