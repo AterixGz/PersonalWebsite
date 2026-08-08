@@ -44,20 +44,20 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth56">
+  <link rel="stylesheet" href="/static/app.css?v=oauth57">
 
   <!-- App JS modules (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/js/core.js?v=oauth56" defer></script>
-  <script src="/static/js/stores/auth.js?v=oauth56" defer></script>
-  <script src="/static/js/stores/notification.js?v=oauth56" defer></script>
-  <script src="/static/js/stores/keypass.js?v=oauth56" defer></script>
-  <script src="/static/js/stores/ui.js?v=oauth56" defer></script>
-  <script src="/static/js/stores/logs.js?v=oauth56" defer></script>
-  <script src="/static/js/stores/finance.js?v=oauth56" defer></script>
-  <script src="/static/js/stores/workspace.js?v=oauth56" defer></script>
-  <script src="/static/js/stores/chat.js?v=oauth56" defer></script>
-  <script src="/static/js/stores/aiUsage.js?v=oauth56" defer></script>
-  <script src="/static/js/stores/game.js?v=oauth56" defer></script>
+  <script src="/static/js/core.js?v=oauth57" defer></script>
+  <script src="/static/js/stores/auth.js?v=oauth57" defer></script>
+  <script src="/static/js/stores/notification.js?v=oauth57" defer></script>
+  <script src="/static/js/stores/keypass.js?v=oauth57" defer></script>
+  <script src="/static/js/stores/ui.js?v=oauth57" defer></script>
+  <script src="/static/js/stores/logs.js?v=oauth57" defer></script>
+  <script src="/static/js/stores/finance.js?v=oauth57" defer></script>
+  <script src="/static/js/stores/workspace.js?v=oauth57" defer></script>
+  <script src="/static/js/stores/chat.js?v=oauth57" defer></script>
+  <script src="/static/js/stores/aiUsage.js?v=oauth57" defer></script>
+  <script src="/static/js/stores/game.js?v=oauth57" defer></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -71,7 +71,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth56', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth57', { updateViaCache: 'none' });
       });
     }
 
@@ -239,7 +239,7 @@
     <div class="flex-1 overflow-y-auto no-scrollbar pb-[100px] safe-bottom px-4 pt-4" id="scroll-container">
       
       <!-- TAB 1: Finance -->
-      <div x-show="$store.ui.activeTab === 'finance'" 
+      <div x-show="$store.ui.activeTab === 'finance'" x-cloak
            x-transition:enter="transition ease-out duration-100"
            x-transition:enter-start="opacity-0"
            x-transition:enter-end="opacity-100"
