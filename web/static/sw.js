@@ -1,5 +1,5 @@
-const CACHE_NAME = 'finflow-v44';
-const VERSION = "oauth50";
+const CACHE_NAME = 'finflow-v45';
+const VERSION = "oauth51";
 const ASSETS = [
   '/',
   '/static/app.css?v=' + VERSION,
@@ -49,14 +49,17 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   
-  // HTML navigations - Network first (always fresh), fallback to cache
+  // HTML navigations - Cache first (instant open), update in background
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).then(response => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-        return response;
-      }).catch(() => caches.match(event.request))
+      caches.match(event.request).then(cached => {
+        const network = fetch(event.request).then(response => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+          return response;
+        }).catch(() => cached);
+        return cached || network;
+      })
     );
     return;
   }
