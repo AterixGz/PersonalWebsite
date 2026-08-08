@@ -1,5 +1,5 @@
-const CACHE_NAME = 'finflow-v46';
-const VERSION = "oauth52";
+const CACHE_NAME = 'finflow-v47';
+const VERSION = "oauth53";
 const ASSETS = [
   '/',
   '/static/app.css?v=' + VERSION,
