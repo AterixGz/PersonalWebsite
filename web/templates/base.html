@@ -44,20 +44,20 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth45">
+  <link rel="stylesheet" href="/static/app.css?v=oauth46">
 
   <!-- App JS modules (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/js/core.js?v=oauth45"></script>
-  <script src="/static/js/stores/auth.js?v=oauth45"></script>
-  <script src="/static/js/stores/notification.js?v=oauth45"></script>
-  <script src="/static/js/stores/keypass.js?v=oauth45"></script>
-  <script src="/static/js/stores/ui.js?v=oauth45"></script>
-  <script src="/static/js/stores/logs.js?v=oauth45"></script>
-  <script src="/static/js/stores/finance.js?v=oauth45"></script>
-  <script src="/static/js/stores/workspace.js?v=oauth45"></script>
-  <script src="/static/js/stores/chat.js?v=oauth45"></script>
-  <script src="/static/js/stores/aiUsage.js?v=oauth45"></script>
-  <script src="/static/js/stores/game.js?v=oauth45"></script>
+  <script src="/static/js/core.js?v=oauth46"></script>
+  <script src="/static/js/stores/auth.js?v=oauth46"></script>
+  <script src="/static/js/stores/notification.js?v=oauth46"></script>
+  <script src="/static/js/stores/keypass.js?v=oauth46"></script>
+  <script src="/static/js/stores/ui.js?v=oauth46"></script>
+  <script src="/static/js/stores/logs.js?v=oauth46"></script>
+  <script src="/static/js/stores/finance.js?v=oauth46"></script>
+  <script src="/static/js/stores/workspace.js?v=oauth46"></script>
+  <script src="/static/js/stores/chat.js?v=oauth46"></script>
+  <script src="/static/js/stores/aiUsage.js?v=oauth46"></script>
+  <script src="/static/js/stores/game.js?v=oauth46"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -71,7 +71,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth45', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth46', { updateViaCache: 'none' });
       });
     }
 
@@ -180,7 +180,7 @@
                     class="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-medium text-sm transition-colors"
                     :class="$store.ui.activeTab === 'game' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-600 hover:bg-slate-50'">
               <i class="fa-solid fa-gamepad text-lg w-5 text-center"></i>
-              <span>RunQuest MMO (Demo)</span>
+              <span>RunVerse</span>
             </button>
 
 
@@ -778,7 +778,7 @@
 
       </div>
 
-      <!-- TAB 4: RunQuest MMO (Mockup Demo) -->
+      <!-- TAB 4: RunVerse -->
       <div x-show="$store.ui.activeTab === 'game'" x-cloak
            class="flex flex-col space-y-4 pb-24"
            x-transition:enter="transition ease-out duration-100"
@@ -794,13 +794,8 @@
             <button @click="$store.ui.toggleSidebar()" class="w-10 h-10 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-700 hover:text-indigo-600 active:scale-90 transition-all">
               <i class="fa-solid fa-bars text-base"></i>
             </button>
-            <button @click="$store.game.toggleGameSettings()"
-                    class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0"
-                    title="ตั้งค่าหน้าวิ่ง">
-              <i class="fa-solid fa-sliders text-sm"></i>
-            </button>
             <div>
-              <h1 class="text-xl font-bold tracking-tight text-slate-900 leading-tight">RunQuest MMO</h1>
+              <h1 class="text-xl font-bold tracking-tight text-slate-900 leading-tight">RunVerse</h1>
               <!-- (order ตั้งไว้ที่ wrapper ด้านล่าง) -->
               <span class="text-[10px] font-semibold text-slate-400 flex items-center gap-1 mt-0.5">
                 <i class="fa-solid fa-gamepad text-[9px]"></i> เลเวล = ระดับฝีเท้าจริง อ้างอิงสถิติโลก
@@ -808,6 +803,11 @@
             </div>
           </div>
           <div class="flex items-center gap-2">
+            <button @click="$store.game.toggleGameSettings()"
+                    class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0"
+                    title="ตั้งค่าหน้าวิ่ง">
+              <i class="fa-solid fa-sliders text-sm"></i>
+            </button>
             <button @click="$store.notification.toggleModal()" 
                     class="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-600 hover:text-indigo-600 active:scale-95 transition-all relative shrink-0" 
                     title="การแจ้งเตือน">
@@ -942,7 +942,7 @@
               <span class="text-sm font-bold text-slate-900">Google Health</span>
               <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black"
                     :class="$store.game.healthConnected ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'"
-                    x-text="$store.game.healthConnected ? ($store.game.apiLastSync ? 'อัปเดต ' + $store.game.apiLastSync : 'เชื่อมต่อแล้ว') : 'ยังไม่เชื่อม'"></span>
+                    x-text="$store.game.healthConnected ? ($store.game.apiLastSync ? 'อัปเดต ' + $store.game.apiLastSync : 'เชื่อมต่อ') : 'ยังไม่เชื่อม'"></span>
             </div>
             <p class="text-[11px] text-slate-400 mt-0.5" x-text="$store.game.healthConnected ? 'ดึงข้อมูลวิ่ง (ระยะทาง/เวลา/แคลอรี่/HR) จาก Google Health API' : 'กดเชื่อมเพื่อให้เว็บอ่านข้อมูลวิ่งจาก Google Health' + ' • ต้องเปิด Google Health API ใน Google Cloud ก่อน'"></p>
           </div>
@@ -1216,7 +1216,7 @@
 
   </main>
 
-  <!-- RunQuest: ประวัติวิ่งทั้งหมด (ดูย้อนหลัง) -->
+  <!-- RunVerse: ประวัติวิ่งทั้งหมด (ดูย้อนหลัง) -->
   <div x-show="$store.game.runsModalOpen" x-cloak class="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">
     <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" @click="$store.game.closeRuns()"></div>
     <div class="bg-white rounded-t-3xl w-full max-w-md flex flex-col relative z-10 safe-bottom max-h-[85vh]">
@@ -1249,7 +1249,7 @@
     </div>
   </div>
 
-  <!-- RunQuest: ตั้งค่าลำดับหัวข้อ (ลาก grip จัด) -->
+  <!-- RunVerse: ตั้งค่าลำดับหัวข้อ (ลาก grip จัด) -->
   <div x-show="$store.game.gameSettingsOpen" x-cloak class="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">
     <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" @click="$store.game.toggleGameSettings()"></div>
     <div class="bg-white rounded-t-3xl w-full max-w-md p-6 relative z-10 safe-bottom">

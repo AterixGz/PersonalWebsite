@@ -281,7 +281,7 @@ Alpine.store('ui', {
       if (tab === 'game') {
         Alpine.store('game').loadRealStats();
         Alpine.store('game').checkHealth();
-        if (Alpine.store('logs')) Alpine.store('logs').log('game', 'เปิดแท็บ', 'RunQuest');
+        if (Alpine.store('logs')) Alpine.store('logs').log('game', 'เปิดแท็บ', 'RunVerse');
       }
       if (tab === 'finance' && Alpine.store('logs')) Alpine.store('logs').log('finance', 'เปิดแท็บ', 'สรุปการเงิน');
       if (tab === 'workspace' && Alpine.store('logs')) Alpine.store('logs').log('workspace', 'เปิดแท็บ', 'พื้นที่ทำงาน');

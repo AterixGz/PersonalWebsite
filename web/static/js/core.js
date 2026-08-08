@@ -10,7 +10,7 @@
   }, true);
 
   // --- Auth Store ---
-// ===== RunQuest builders (สร้างมาตรฐาน 20 เลเวล/คลาส จาก thresholds จริง) =====
+// ===== RunVerse builders (สร้างมาตรฐาน 20 เลเวล/คลาส จาก thresholds จริง) =====
   function rqFmt(sec) { const m = Math.floor(sec / 60), s = sec % 60; return m + ':' + String(s).padStart(2, '0'); }
   function rqFmtH(sec) { const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'); }
   function rqBuildStandards() {
