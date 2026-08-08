@@ -44,20 +44,20 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth54">
+  <link rel="stylesheet" href="/static/app.css?v=oauth55">
 
   <!-- App JS modules (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/js/core.js?v=oauth54" defer></script>
-  <script src="/static/js/stores/auth.js?v=oauth54" defer></script>
-  <script src="/static/js/stores/notification.js?v=oauth54" defer></script>
-  <script src="/static/js/stores/keypass.js?v=oauth54" defer></script>
-  <script src="/static/js/stores/ui.js?v=oauth54" defer></script>
-  <script src="/static/js/stores/logs.js?v=oauth54" defer></script>
-  <script src="/static/js/stores/finance.js?v=oauth54" defer></script>
-  <script src="/static/js/stores/workspace.js?v=oauth54" defer></script>
-  <script src="/static/js/stores/chat.js?v=oauth54" defer></script>
-  <script src="/static/js/stores/aiUsage.js?v=oauth54" defer></script>
-  <script src="/static/js/stores/game.js?v=oauth54" defer></script>
+  <script src="/static/js/core.js?v=oauth55" defer></script>
+  <script src="/static/js/stores/auth.js?v=oauth55" defer></script>
+  <script src="/static/js/stores/notification.js?v=oauth55" defer></script>
+  <script src="/static/js/stores/keypass.js?v=oauth55" defer></script>
+  <script src="/static/js/stores/ui.js?v=oauth55" defer></script>
+  <script src="/static/js/stores/logs.js?v=oauth55" defer></script>
+  <script src="/static/js/stores/finance.js?v=oauth55" defer></script>
+  <script src="/static/js/stores/workspace.js?v=oauth55" defer></script>
+  <script src="/static/js/stores/chat.js?v=oauth55" defer></script>
+  <script src="/static/js/stores/aiUsage.js?v=oauth55" defer></script>
+  <script src="/static/js/stores/game.js?v=oauth55" defer></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -71,7 +71,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth54', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth55', { updateViaCache: 'none' });
       });
     }
 
@@ -94,12 +94,14 @@
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased overflow-hidden w-full h-full safe-top" x-data>
   <!-- Splash: โชว์ทันที (inline style ไม่พึ่ง Alpine) ซ่อนเมื่อพร้อม -->
-  <div id="app-splash" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(165deg,#eef2ff 0%,#f8fafc 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform 1s cubic-bezier(0.42,0,1,1),opacity .9s ease-in;">
-    <div style="text-align:center;animation:rqfade .6s ease-out both;">
-      <div style="font-size:16px;color:#64748b;font-family:system-ui,sans-serif;letter-spacing:2px;text-transform:uppercase;">Welcome to</div>
-      <div style="font-size:56px;font-weight:900;color:#1e293b;font-family:system-ui,sans-serif;letter-spacing:-1px;animation:rqzoom .6s .15s ease-out both;">FinFlow</div>
+  <div id="app-splash" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(165deg,#eef2ff 0%,#f8fafc 100%);transition:opacity .9s ease-in;">
+    <div id="app-splash-inner" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform 1s cubic-bezier(0.42,0,1,1);">
+      <div style="text-align:center;animation:rqfade .6s ease-out both;">
+        <div style="font-size:16px;color:#64748b;font-family:system-ui,sans-serif;letter-spacing:2px;text-transform:uppercase;">Welcome to</div>
+        <div style="font-size:56px;font-weight:900;color:#1e293b;font-family:system-ui,sans-serif;letter-spacing:-1px;animation:rqzoom .6s .15s ease-out both;">FinFlow</div>
+      </div>
+      <div style="width:28px;height:28px;border:4px solid #e2e8f0;border-top-color:#4f46e5;border-radius:50%;animation:rqspin .8s linear infinite,rqfade .5s .3s ease-out both;margin-top:8px;"></div>
     </div>
-    <div style="width:28px;height:28px;border:4px solid #e2e8f0;border-top-color:#4f46e5;border-radius:50%;animation:rqspin .8s linear infinite,rqfade .5s .3s ease-out both;margin-top:8px;"></div>
   </div>
   <style>
     @keyframes rqspin{to{transform:rotate(360deg)}}
@@ -115,9 +117,10 @@
         done = true;
         var s = document.getElementById('app-splash');
         if (!s) return;
-        // slide up ออกจากจอ + fade แล้วค่อยลบออกจาก DOM
-        s.style.transform = 'translateY(-100%)';
+        // background fade อย่างเดียว, เฉพาะ text/spinner (inner) ที่ slide ขึ้น
         s.style.opacity = '0';
+        var inner = document.getElementById('app-splash-inner');
+        if (inner) inner.style.transform = 'translateY(-100%)';
         setTimeout(function(){ s.style.display = 'none'; }, 1050);
       }
       function hideLater(){
