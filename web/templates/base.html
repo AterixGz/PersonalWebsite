@@ -44,20 +44,20 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth46">
+  <link rel="stylesheet" href="/static/app.css?v=oauth47">
 
   <!-- App JS modules (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/js/core.js?v=oauth46"></script>
-  <script src="/static/js/stores/auth.js?v=oauth46"></script>
-  <script src="/static/js/stores/notification.js?v=oauth46"></script>
-  <script src="/static/js/stores/keypass.js?v=oauth46"></script>
-  <script src="/static/js/stores/ui.js?v=oauth46"></script>
-  <script src="/static/js/stores/logs.js?v=oauth46"></script>
-  <script src="/static/js/stores/finance.js?v=oauth46"></script>
-  <script src="/static/js/stores/workspace.js?v=oauth46"></script>
-  <script src="/static/js/stores/chat.js?v=oauth46"></script>
-  <script src="/static/js/stores/aiUsage.js?v=oauth46"></script>
-  <script src="/static/js/stores/game.js?v=oauth46"></script>
+  <script src="/static/js/core.js?v=oauth47"></script>
+  <script src="/static/js/stores/auth.js?v=oauth47"></script>
+  <script src="/static/js/stores/notification.js?v=oauth47"></script>
+  <script src="/static/js/stores/keypass.js?v=oauth47"></script>
+  <script src="/static/js/stores/ui.js?v=oauth47"></script>
+  <script src="/static/js/stores/logs.js?v=oauth47"></script>
+  <script src="/static/js/stores/finance.js?v=oauth47"></script>
+  <script src="/static/js/stores/workspace.js?v=oauth47"></script>
+  <script src="/static/js/stores/chat.js?v=oauth47"></script>
+  <script src="/static/js/stores/aiUsage.js?v=oauth47"></script>
+  <script src="/static/js/stores/game.js?v=oauth47"></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -71,7 +71,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth46', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth47', { updateViaCache: 'none' });
       });
     }
 
@@ -94,17 +94,30 @@
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased overflow-hidden w-full h-full safe-top" x-data>
   <!-- Splash: โชว์ทันที (inline style ไม่พึ่ง Alpine) ซ่อนเมื่อพร้อม -->
-  <div id="app-splash" style="position:fixed;inset:0;z-index:9999;background:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
-    <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:24px;">💰</div>
-    <div style="width:22px;height:22px;border:3px solid #e2e8f0;border-top-color:#4f46e5;border-radius:50%;animation:rqspin .8s linear infinite;"></div>
-    <div style="font-size:11px;color:#94a3b8;font-family:system-ui,sans-serif;">กำลังโหลด FinFlow…</div>
+  <div id="app-splash" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(165deg,#eef2ff 0%,#f8fafc 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
+    <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 24px rgba(79,70,229,.35);animation:rqfade .6s ease-out both,rqzoom .6s ease-out both;">💰</div>
+    <div style="text-align:center;animation:rqfade .6s .15s ease-out both;">
+      <div style="font-size:12px;color:#94a3b8;font-family:system-ui,sans-serif;letter-spacing:1px;">Welcome to</div>
+      <div style="font-size:24px;font-weight:800;color:#1e293b;font-family:system-ui,sans-serif;animation:rqzoom .6s .25s ease-out both;">FinFlow</div>
+    </div>
+    <div style="width:22px;height:22px;border:3px solid #e2e8f0;border-top-color:#4f46e5;border-radius:50%;animation:rqspin .8s linear infinite,rqfade .5s .35s ease-out both;"></div>
   </div>
-  <style>@keyframes rqspin{to{transform:rotate(360deg)}}</style>
+  <style>
+    @keyframes rqspin{to{transform:rotate(360deg)}}
+    @keyframes rqfade{from{opacity:0}to{opacity:1}}
+    @keyframes rqzoom{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+  </style>
   <script>
     (function(){
+      var t0 = Date.now();
       function hide(){ var s=document.getElementById('app-splash'); if(s) s.style.display='none'; }
-      document.addEventListener('alpine:initialized', hide);
-      window.addEventListener('load', function(){ setTimeout(hide, 800); });
+      // ให้ welcome แสดงอย่างน้อย ~1.6s (fade+zoom เห็นชัด) ก่อนปิด
+      function hideLater(){
+        var left = 1600 - (Date.now() - t0);
+        setTimeout(hide, Math.max(0, left));
+      }
+      document.addEventListener('alpine:initialized', hideLater);
+      window.addEventListener('load', function(){ setTimeout(hideLater, 600); });
       setTimeout(hide, 6000); // fallback กันค้าง
     })();
   </script>
