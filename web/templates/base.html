@@ -44,20 +44,20 @@
   <style>[x-cloak] { display: none !important; }</style>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/static/app.css?v=oauth55">
+  <link rel="stylesheet" href="/static/app.css?v=oauth56">
 
   <!-- App JS modules (Registers Alpine stores before Alpine loads) -->
-  <script src="/static/js/core.js?v=oauth55" defer></script>
-  <script src="/static/js/stores/auth.js?v=oauth55" defer></script>
-  <script src="/static/js/stores/notification.js?v=oauth55" defer></script>
-  <script src="/static/js/stores/keypass.js?v=oauth55" defer></script>
-  <script src="/static/js/stores/ui.js?v=oauth55" defer></script>
-  <script src="/static/js/stores/logs.js?v=oauth55" defer></script>
-  <script src="/static/js/stores/finance.js?v=oauth55" defer></script>
-  <script src="/static/js/stores/workspace.js?v=oauth55" defer></script>
-  <script src="/static/js/stores/chat.js?v=oauth55" defer></script>
-  <script src="/static/js/stores/aiUsage.js?v=oauth55" defer></script>
-  <script src="/static/js/stores/game.js?v=oauth55" defer></script>
+  <script src="/static/js/core.js?v=oauth56" defer></script>
+  <script src="/static/js/stores/auth.js?v=oauth56" defer></script>
+  <script src="/static/js/stores/notification.js?v=oauth56" defer></script>
+  <script src="/static/js/stores/keypass.js?v=oauth56" defer></script>
+  <script src="/static/js/stores/ui.js?v=oauth56" defer></script>
+  <script src="/static/js/stores/logs.js?v=oauth56" defer></script>
+  <script src="/static/js/stores/finance.js?v=oauth56" defer></script>
+  <script src="/static/js/stores/workspace.js?v=oauth56" defer></script>
+  <script src="/static/js/stores/chat.js?v=oauth56" defer></script>
+  <script src="/static/js/stores/aiUsage.js?v=oauth56" defer></script>
+  <script src="/static/js/stores/game.js?v=oauth56" defer></script>
 
   <!-- Alpine.js (local, no CDN dependency) -->
   <script defer src="/static/vendor/alpine.min.js"></script>
@@ -71,7 +71,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js?v=oauth55', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('/static/sw.js?v=oauth56', { updateViaCache: 'none' });
       });
     }
 
@@ -110,6 +110,15 @@
   </style>
   <script>
     (function(){
+      // กัน splash โผล่ซ้ำ: ถ้าเพิ่งโชว์ภายใน 20 วิ (เช่นหน้า reload หลัง SW อัปเดต) → ซ่อนทันที
+      var last = parseInt(sessionStorage.getItem('finflow_splash_at') || '0', 10);
+      if (Date.now() - last < 20000) {
+        var s0 = document.getElementById('app-splash');
+        if (s0) s0.style.display = 'none';
+        return;
+      }
+      sessionStorage.setItem('finflow_splash_at', String(Date.now()));
+
       var t0 = Date.now();
       var done = false; // guard: hide รอบเดียวเท่านั้น (กัน slide ซ้ำ = โหลด 2 ครั้ง)
       function hide(){

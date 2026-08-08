@@ -1,5 +1,5 @@
-const CACHE_NAME = 'finflow-v49';
-const VERSION = "oauth55";
+const CACHE_NAME = 'finflow-v50';
+const VERSION = "oauth56";
 const ASSETS = [
   '/',
   '/static/app.css?v=' + VERSION,
@@ -28,7 +28,8 @@ self.addEventListener('install', event => {
       })
       .catch(err => console.log('SW install cache error', err))
   );
-  self.skipWaiting();
+  // ไม่ใช้ skipWaiting/clients.claim — SW ใหม่รอ activate ตอนเปิดครั้งถัดไป
+  // (กัน iOS reload หน้ากำลังเปิด = splash โผล่ซ้ำ)
 });
 
 self.addEventListener('activate', event => {
